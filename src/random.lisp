@@ -90,7 +90,8 @@ nasty.  DON'T DO IT."))
   (:method ((rv univariate) x)
     (error 'not-implemented)))
 
-(def* cdf (x) "CDF for a random variate of the given type and parameters.")
+(def* cdf (x) "CDF (ie Pr(X <= x)) for a random variate of the given
+type and parameters.")
 
 (defgeneric quantile (rv q)
   (:documentation "Quantile function of rv evaluated at x.")
@@ -100,14 +101,3 @@ nasty.  DON'T DO IT."))
     (error 'undefined)))
 
 (def* quantile (q) "Quantile for a random variate of the given type and parameters.")
-
-(defmacro calculate-generator ((instance-variable class) &body body)
-  "Define a slot-unbound method for generator, which is a closure
-returned by body."
-  (check-type instance-variable symbol)
-  (with-unique-names (value)
-    `(defmethod slot-unbound (class (,instance-variable ,class)
-                              (slot-name (eql 'generator)))
-       (let ((,value (locally ,@body)))
-         (setf (slot-value ,instance-variable 'generator) ,value)
-         ,value))))

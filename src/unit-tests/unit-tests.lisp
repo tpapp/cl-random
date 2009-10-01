@@ -55,7 +55,7 @@ var-band."
     (unless ok-p
       (format t "~&moment mismatch for distribution ~a~%" rv)
       (format t "theoretical/empirical mean: ~a / ~a, variance: ~a / ~a~%"
-	      mean (mean rv) variance (variance rv)))
+	      (mean rv) mean (variance rv) variance))
     ok-p))
 
 ;; TEST SUITES
@@ -145,3 +145,15 @@ var-band."
   (ensure (same-mean-variance (make-instance 'gamma :alpha 12d0)))
   (ensure (same-mean-variance (make-instance 'gamma :beta 8d0)))
   (ensure (same-mean-variance (make-instance 'gamma :alpha 0.5d0 :beta pi))))
+
+;; general discrete distribution
+
+(addtest (cl-random-unit-tests)
+  discrete-draws
+  (ensure (same-mean-variance (make-instance 'discrete
+                                             :probabilities #(1 2.d0 3))))
+  (ensure (same-mean-variance (make-instance 'discrete 
+                                             :probabilities (vector 9 pi 3))))
+  (ensure (same-mean-variance (make-instance 'discrete
+                                             :probabilities #(0.5d0 0.3d0 0.2d0)
+                                             :normalized-p t))))

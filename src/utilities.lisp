@@ -1,5 +1,8 @@
 (in-package :cl-random)
 
+;;;; !! At some point, this file should be split up for clarity.  That
+;;;; should be done once the structure of the library stabilizes. -- Tamas
+
 ;;; ?? these 2 are rather useful macros, this is the 3rd library when
 ;;; I see them, maybe put into a common library? not really worth the
 ;;; overhead in work I guess -- Tamas
@@ -71,6 +74,16 @@
 (deftype truncation-boundary ()
   '(or double-float null))
 
+(deftype vector-double-float (&optional n)
+  `(simple-array double-float (,n)))
+
+(defun vector-plusp (v)
+  (every #'plusp v))
+
+(deftype vector-positive-double-float (&optional n)
+  `(and (vector-double-float ,n)
+        (satisfies vector-plusp)))
+
 ;;;; Comparisons for truncated distributions.
 ;;;;
 ;;;; The convention is that nil indicates no truncation (from that
@@ -121,3 +134,18 @@ used) until condition is satisfied, then return value."
   (assert (every #'symbolp slots))
   `(defmethod print-object ((rv ,class) stream)
      (print-with-slots rv stream ',slots)))
+
+;;;; Slots calculated when needed.
+
+(defmacro cached-slot ((instance-variable class slot-name) &body body)
+  "Define a slot-unbound method for slot-name, using the value
+returned by body."
+  (check-type instance-variable symbol)
+  (check-type class symbol)
+  (check-type slot-name symbol)
+  (with-unique-names (value)
+    `(defmethod slot-unbound (class (,instance-variable ,class)
+                              (slot-name (eql ',slot-name)))
+       (let ((,value (locally ,@body)))
+         (setf (slot-value ,instance-variable ',slot-name) ,value)
+         ,value))))

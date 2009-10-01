@@ -22,7 +22,7 @@ beta*exp(-beta*x)."))
 
 (define-printer-with-slots exponential beta)
 
-(calculate-generator (rv exponential)
+(cached-slot (rv exponential generator)
   (bind (((:slots-read-only beta) rv))
     (declare (double-float beta))
     (check-type beta positive-double-float)
@@ -148,7 +148,7 @@ deviation sigma."))
 ;; !! do quantile, based on the links in Marsaglia's articles, ie
 ;; !! rootfinding using the CDF from a good guess
 
-(calculate-generator (rv normal)
+(cached-slot (rv normal generator)
   (declare (optimize (speed 3)))
   (bind (((:slots-read-only mu sigma) rv))
     (declare (double-float mu sigma))
@@ -262,7 +262,7 @@ exp(right^2) as appropriate.  width is right-left."
         (rho (* coefficient (exp (* (expt z 2) -0.5d0)))))
        (<= (random 1d0) rho) z))
 
-(calculate-generator (rv truncated-normal)
+(cached-slot (rv truncated-normal generator)
   (declare (optimize (speed 3)))
   (bind (((:slots-read-only mu sigma left right) rv))
     (declare (double-float mu sigma)
@@ -411,7 +411,7 @@ distributions (eg Dirichlet, etc), too."
         (lambda ()
           (draw-standard-gamma1 alpha d c)))))
 
-(calculate-generator (rv gamma)
+(cached-slot (rv gamma generator)
   (declare (optimize (speed 3)))
   (bind (((:slots-read-only alpha beta) rv)
          (standard-generator (generator-standard-gamma alpha)))
@@ -419,3 +419,99 @@ distributions (eg Dirichlet, etc), too."
              (univariate-continuous-generator standard-generator))
     (lambda ()
       (/ (funcall standard-generator) beta))))
+
+
+;;;; ****************************************************************
+;;;; Discrete distribution.
+;;;; ****************************************************************
+
+;;; ?? The implementation may be improved speedwise with declarations
+;;; and micro-optimizations.  Not a high priority.
+
+(defclass discrete (rv)
+  ((probabilities :initarg :probabilities
+                  :type vector
+                  :reader probabilities
+                  :documentation "normalized probabilities")
+   (mean :type real :reader mean)
+   (variance :type real :reader variance))
+  (:documentation "General discrete distribution with given
+probabilities.  Random variates are integers, starting from 0."))
+
+(define-printer-with-slots discrete probabilities)
+
+(defun normalize-vector (vector)
+  "Normalize vector, no checks."
+  (let ((sum (iter
+               (for v :in-vector vector)
+               (summing v))))
+    (map 'vector-double-float (lambda (x) (coerce (/ x sum) 'double-float)) vector)))
+
+(defmethod initialize-instance :after ((rv discrete) &key normalized-p skip-checks-p
+                                       &allow-other-keys)
+  "Normalized-p indicates that probabilities have been normalized to
+sum to 0, skip-checks-p makes the initializer ignore sanity checks (eg
+positive probabilities).  If normalized-p, probabilities has to
+be coercible to vector-double-float."
+  (with-slots (probabilities) rv
+    (cond
+      ((and normalized-p skip-checks-p) ; nothing to do, except a typecheck
+       (setf probabilities (coerce probabilities 'vector-double-float)))
+      (normalized-p                     ; check nonnegativity & type
+       (setf probabilities (coerce probabilities 'vector-double-float))
+       (check-type probabilities vector-positive-double-float))
+      (skip-checks-p                    ; need to normalize
+       (check-type probabilities vector)
+       (setf probabilities (normalize-vector probabilities)))
+      (t                                ; check and normalize
+       (check-type probabilities vector)
+       (assert (every #'plusp probabilities))
+       (setf probabilities (normalize-vector probabilities)))))
+  rv)
+
+(cached-slot (rv discrete mean)
+  (bind (((:slots-read-only probabilities) rv))
+    (iter
+      (for p :in-vector probabilities)
+      (for i :from 0)
+      (summing (* i p)))))
+
+(cached-slot (rv discrete variance)
+  (bind (((:slots-read-only probabilities) rv))
+    (- (iter
+         (for p :in-vector probabilities)
+         (for i :from 0)
+         (summing (* i i p)))
+       (expt (mean rv) 2))))
+
+(defmethod pdf ((rv discrete) i)
+  (bind (((:slots-read-only probabilities) rv))
+    (if (or (minusp i) (<= (length probabilities) i))
+        0
+        (aref probabilities i))))
+
+(defmethod cdf ((rv discrete) i)
+  ;; ?? not cached, should we?
+  (bind (((:slots-read-only probabilities) rv))
+    (cond
+      ((minusp i) 0)
+      ((<= (length probabilities) i) 1)
+      (t (iter
+           (for j :from 0 :to i)
+           (summing (aref probabilities j)))))))
+
+(cached-slot (rv discrete generator)
+  (declare (optimize (speed 3)))
+  (bind (((:slots-read-only probabilities) rv)
+         (n (length probabilities)))
+    (declare (vector-double-float probabilities))
+    (lambda ()
+      (let ((x (random 1d0)))
+        (block comparison
+          (dotimes (i n)
+            (let ((p (aref probabilities i)))
+              (if (< x p)
+                  (return-from comparison i)
+                  (decf x p))))
+          ;; fallback, mathematically it has a zero chance
+          0)))))
