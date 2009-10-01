@@ -11,8 +11,8 @@
 
    ;; utilities
 
-   missing not-implemented undefined positive-double-float
-   truncation-boundary
+   missing not-implemented undefined positive-double-float vector-double-float
+   vector-positive-double-float truncation-boundary
 
    ;; random
 
@@ -26,6 +26,6 @@
    draw-standard-exponential exponential normal pdf-standard-normal
    cdf-standard-normal draw-standard-normal to-standard-normal
    from-standard-normal truncated-normal gamma
-   generator-standard-gamma
+   generator-standard-gamma discrete
 
    ))
