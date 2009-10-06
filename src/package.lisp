@@ -19,7 +19,7 @@
    rv draw draw* pdf pdf* mean mean* variance variance* cdf cdf*
    univariate-continuous-generator univariate-discrete-generator
    multivariate-continuous-generator multivariate-discrete-generator
-   univariate multivariate quantile quantile* draw-type draw-dimension
+   univariate multivariate quantile quantile* draw-type draw-dimensions
    draw-many draw-many*
 
    ;; univariate

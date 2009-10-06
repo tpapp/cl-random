@@ -90,8 +90,8 @@ nasty.  DON'T DO IT."))
   (:method ((rv multivariate))
     '(simple-array double-float (*))))
 
-(defgeneric draw-dimension (rv)
-  (:documentation "Dimension of objects returned by draw if array or
+(defgeneric draw-dimensions (rv)
+  (:documentation "Dimensions of objects returned by draw if array or
   similar, otherwise nil (also for scalars, etc).")
   (:method ((rv univariate))
     nil))
