@@ -83,6 +83,19 @@ nasty.  DON'T DO IT."))
   Univariate RV's have densities, but NO distribution functions and
   quantiles."))
 
+(defgeneric draw-type (rv)
+  (:documentation "Type of objects returned by draw.")
+  (:method ((rv univariate))
+    'double-float)
+  (:method ((rv multivariate))
+    '(simple-array double-float (*))))
+
+(defgeneric draw-dimension (rv)
+  (:documentation "Dimension of objects returned by draw if array or
+  similar, otherwise nil (also for scalars, etc).")
+  (:method ((rv univariate))
+    nil))
+
 (defgeneric cdf (rv x)
   (:documentation "Cumulative distribution function of rv evaluated at x.")
   (:method ((rv univariate) x)
@@ -101,3 +114,17 @@ type and parameters.")
     (error 'undefined)))
 
 (def* quantile (q) "Quantile for a random variate of the given type and parameters.")
+
+;;;;  Utility functions
+;;;;
+;;;;
+
+(defun draw-many (rv n)
+  "Draw n samples from rv, returned as a vector of the appropriate type."
+  (let ((result (make-array n :element-type (draw-type rv))))
+    (dotimes (i n)
+      (setf (aref result i) (draw rv)))
+    result))
+
+(def* draw-many (n)
+  "Draw n samples from a random variate of the given type and parameters, returned as a vector of the appropriate type.")

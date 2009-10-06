@@ -16,16 +16,17 @@
 
    ;; random
 
-   rv draw draw* pdf pdf* mean mean* variance variance* cdf cdf* 
+   rv draw draw* pdf pdf* mean mean* variance variance* cdf cdf*
    univariate-continuous-generator univariate-discrete-generator
    multivariate-continuous-generator multivariate-discrete-generator
-   univariate multivariate quantile quantile* 
+   univariate multivariate quantile quantile* draw-type draw-dimension
+   draw-many draw-many*
 
    ;; univariate
 
-   draw-standard-exponential exponential normal pdf-standard-normal
-   cdf-standard-normal draw-standard-normal to-standard-normal
-   from-standard-normal truncated-normal gamma
+   uniform draw-standard-exponential exponential normal
+   pdf-standard-normal cdf-standard-normal draw-standard-normal
+   to-standard-normal from-standard-normal truncated-normal gamma
    generator-standard-gamma discrete
 
    ))

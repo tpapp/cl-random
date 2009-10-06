@@ -1,6 +1,49 @@
 (in-package :cl-random)
 
 ;;;; ****************************************************************
+;;;; Uniform distribution.
+;;;; ****************************************************************
+
+(defclass uniform (univariate)
+  ((left :initarg :left :initform 0d0 :reader left
+         :type double-float :documentation "left boundary")
+   (right :initarg :right :initform 1d0 :reader right
+          :type double-float :documentation "right boundary"))
+  (:documentation "Uniform(a,b) distribution."))
+
+(defmethod initialize-instance :after ((rv uniform) &key
+                                       &allow-other-keys)
+  (bind (((:slots-read-only left right) rv))
+    (assert (< left right)))
+  rv)
+ 
+(defmethod mean ((rv uniform))
+  (/ (+ (left rv) (right rv)) 2d0))
+
+(defmethod variance ((rv uniform))
+  (/ (expt (- (right rv) (left rv)) 2) 12d0))
+
+(defmethod pdf ((rv uniform) x)
+  (bind (((:slots-read-only left right) rv))
+    (cond
+      ((< x left) 0d0)
+      ((< right x) 0d0)
+      (t (/ (- right left))))))
+
+(defmethod cdf ((rv uniform) x)
+  (bind (((:slots-read-only left right) rv))
+    (cond
+      ((< x left) 0d0)
+      ((< right x) 1d0)
+      (t (/ (- x left) (- right left))))))
+
+(cached-slot (rv uniform generator)
+  (bind (((:slots-read-only left right) rv)
+         (width (- right left)))
+    (lambda ()
+      (+ left (* width (random 1d0))))))
+
+;;;; ****************************************************************
 ;;;; Exponential distribution.
 ;;;;
 ;;;; Also provides the primitive draw-standard-exponential, which is
@@ -14,7 +57,7 @@ which has density exp(-x)."
   ;; need 1-random, because there is a remote chance of getting a 0.
   (- (log (- 1d0 (random 1d0)))))
 
-(defclass exponential (rv)
+(defclass exponential (univariate)
   ((beta :initarg :beta :initform 1d0 :reader beta
          :type positive-double-float))
   (:documentation "Exponential(beta) distribution, which has density
@@ -46,7 +89,7 @@ beta*exp(-beta*x)."))
 ;;;; distributions.
 ;;;; ****************************************************************
 
-(defclass normal (rv)
+(defclass normal (univariate)
   ((mu :initarg :mu :initform 0d0 :reader mu :type double-float)
    (sigma :initarg :sigma :initform 1d0 :reader sigma :type positive-double-float))
   (:documentation "Normal distribution with mean mu and standard
@@ -160,7 +203,7 @@ deviation sigma."))
 ;;;; Truncated normal distribution (univariate).
 ;;;; ****************************************************************
 
-(defclass truncated-normal (rv)
+(defclass truncated-normal (univariate)
   ((mu :initarg :mu :initform 0d0 :reader mu :type double-float)
    (sigma :initarg :sigma :initform 1d0 :reader sigma :type positive-double-float)
    (left :initarg :left :initform nil :reader left :type truncation-boundary)
@@ -342,7 +385,7 @@ exp(right^2) as appropriate.  width is right-left."
 ;;;; generator for a given alpha.
 ;;;; ****************************************************************
 
-(defclass gamma (rv)
+(defclass gamma (univariate)
   ((alpha :initarg :alpha :initform 1d0 
           :type positive-double-float :reader alpha
           :documentation "shape parameter")
@@ -428,7 +471,7 @@ distributions (eg Dirichlet, etc), too."
 ;;; ?? The implementation may be improved speedwise with declarations
 ;;; and micro-optimizations.  Not a high priority.
 
-(defclass discrete (rv)
+(defclass discrete (univariate)
   ((probabilities :initarg :probabilities
                   :type vector
                   :reader probabilities
@@ -437,6 +480,9 @@ distributions (eg Dirichlet, etc), too."
    (variance :type real :reader variance))
   (:documentation "General discrete distribution with given
 probabilities.  Random variates are integers, starting from 0."))
+
+(defmethod draw-type ((rv discrete))
+  'fixnum)
 
 (define-printer-with-slots discrete probabilities)
 

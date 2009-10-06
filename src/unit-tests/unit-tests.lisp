@@ -71,6 +71,13 @@ var-band."
 
 ;; TESTS
 
+(addtest (cl-random-unit-tests)
+  uniform-draws
+  (ensure (same-mean-variance (make-instance 'uniform)))
+  (ensure (same-mean-variance (make-instance 'uniform :left -9d0)))
+  (ensure (same-mean-variance (make-instance 'uniform :right 107d0)))
+  (ensure (same-mean-variance (make-instance 'uniform :left 19d0 :right 57d0))))
+
 ;; exponential distribution
 
 (addtest (cl-random-unit-tests)
