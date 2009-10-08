@@ -27,6 +27,6 @@
    uniform draw-standard-exponential exponential normal
    pdf-standard-normal cdf-standard-normal draw-standard-normal
    to-standard-normal from-standard-normal truncated-normal gamma
-   generator-standard-gamma discrete
+   generator-standard-gamma beta discrete
 
    ))
