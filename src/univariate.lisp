@@ -465,11 +465,51 @@ distributions (eg Dirichlet, etc), too."
 
 
 ;;;; ****************************************************************
+;;;; Beta distribution.
+;;;; ****************************************************************
+
+(defclass beta (univariate)
+  ((alpha :initarg :alpha :initform 1d0 
+          :type positive-double-float :reader alpha
+          :documentation "shape parameter alpha")
+   (beta :initarg :beta :initform 1d0
+         :type positive-double-float :reader beta
+         :documentation "shape parameter beta"))
+  (:documentation "Beta(alpha,beta) distribution, with density
+  proportional to x^(alpha-1)*(1-x)^(beta-1)"))
+
+(define-printer-with-slots beta alpha beta)
+
+(defmethod mean ((rv beta))
+  (bind (((:slots-read-only alpha beta) rv))
+    (/ alpha (+ alpha beta))))
+
+(defmethod variance ((rv beta))
+  (bind (((:slots-read-only alpha beta) rv)
+         (sum (+ alpha beta)))
+    (/ (* alpha beta) (* (expt sum 2) (1+ sum)))))
+    
+(cached-slot (rv beta generator)
+  (declare (optimize (speed 3)))
+  (bind (((:slots-read-only alpha beta) rv)
+         (alpha-gen (generator-standard-gamma alpha))
+         (beta-gen (generator-standard-gamma beta)))
+    (declare (univariate-continuous-generator alpha-gen beta-gen))
+    (lambda ()
+      (let ((alpha (funcall alpha-gen))
+            (beta (funcall beta-gen)))
+        (/ alpha (+ alpha beta))))))
+
+
+;;;; ****************************************************************
 ;;;; Discrete distribution.
 ;;;; ****************************************************************
 
 ;;; ?? The implementation may be improved speedwise with declarations
-;;; and micro-optimizations.  Not a high priority.
+;;; and micro-optimizations.  Not a high priority.  However,
+;;; converting arguments to double-float provided a great speedup,
+;;; especially in cases when the normalization resulted in rationals
+;;; -- comparisons for the latter are quite slow.
 
 (defclass discrete (univariate)
   ((probabilities :initarg :probabilities

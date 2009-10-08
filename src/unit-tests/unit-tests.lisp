@@ -153,6 +153,17 @@ var-band."
   (ensure (same-mean-variance (make-instance 'gamma :beta 8d0)))
   (ensure (same-mean-variance (make-instance 'gamma :alpha 0.5d0 :beta pi))))
 
+
+;; beta distribution
+
+(addtest (cl-random-unit-tests)
+  beta-draws
+  (ensure (same-mean-variance (make-instance 'beta)))
+  (ensure (same-mean-variance (make-instance 'beta :alpha 12d0)))
+  (ensure (same-mean-variance (make-instance 'beta :beta 8d0)))
+  (ensure (same-mean-variance (make-instance 'beta :alpha 0.5d0 :beta pi))))
+
+
 ;; general discrete distribution
 
 (addtest (cl-random-unit-tests)
