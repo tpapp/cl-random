@@ -21,6 +21,13 @@
     :components
     ((:file "utilities")
      (:file "random")
-     (:file "univariate"))))
-  :depends-on (:cl-utilities :iterate :metabang-bind :lift))
+     (:file "univariate")
+     (:file "multivariate")))
+   (:module
+    "statistics"
+    :pathname #P"src/"
+    :serial t
+    :components
+    ((:file "statistics"))))
+  :depends-on (:cl-utilities :iterate :metabang-bind :xarray :lla :lift))
 

@@ -124,9 +124,18 @@ used) until condition is satisfied, then return value."
 ;;;; characterize the distribution.
 
 (defun print-with-slots (rv stream slots)
+  "A slot can be a symbol (used with slot-value)."
   (print-unreadable-object (rv stream :type t)
     (dolist (slot slots)
       (format stream " ~A=~A" (symbol-name slot) (slot-value rv slot)))))
+
+(defmacro define-printer ((class &key (instance 'rv) (stream 'stream)) &body body)
+  (check-type class symbol)
+  (check-type instance symbol)
+  (check-type stream symbol)
+  `(defmethod print-object ((,instance ,class) ,stream)
+     (print-unreadable-object (,instance ,stream :type t)
+       ,@body)))
 
 (defmacro define-printer-with-slots (class &rest slots)
   (check-type class symbol)

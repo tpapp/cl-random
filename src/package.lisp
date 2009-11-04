@@ -4,8 +4,10 @@
     (:nicknames :rv)
   (:use :common-lisp
 	:cl-utilities
-	  :iterate
-	  :bind)
+        :iterate
+        :bind
+        :lla
+        :xarray)
   (:shadowing-import-from :iterate :collecting :collect)
   (:export
 
@@ -28,5 +30,9 @@
    pdf-standard-normal cdf-standard-normal draw-standard-normal
    to-standard-normal from-standard-normal truncated-normal gamma
    generator-standard-gamma beta discrete
+
+   ;; multivariate
+
+   mv-normal
 
    ))
