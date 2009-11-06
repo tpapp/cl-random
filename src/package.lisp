@@ -26,13 +26,14 @@
 
    ;; univariate
 
-   uniform draw-standard-exponential exponential normal
-   pdf-standard-normal cdf-standard-normal draw-standard-normal
-   to-standard-normal from-standard-normal truncated-normal gamma
-   generator-standard-gamma beta discrete
+   uniform left right draw-standard-exponential exponential beta
+   normal mu sigma pdf-standard-normal cdf-standard-normal
+   draw-standard-normal to-standard-normal from-standard-normal
+   truncated-normal left right gamma alpga beta
+   generator-standard-gamma beta discrete probabilities
 
    ;; multivariate
 
-   mv-normal
+   mv-normal linear-regression tau
 
    ))

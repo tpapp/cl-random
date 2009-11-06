@@ -56,6 +56,11 @@
 ;;;;  N(0,sigma^2).  Internally, the implementation uses the precision
 ;;;;  tau = sigma^(-2).  See Lancaster (2004, Chapter 3) for the
 ;;;;  formulas.
+;;;;
+;;;;  LINEAR-REGRESSION behaves as if the random variable was BETA for
+;;;;  calculating the mean, variance, drawing random values, etc.  For
+;;;;  the latter, the generator returns a value of SIGMA as a second
+;;;;  value.
 
 (defclass linear-regression (multivariate)
   ((beta :type mv-normal :reader beta :initarg :beta
