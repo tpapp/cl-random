@@ -1,6 +1,9 @@
 (in-package :cl-random)
 
 (use-package :lift)
+(asdf:load-system :named-readtables) 
+(use-package :named-readtables)
+(in-readtable lla-readtable)
 
 ;; SUPPORT FUNCTIONS
 
@@ -188,22 +191,20 @@ var-band."
 ;;;;
 
 (time
-(bind ((mean (make-nv 2 :double '(3 4)))
-       (variance (make-matrix 'dense-matrix 2 2 
-                              :initial-contents '(1 0.5 0.5 1)))
-       (rv (make-instance 'mv-normal :mu mean 
-                          :sigma (cholesky variance)))
+(bind ((mean #vd(3 4))
+       (variance #2vd:hermitian(1 0.5 0.5 1))
+       (rv (make-instance 'mv-normal :mu mean :sigma variance))
        (matrix (xcollect 100000 (lambda () (draw rv))))
        ((:values sample-mean sample-variance)
-        (matrix-mean-var matrix)))
+        (matrix-mean-variance matrix)))
   sample-mean
-;  sample-variance
+  sample-variance
 ))
 
 
 ;;; linear regression
 
-(defparameter *beta* (make-nv 2 :double #(1 2)))
+(defparameter *beta* #v(1 2))
 (defparameter *x* (xcollect 500 (lambda ()
                                   (vector (* 3 (draw-standard-normal))
                                           (+ 5 (draw-standard-normal))))
@@ -224,6 +225,6 @@ var-band."
 
 (bind ((matrix (xcollect 1000000 (generator *ls*)))
        ((:values sample-mean sample-variance)
-        (matrix-mean-var matrix)))
+        (matrix-mean-variance matrix)))
   (defparameter *sample-variance* sample-variance))
 (x/ *sample-variance* (variance *ls*))  ; should be near 1

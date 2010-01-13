@@ -10,20 +10,33 @@
 (defclass mv-normal (multivariate)
   ((mu :initarg :mu :reader mu :type numeric-vector-double
        :documentation "vector of means")
-   (sigma :initarg :sigma :reader sigma :type lower-triangular-matrix
-            :documentation "cholesky decomposition of variance, ie
-            sigmasq sigmasq^T = variance.  Can be calculated from
-            variance matrix using a lla:cholesky.  Not checked for
-            PSD, only for type dimensions.")))
+   (sigma :initarg :sigma :reader sigma
+          :type hermitian-matrix-double
+          :documentation "variance matrix")
+   (sigma-sqrt :type dense-matrix-double
+               :documentation "\"square root\" of sigma, using
+               eigenvector decomposition")))
+
+(define-modify-macro multf (factor) *)
+
+(defun sigma-sqrt (sigma)
+  "Calculate matrix square root of sigma."
+  (bind (((:values val vec) (eigen sigma :vectors-p t))
+         ((:slots-read-only (n nrow) (vec-elements elements)) vec)
+         (val-elements (elements val)))
+    ;; we can modify destructively, since vec is freshly created
+    (dotimes (i n)
+      (let ((sqrt-diag (sqrt (aref val-elements i))))
+        (iter
+          (for j :from (cm-index2 n 0 i) :below (cm-index2 n n i))
+          (multf (aref vec-elements j) sqrt-diag))))
+    vec))
 
 (defmethod initialize-instance :after ((rv mv-normal) &key &allow-other-keys)
-  (with-slots (mu sigma) rv
-    (setf mu (take 'numeric-vector-double mu)
-          sigma (take 'lower-triangular-matrix sigma))
-    (bind ((n (xdim mu 0))
-           ((n1 n2) (xdims sigma)))
-      (unless (and (plusp n) (= n n1 n2))
-        (error "incompatible dimensions for mu and/or sigma")))
+  (with-slots (mu sigma sigma-sqrt) rv
+    (check-type mu numeric-vector-double)
+    (check-type sigma hermitian-matrix-double)
+    (setf sigma-sqrt (sigma-sqrt sigma))
     rv))
 
 (define-printer (mv-normal)
@@ -33,20 +46,19 @@
   (mu rv))
 
 (defmethod variance ((rv mv-normal))
-  (update-syhe (sigma rv) 'symmetric-matrix nil))
+  (sigma rv))
 
 ;;;; !!!! define at least pdf
 
 (cached-slot (rv mv-normal generator)
-  (bind (((:slots-read-only mu sigma) rv)
+  (bind (((:slots-read-only mu sigma-sqrt) rv)
          (n (xdim mu 0)))
     (lambda (&optional (scale 1d0))
       (let* ((x (make-nv n :double))
-             (x-data (nv-data x)))
+             (x-elements (elements x)))
         (dotimes (i n)
-          (setf (aref x-data i) (draw-standard-normal)))
-        (xmap 'numeric-vector-double #'+
-              mu (mm sigma x :alpha scale))))))
+          (setf (aref x-elements i) (draw-standard-normal)))
+        (x+ mu (mm sigma-sqrt x scale))))))
 
 ;;;;
 ;;;;  LINEAR-REGRESSION
@@ -75,7 +87,7 @@
 
 (defun linear-regression (y x)
   (bind (((:values b qr ss nu) (least-squares x y))
-         (sigma (take 'lower-triangular-matrix (least-squares-raw-variance qr)))
+         (sigma (least-squares-xxinverse qr))
          (beta (make-instance 'mv-normal :mu b :sigma sigma))
          (tau (make-instance 'gamma :alpha (/ nu 2d0) :beta (/ ss 2))))
     (make-instance 'linear-regression :beta beta :tau tau)))
