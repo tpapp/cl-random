@@ -13,31 +13,34 @@
    (sigma :initarg :sigma :reader sigma
           :type hermitian-matrix-double
           :documentation "variance matrix")
-   (sigma-sqrt :type dense-matrix-double
-               :documentation "\"square root\" of sigma, using
-               eigenvector decomposition")))
+   (sigma-sqrt :initarg sigma-sqrt :reader sigma-sqrt :type dense-matrix-double
+               :documentation "(right) square root of sigma, ie M such that M^T M=sigma")))
 
-(define-modify-macro multf (factor) *)
+;; (define-modify-macro multf (factor) *)
 
-(defun sigma-sqrt (sigma)
-  "Calculate matrix square root of sigma."
-  (bind (((:values val vec) (eigen sigma :vectors-p t))
-         ((:slots-read-only (n nrow) (vec-elements elements)) vec)
-         (val-elements (elements val)))
-    ;; we can modify destructively, since vec is freshly created
-    (dotimes (i n)
-      (let ((sqrt-diag (sqrt (aref val-elements i))))
-        (iter
-          (for j :from (cm-index2 n 0 i) :below (cm-index2 n n i))
-          (multf (aref vec-elements j) sqrt-diag))))
-    vec))
+;; (defun sigma-sqrt (sigma)
+;;   "Calculate matrix square root of sigma."
+;;   (bind (((:values val vec) (eigen sigma :vectors-p t))
+;;          ((:slots-read-only (n nrow) (vec-elements elements)) vec)
+;;          (val-elements (elements val)))
+;;     ;; we can modify destructively, since vec is freshly created
+;;     (dotimes (i n)
+;;       (let ((sqrt-diag (sqrt (aref val-elements i))))
+;;         (iter
+;;           (for j :from (cm-index2 n 0 i) :below (cm-index2 n n i))
+;;           (multf (aref vec-elements j) sqrt-diag))))
+;;     vec))
 
 (defmethod initialize-instance :after ((rv mv-normal) &key &allow-other-keys)
-  (with-slots (mu sigma sigma-sqrt) rv
-    (check-type mu numeric-vector-double)
-    (check-type sigma hermitian-matrix-double)
-    (setf sigma-sqrt (sigma-sqrt sigma))
-    rv))
+  (unless (or (slot-boundp rv 'sigma) (slot-boundp rv 'sigma-sqrt))
+    (error "At least one of SIGMA or SIGMA-SQRT has to be provided."))
+  rv)
+
+(cached-slot (rv mv-normal sigma)
+  (mm t (sigma-sqrt rv)))
+
+(cached-slot (rv mv-normal sigma-sqrt)
+  (factor (cholesky (sigma rv) :U)))
 
 (define-printer (mv-normal)
     (format stream "~&MEAN: ~A~%VARIANCE:~%~A~%" (mean rv) (variance rv)))
@@ -58,7 +61,7 @@
              (x-elements (elements x)))
         (dotimes (i n)
           (setf (aref x-elements i) (draw-standard-normal)))
-        (x+ mu (mm sigma-sqrt x scale))))))
+        (x+ mu (mm x sigma-sqrt scale))))))
 
 ;;;;
 ;;;;  LINEAR-REGRESSION

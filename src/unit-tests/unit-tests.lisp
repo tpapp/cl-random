@@ -2,8 +2,7 @@
 
 (use-package :lift)
 (asdf:load-system :named-readtables) 
-(use-package :named-readtables)
-(in-readtable lla-readtable)
+(named-readtables:in-readtable lla:v-syntax)
 
 ;; SUPPORT FUNCTIONS
 
@@ -197,9 +196,8 @@ var-band."
        (matrix (xcollect 100000 (lambda () (draw rv))))
        ((:values sample-mean sample-variance)
         (matrix-mean-variance matrix)))
-  sample-mean
-  sample-variance
-))
+  (values sample-mean
+          sample-variance)))
 
 
 ;;; linear regression

@@ -4,11 +4,10 @@
   "For multivariate observations stacked in the rows of a matrix,
   return sample mean and (co)variance matrix as (values mean var).
   Their types are numeric-vector and hermitian-matrix, respectively."
-  (bind ((matrix (copy-matrix matrix)))
-    (ensure-unshared matrix)
-    (bind (((:slots-read-only nrow ncol elements) matrix)
-           (mean (make-nv ncol (lla-type matrix)))
-           (mean-elements (elements mean)))
+  (bind ((matrix (copy-matrix matrix :copy-p t))
+         ((:slots-read-only nrow ncol elements) matrix)
+         (mean (make-nv ncol (lla-type matrix)))
+         (mean-elements (elements mean)))
     ;; calculate & subtract mean
     (dotimes (col ncol)
       (let* ((start (cm-index2 nrow 0 col))
@@ -22,5 +21,5 @@
           (decf (aref elements index) col-mean))))
     ;; values
     (values mean
-            (mm t matrix (/ nrow))))))
+            (mm t matrix (/ nrow)))))
          
