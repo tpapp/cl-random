@@ -393,7 +393,11 @@ exp(right^2) as appropriate.  width is right-left."
          :type positive-double-float :reader beta
          :documentation "scale parameter"))
   (:documentation "Gamma(alpha,beta) distribution, with density
-  proportional to x^(alpha-1) exp(-x*beta) beta^k"))
+  proportional to x^(alpha-1) exp(-x*beta)"))
+
+(defmethod initialize-instance :after ((rv gamma) &key &allow-other-keys)
+  (check-type* (alpha rv) positive-double-float)
+  (check-type* (beta rv) positive-double-float))
 
 (define-printer-with-slots gamma alpha beta)
 
@@ -463,6 +467,91 @@ distributions (eg Dirichlet, etc), too."
     (lambda ()
       (/ (funcall standard-generator) beta))))
 
+;;;; ****************************************************************
+;;;; Inverse gamma distribution.
+;;;; ****************************************************************
+
+(defclass inverse-gamma (univariate)
+  ((alpha :initarg :alpha :initform 1d0 
+          :type positive-double-float :reader alpha
+          :documentation "shape parameter")
+   (beta :initarg :beta :initform 1d0
+         :type positive-double-float :reader beta
+         :documentation "scale parameter"))
+  (:documentation "Inverse-Gamma(alpha,beta) distribution, with
+  density p(x) proportional to x^(-alpha+1) exp(-beta/x)"))
+
+(define-printer-with-slots inverse-gamma alpha beta)
+
+(defmethod initialize-instance :after ((rv inverse-gamma) &key &allow-other-keys)
+  (check-type* (alpha rv) positive-double-float)
+  (check-type* (beta rv) positive-double-float))
+
+(defmethod mean ((rv inverse-gamma))
+  (bind (((:slots-read-only alpha beta) rv))
+    (unless (< 1 alpha)
+      (error "Mean is defined only for ALPHA > 1"))
+    (/ beta (1- alpha))))
+
+(defmethod variance ((rv inverse-gamma))
+  (bind (((:slots-read-only alpha beta) rv))
+    (unless (< 2 alpha)
+      (error "Mean is defined only for ALPHA > 2"))
+    (/ (expt beta 2) (expt (1- alpha) 2) (- alpha 2))))
+
+(cached-slot (rv inverse-gamma generator)
+  (declare (optimize (speed 3)))
+  (bind (((:slots-read-only alpha beta) rv)
+         (standard-generator (generator-standard-gamma alpha)))
+    (declare (double-float alpha beta)
+             (univariate-continuous-generator standard-generator))
+    (lambda ()
+      (/ beta (funcall standard-generator)))))
+
+;;;; ****************************************************************
+;;;; Chi-square and inverse-chi-square distribution (both scaled).
+;;;;
+;;;; We just reparametrize and rely on GAMMA and INVERSE-GAMMA.
+;;;; ****************************************************************
+
+(defclass chi-square (gamma)
+  ((nu :accessor nu :initarg :nu)))
+
+(define-printer-with-slots chi-square nu)
+
+(defmethod initialize-instance :before ((rv chi-square) &key nu
+                                        (alpha nil alpha-provided-p)
+                                        (beta nil beta-provided-p)
+                                        &allow-other-keys)
+  (declare (ignore alpha beta))
+  (assert (and (not alpha-provided-p)
+               (not beta-provided-p)) ()
+          "Can't specify ALPHA and/or BETA for a CHI-SQUARE
+          distribution, those are calculated internally.")
+  (with-slots (alpha beta) rv
+    (setf alpha (/ nu 2)
+          beta 0.5d0)))
+
+(defclass inverse-chi-square (inverse-gamma)
+  ((nu :accessor nu :initarg :nu)
+   (scale :accessor scale :initarg :scale)))
+
+(define-printer-with-slots inverse-chi-square nu scale)
+
+(defmethod initialize-instance :before ((rv inverse-chi-square) &key nu (scale 1d0)
+                                        (alpha nil alpha-provided-p)
+                                        (beta nil beta-provided-p)
+                                        &allow-other-keys)
+  (declare (ignore alpha beta))
+  (assert (and (not alpha-provided-p)
+               (not beta-provided-p)) ()
+          "Can't specify ALPHA and/or BETA for a CHI-SQUARE
+          distribution, those are calculated internally.")
+  (bind ((nu/2 (/ nu 2))
+         ((:slots alpha beta) rv))
+    (setf alpha nu/2
+          beta (* nu/2 (expt scale 2))))
+  rv)
 
 ;;;; ****************************************************************
 ;;;; Beta distribution.

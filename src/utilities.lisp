@@ -84,6 +84,12 @@
   `(and (vector-double-float ,n)
         (satisfies vector-plusp)))
 
+(defmacro check-type* (value typespec)
+  "Like check-type, except that this error is not correctable."
+  (once-only (value)
+    `(assert (typep ,value ',typespec) ()
+             'type-error :datum ,value :expected-type ',typespec)))
+
 ;;;; Comparisons for truncated distributions.
 ;;;;
 ;;;; The convention is that nil indicates no truncation (from that

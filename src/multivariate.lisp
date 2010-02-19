@@ -32,9 +32,14 @@
 ;;     vec))
 
 (defmethod initialize-instance :after ((rv mv-normal) &key &allow-other-keys)
-  (unless (or (slot-boundp rv 'sigma) (slot-boundp rv 'sigma-sqrt))
-    (error "At least one of SIGMA or SIGMA-SQRT has to be provided."))
-  rv)
+  (let ((sigma-or-sigma-sqrt (cond 
+                               ((slot-boundp rv 'sigma) (sigma rv))
+                               ((slot-boundp rv 'sigma-sqrt) (sigma-sqrt rv))
+                               (t (error "At least one of SIGMA or SIGMA-SQRT has to be provided.")))))
+    (assert (square-matrix-p sigma-or-sigma-sqrt) ()  "SIGMA/SIGMA-SQRT has to be a square matrix.")
+    (unless (slot-boundp rv 'mu)
+      (setf (slot-value rv 'mu) (make-nv (nrow sigma-or-sigma-sqrt) (lla-type sigma-or-sigma-sqrt))))
+    rv))
 
 (cached-slot (rv mv-normal sigma)
   (mm t (sigma-sqrt rv)))
@@ -90,8 +95,8 @@
 
 (defun linear-regression (y x)
   (bind (((:values b qr ss nu) (least-squares x y))
-         (sigma (least-squares-xxinverse qr))
-         (beta (make-instance 'mv-normal :mu b :sigma sigma))
+         (sigma (least-squares-xx-inverse qr :reconstruct-p nil)) ; Cholesky decomposition
+         (beta (make-instance 'mv-normal :mu b :sigma-sqrt (factorization-component sigma :U)))
          (tau (make-instance 'gamma :alpha (/ nu 2d0) :beta (/ ss 2))))
     (make-instance 'linear-regression :beta beta :tau tau)))
 

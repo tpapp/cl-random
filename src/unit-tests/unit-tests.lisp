@@ -154,11 +154,35 @@ var-band."
 
 (addtest (cl-random-unit-tests)
   gamma-draws
+  (ensure-error (make-instance 'gamma :alpha 9)) 
+  (ensure-error (make-instance 'gamma :alpha -7d0))
   (ensure (same-mean-variance (make-instance 'gamma)))
   (ensure (same-mean-variance (make-instance 'gamma :alpha 12d0)))
   (ensure (same-mean-variance (make-instance 'gamma :beta 8d0)))
   (ensure (same-mean-variance (make-instance 'gamma :alpha 0.5d0 :beta pi))))
 
+(addtest (cl-random-unit-tests)
+  inverse-gamma-draws
+  (ensure (same-mean-variance (make-instance 'inverse-gamma :alpha 12d0)))
+  (ensure (same-mean-variance (make-instance 'inverse-gamma :alpha 4d0 :beta 8d0)))
+  (ensure-error (mean (make-instance 'inverse-gamma :alpha 0.5d0)))
+  (ensure-error (variance (make-instance 'inverse-gamma :alpha 1.5d0))))
+
+(addtest (cl-random-unit-tests)
+  chi-square-moments
+  (let* ((nu 9d0)
+         (rv (make-instance 'chi-square :nu nu)))
+    (ensure-same (mean rv) nu)
+    (ensure-same (variance rv) (* 2 nu))))
+
+(addtest (cl-random-unit-tests)
+  inverse-chi-square-moments
+  (let* ((nu 9d0)
+         (scale pi)
+         (rv (make-instance 'inverse-chi-square :nu nu :scale scale)))
+    (ensure-same (mean rv) (* (/ nu (- nu 2)) (expt scale 2)))
+    (ensure-same (variance rv) (/ (* 2 (expt nu 2) (expt scale 4))
+                                  (* (expt (- nu 2) 2) (- nu 4))))))
 
 ;; beta distribution
 
