@@ -249,4 +249,4 @@ var-band."
        ((:values sample-mean sample-variance)
         (matrix-mean-variance matrix)))
   (defparameter *sample-variance* sample-variance))
-(x/ *sample-variance* (variance *ls*))  ; should be near 1
+x(x/ *sample-variance* (variance *ls*))  ; should be near 1

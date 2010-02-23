@@ -29,8 +29,9 @@
    uniform left right draw-standard-exponential exponential beta
    normal mu sigma pdf-standard-normal cdf-standard-normal
    draw-standard-normal to-standard-normal from-standard-normal
-   truncated-normal left right gamma alpga beta
-   generator-standard-gamma beta discrete probabilities
+   truncated-normal left right gamma alpha beta
+   generator-standard-gamma inverse-gamma chi-square inverse-chi-square
+   beta discrete probabilities
 
    ;; multivariate
 
