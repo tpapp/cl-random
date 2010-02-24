@@ -610,7 +610,7 @@ distributions (eg Dirichlet, etc), too."
   (:documentation "General discrete distribution with given
 probabilities.  Random variates are integers, starting from 0."))
 
-(defmethod draw-type ((rv discrete))
+(defmethod type ((rv discrete))
   'fixnum)
 
 (define-printer-with-slots discrete probabilities)
