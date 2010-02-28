@@ -2,6 +2,7 @@
 
 (defpackage #:cl-random
     (:nicknames :rv)
+  (:shadow #:type)
   (:use :common-lisp
 	:cl-utilities
         :iterate
@@ -18,11 +19,9 @@
 
    ;; random
 
-   rv draw draw* pdf pdf* mean mean* variance variance* cdf cdf*
+   rv draw draw* pdf pdf* mean mean* variance variance* cdf cdf* dimensions
    univariate-continuous-generator univariate-discrete-generator
-   multivariate-continuous-generator multivariate-discrete-generator
-   univariate multivariate quantile quantile* draw-type draw-dimensions
-   draw-many draw-many*
+   univariate multivariate quantile quantile* type dimensions
 
    ;; univariate
 
@@ -35,6 +34,10 @@
 
    ;; multivariate
 
-   mv-normal linear-regression tau
+   mv-normal linear-regression tau wishart nu scale
+
+   ;; statistics
+   
+   matrix-mean-variance
 
    ))

@@ -32,10 +32,11 @@
 ;;     vec))
 
 (defmethod initialize-instance :after ((rv mv-normal) &key &allow-other-keys)
-  (let ((sigma-or-sigma-sqrt (cond 
-                               ((slot-boundp rv 'sigma) (sigma rv))
-                               ((slot-boundp rv 'sigma-sqrt) (sigma-sqrt rv))
-                               (t (error "At least one of SIGMA or SIGMA-SQRT has to be provided.")))))
+  (let ((sigma-or-sigma-sqrt 
+         (cond 
+           ((slot-boundp rv 'sigma) (sigma rv))
+           ((slot-boundp rv 'sigma-sqrt) (sigma-sqrt rv))
+           (t (error "At least one of SIGMA or SIGMA-SQRT has to be provided.")))))
     (assert (square-matrix-p sigma-or-sigma-sqrt) ()  "SIGMA/SIGMA-SQRT has to be a square matrix.")
     (unless (slot-boundp rv 'mu)
       (setf (slot-value rv 'mu) (make-nv (nrow sigma-or-sigma-sqrt) (lla-type sigma-or-sigma-sqrt))))
@@ -49,6 +50,12 @@
 
 (define-printer (mv-normal)
     (format stream "~&MEAN: ~A~%VARIANCE:~%~A~%" (mean rv) (variance rv)))
+
+(defmethod dimensions ((rv mv-normal))
+  (xdims (sigma-sqrt rv)))
+
+(defmethod type ((rv mv-normal))
+  'numeric-vector-double)
 
 (defmethod mean ((rv mv-normal))
   (mu rv))
@@ -100,6 +107,12 @@
          (tau (make-instance 'gamma :alpha (/ nu 2d0) :beta (/ ss 2))))
     (make-instance 'linear-regression :beta beta :tau tau)))
 
+(defmethod dimensions ((rv linear-regression))
+  (values (dimensions (beta rv)) nil))
+
+(defmethod type ((rv linear-regression))
+  (values 'numeric-vector-double 'double-float))
+
 (defmethod mean ((rv linear-regression))
   (mean (beta rv)))
 
@@ -117,3 +130,48 @@
    
 ;;;; ??? implement pdf -- Tamas
 
+;;;  WISHART
+;;;
+;;;  The k-dimensional Wishart distribution with NU degrees of freedom
+;;;  and scale parameter SCALE is the multivariate generalization of
+;;;  the gamma (or chi-square) distribution.
+
+(defclass wishart (multivariate)
+  ((nu :initarg :nu :reader nu :type fixnum :documentation "degrees of freedom")
+   (scale :initarg :scale :reader scale
+          :type hermitian-matrix-double
+          :documentation "scale matrix")
+   (mv-normal :reader mv-normal :type mv-normal
+              :documentation "multivariate normal for drawing")))
+
+(defmethod initialize-instance :after ((rv wishart) &key &allow-other-keys)
+  (with-slots (scale mv-normal) rv 
+    (check-type scale hermitian-matrix-double)
+    (setf mv-normal (make-instance 'mv-normal :sigma scale)))
+  rv)
+
+(defmethod dimensions ((rv wishart))
+  (xdims (scale rv)))
+
+(defmethod type ((rv wishart))
+  'hermitian-matrix-double)
+
+(defmethod mean ((rv wishart))
+  (x* (nu rv) (scale rv)))
+
+(defun draw-wishart (nu mv-normal)
+  (bind (((k nil) (dimensions mv-normal))
+         ((:lla-matrix w) (make-matrix k k :double :kind :hermitian)))
+    (assert (>= nu k) () "Generator not defined for NU < K.")
+    (dotimes (i nu)
+      (bind (((:lla-vector a) (draw mv-normal)))
+        (dotimes (col k)
+          (iter
+            (for row :from 0 :to col)
+            (incf (w row col) (* (a row) (a col)))))))
+    w))
+
+(cached-slot (rv wishart generator)
+  (bind (((:slots-read-only nu mv-normal) rv))
+    (lambda ()
+      (draw-wishart nu mv-normal))))

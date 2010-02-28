@@ -19,6 +19,10 @@ initialization of the instance, or on demand.  The consequences or
 changing the slots of RV classes are UNDEFINED, but probably quite
 nasty.  DON'T DO IT."))
 
+(defgeneric dimensions (rv)
+  (:documentation "Return a list of dimensions for the random
+  variable (NIL for scalars)"))
+
 (defgeneric draw (rv)
   (:documentation "Draw a random variate from rv.")
   (:method ((rv rv))
@@ -60,12 +64,6 @@ nasty.  DON'T DO IT."))
 (deftype univariate-discrete-generator ()
   '(function () fixnum))
 
-(deftype multivariate-continuous-generator (n)
-  `(function () (array double-float (,n))))
-
-(deftype multivariate-discrete-generator (n)
-  `(function () (array fixnum (,n))))
-
 (define-abstract-class univariate (rv)
   ()
   (:documentation "Base class for univariate random variables.
@@ -83,14 +81,12 @@ nasty.  DON'T DO IT."))
   Univariate RV's have densities, but NO distribution functions and
   quantiles."))
 
-(defgeneric draw-type (rv)
+(defgeneric type (rv)
   (:documentation "Type of objects returned by draw.")
-  (:method ((rv univariate))
-    'double-float)
-  (:method ((rv multivariate))
-    '(simple-array double-float (*))))
+  (:method (rv)
+    t))
 
-(defgeneric draw-dimensions (rv)
+(defgeneric dimensions (rv)
   (:documentation "Dimensions of objects returned by draw if array or
   similar, otherwise nil (also for scalars, etc).")
   (:method ((rv univariate))
@@ -114,17 +110,3 @@ type and parameters.")
     (error 'undefined)))
 
 (def* quantile (q) "Quantile for a random variate of the given type and parameters.")
-
-;;;;  Utility functions
-;;;;
-;;;;
-
-(defun draw-many (rv n)
-  "Draw n samples from rv, returned as a vector of the appropriate type."
-  (let ((result (make-array n :element-type (draw-type rv))))
-    (dotimes (i n)
-      (setf (aref result i) (draw rv)))
-    result))
-
-(def* draw-many (n)
-  "Draw n samples from a random variate of the given type and parameters, returned as a vector of the appropriate type.")
