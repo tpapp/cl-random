@@ -8,12 +8,12 @@
 ;;;;  posteriors, etc.
 
 (defclass mv-normal (multivariate)
-  ((mu :initarg :mu :reader mu :type numeric-vector-double
+  ((mu :initarg :mu :reader mu :type numeric-vector
        :documentation "vector of means")
    (sigma :initarg :sigma :reader sigma
-          :type hermitian-matrix-double
+          :type hermitian-matrix
           :documentation "variance matrix")
-   (sigma-sqrt :initarg sigma-sqrt :reader sigma-sqrt :type dense-matrix-double
+   (sigma-sqrt :initarg sigma-sqrt :reader sigma-sqrt :type dense-matrix
                :documentation "(right) square root of sigma, ie M such that M^T M=sigma")))
 
 ;; (define-modify-macro multf (factor) *)
@@ -55,7 +55,7 @@
   (xdims (sigma-sqrt rv)))
 
 (defmethod type ((rv mv-normal))
-  'numeric-vector-double)
+  'numeric-vector)
 
 (defmethod mean ((rv mv-normal))
   (mu rv))
@@ -103,7 +103,7 @@
 (defun linear-regression (y x)
   (bind (((:values b qr ss nu) (least-squares x y))
          (sigma (least-squares-xx-inverse qr :reconstruct-p nil)) ; Cholesky decomposition
-         (beta (make-instance 'mv-normal :mu b :sigma-sqrt (factorization-component sigma :U)))
+         (beta (make-instance 'mv-normal :mu b :sigma-sqrt (component sigma :U)))
          (tau (make-instance 'gamma :alpha (/ nu 2d0) :beta (/ ss 2))))
     (make-instance 'linear-regression :beta beta :tau tau)))
 
@@ -111,7 +111,7 @@
   (values (dimensions (beta rv)) nil))
 
 (defmethod type ((rv linear-regression))
-  (values 'numeric-vector-double 'double-float))
+  (values 'numeric-vector 'double-float))
 
 (defmethod mean ((rv linear-regression))
   (mean (beta rv)))
@@ -139,14 +139,14 @@
 (defclass wishart (multivariate)
   ((nu :initarg :nu :reader nu :type fixnum :documentation "degrees of freedom")
    (scale :initarg :scale :reader scale
-          :type hermitian-matrix-double
+          :type hermitian-matrix
           :documentation "scale matrix")
    (mv-normal :reader mv-normal :type mv-normal
               :documentation "multivariate normal for drawing")))
 
 (defmethod initialize-instance :after ((rv wishart) &key &allow-other-keys)
   (with-slots (scale mv-normal) rv 
-    (check-type scale hermitian-matrix-double)
+    (check-type scale hermitian-matrix)
     (setf mv-normal (make-instance 'mv-normal :sigma scale)))
   rv)
 
@@ -154,7 +154,7 @@
   (xdims (scale rv)))
 
 (defmethod type ((rv wishart))
-  'hermitian-matrix-double)
+  'hermitian-matrix)
 
 (defmethod mean ((rv wishart))
   (x* (nu rv) (scale rv)))
