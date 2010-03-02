@@ -38,6 +38,6 @@
 
    ;; statistics
    
-   matrix-mean-variance
+   demean-matrix matrix-mean-variance
 
    ))
