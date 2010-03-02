@@ -46,7 +46,7 @@
        ((:values sample-mean sample-variance)
         (matrix-mean-variance matrix)))
   (defparameter *sample-variance* sample-variance))
-(/ *sample-variance* (variance *ls*))  ; should be near 1
+(x-rel-diff *sample-variance* (variance *ls*))  ; should be near 1
 
 ;;; Wishart
 
@@ -55,7 +55,18 @@
        (rv (make-instance 'wishart :nu nu :scale S))
        (draws (xcollect 100000 (lambda () (as 'numeric-vector (draw rv)))))
        ((:values mean variance) (matrix-mean-variance draws)))
-  (x/ (x- (reshape (mean rv) 2 2) mean)
-      (xmap t #'abs (mean rv))))
+  (defparameter *rv* rv)
+  (x-rel-diff (mean rv)
+              (reshape mean 2 2)))
+  ;; (values (x- (reshape mean 2 2) (mean rv))
+  ;;     (xmap t #'abs (mean rv))))
 
 
+;;; Inverse Wishart
+
+(bind ((nu 5)
+       (S (mm t #2v(1 2 9 4)))
+       (rv (make-instance 'inverse-wishart :nu nu :inverse-scale S))
+       (draws (xcollect 100000 (lambda () (as 'numeric-vector (draw rv)))))
+       ((:values mean variance) (matrix-mean-variance draws)))
+  (x-rel-diff (mean rv) (reshape mean 2 2)))

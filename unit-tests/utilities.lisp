@@ -55,3 +55,12 @@ var-band."
       (format t "theoretical/empirical mean: ~a / ~a, variance: ~a / ~a~%"
 	      (mean rv) mean (variance rv) variance))
     ok-p))
+
+(defun x-rel-diff (a b)
+  "Relative difference between two objects, elementwise."
+  (xmap t (lambda (x y)
+            (let ((diff (- x y)))
+              (if (zerop diff)
+                  0d0
+                  (abs (/ diff x)))))
+        a b))

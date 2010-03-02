@@ -34,7 +34,8 @@
 
    ;; multivariate
 
-   mv-normal linear-regression tau wishart nu scale
+   mv-normal linear-regression tau wishart nu scale inverse-wishart
+   inverse-scale
 
    ;; statistics
    

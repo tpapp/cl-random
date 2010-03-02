@@ -6,8 +6,7 @@
   "Remove mean of columns (for multivariate observations stacked in
   the rows of a matrix.  Return (values demeaned-matrix mean)."
   (check-type matrix dense-matrix-like)
-  (set-restricted matrix)
-  (bind ((matrix (copy-matrix matrix :copy-p t))
+  (bind ((matrix (copy-as 'dense-matrix matrix))
          ((:slots-read-only nrow ncol elements) matrix)
          (mean (make-nv (lla-type matrix) ncol))
          (mean-elements (elements mean)))

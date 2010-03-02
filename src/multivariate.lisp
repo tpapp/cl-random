@@ -175,3 +175,42 @@
   (bind (((:slots-read-only nu mv-normal) rv))
     (lambda ()
       (draw-wishart nu mv-normal))))
+
+
+;;;  INVERSE-WISHART
+;;;
+;;;  If A ~ Inverse-Wishart[nu,inverse-scale], then 
+;;;  (invert A) ~ Wishart(nu,inverse-scale).
+
+(defclass inverse-wishart (multivariate)
+  ((nu :initarg :nu :reader nu :type fixnum :documentation "degrees of freedom")
+   (inverse-scale :initarg :inverse-scale :reader inverse-scale
+          :type hermitian-matrix
+          :documentation "inverse-scale matrix, that is, the scale of
+          the normal distribution which will be used for drawing
+          Wishart variates, which are then inverted (see also the
+          definition for the mean).")
+   (mv-normal :reader mv-normal :type mv-normal
+              :documentation "multivariate normal for drawing"))
+  (:documentation "Inverse Wishart distribution."))
+
+(defmethod initialize-instance :after ((rv inverse-wishart) &key &allow-other-keys)
+  (with-slots (inverse-scale mv-normal) rv 
+    (check-type inverse-scale hermitian-matrix)
+    (setf mv-normal (make-instance 'mv-normal :sigma inverse-scale)))
+  rv)
+
+(defmethod dimensions ((rv inverse-wishart))
+  (xdims (inverse-scale rv)))
+
+(defmethod type ((rv inverse-wishart))
+  'hermitian-matrix)
+
+(defmethod mean ((rv inverse-wishart))
+  (with-slots (nu inverse-scale) rv 
+    (x/ (invert inverse-scale) (- nu (nrow inverse-scale) 1))))
+
+(cached-slot (rv inverse-wishart generator)
+  (bind (((:slots-read-only nu mv-normal) rv))
+    (lambda ()
+      (invert (draw-wishart nu mv-normal)))))
