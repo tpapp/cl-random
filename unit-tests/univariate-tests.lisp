@@ -61,7 +61,7 @@
                                              :mu 1.5d0 :sigma 2d0)))
   ;; including zero
   (ensure (same-mean-variance (make-instance 'truncated-normal :right 0.7d0
-                                             :mu -4.2d0 :sigma 0.1d0)))
+                                             :mu -4.2d0 :sigma 2d0)))
   ;; BOTH LEFT AND RIGHT
   ;; wide
   (ensure (same-mean-variance (make-instance 'truncated-normal

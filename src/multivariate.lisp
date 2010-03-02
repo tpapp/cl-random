@@ -13,7 +13,7 @@
    (sigma :initarg :sigma :reader sigma
           :type hermitian-matrix
           :documentation "variance matrix")
-   (sigma-sqrt :initarg sigma-sqrt :reader sigma-sqrt :type dense-matrix
+   (sigma-sqrt :initarg :sigma-sqrt :reader sigma-sqrt :type dense-matrix
                :documentation "(right) square root of sigma, ie M such that M^T M=sigma")))
 
 ;; (define-modify-macro multf (factor) *)
@@ -39,7 +39,7 @@
            (t (error "At least one of SIGMA or SIGMA-SQRT has to be provided.")))))
     (assert (square-matrix-p sigma-or-sigma-sqrt) ()  "SIGMA/SIGMA-SQRT has to be a square matrix.")
     (unless (slot-boundp rv 'mu)
-      (setf (slot-value rv 'mu) (make-nv (nrow sigma-or-sigma-sqrt) (lla-type sigma-or-sigma-sqrt))))
+      (setf (slot-value rv 'mu) (make-nv (lla-type sigma-or-sigma-sqrt) (nrow sigma-or-sigma-sqrt))))
     rv))
 
 (cached-slot (rv mv-normal sigma)
@@ -69,7 +69,7 @@
   (bind (((:slots-read-only mu sigma-sqrt) rv)
          (n (xdim mu 0)))
     (lambda (&optional (scale 1d0))
-      (let* ((x (make-nv n :double))
+      (let* ((x (make-nv :double n))
              (x-elements (elements x)))
         (dotimes (i n)
           (setf (aref x-elements i) (draw-standard-normal)))
@@ -161,7 +161,7 @@
 
 (defun draw-wishart (nu mv-normal)
   (bind (((k nil) (dimensions mv-normal))
-         ((:lla-matrix w) (make-matrix k k :double :kind :hermitian)))
+         ((:lla-matrix w) (make-matrix :double k k :kind :hermitian)))
     (assert (>= nu k) () "Generator not defined for NU < K.")
     (dotimes (i nu)
       (bind (((:lla-vector a) (draw mv-normal)))

@@ -28,7 +28,7 @@
                                   (vector (* 3 (draw-standard-normal))
                                           (+ 5 (draw-standard-normal))))
                             'dense-matrix))
-(defparameter *y* (xmap 'numeric-vector-double #'+
+(defparameter *y* (xmap '(numeric-vector :lla-type :double) #'+
                         (mm *x* *beta*)
                         (xcollect 500 (lambda ()
                                         (* 9d0 (draw-standard-normal))))))

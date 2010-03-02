@@ -19,8 +19,8 @@
 
    ;; random
 
-   rv draw draw* pdf pdf* mean mean* variance variance* cdf cdf* dimensions
-   univariate-continuous-generator univariate-discrete-generator
+   rv generator draw draw* pdf pdf* mean mean* variance variance* cdf cdf*
+   dimensions univariate-continuous-generator univariate-discrete-generator
    univariate multivariate quantile quantile* type dimensions
 
    ;; univariate
