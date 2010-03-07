@@ -39,6 +39,6 @@
 
    ;; statistics
    
-   demean-matrix matrix-mean-variance
+   demean-matrix matrix-mean-variance empirical-quantiles
 
    ))

@@ -31,4 +31,20 @@
   (bind (((:values matrix mean) (demean-matrix matrix)))
     (values mean
             (mm t matrix (/ (nrow matrix))))))
-         
+
+(defun empirical-quantiles (vector quantiles)
+  "Empirical quantiles of VECTOR (copied with COPY-AS).  QUANTILES has
+to be a sequence, and the result is of the same type.  Elements are
+interpolated linearly."
+  (let* ((vector (sort (copy-as 'vector vector) #'<=))
+         (n (length vector)))
+    (map (type-of quantiles)
+         (lambda (q)
+           (assert (<= 0 q 1) () "Quantile ~A is not in [0,1]." q)
+           (bind ((r (* q (1- n)))
+                  ((:values int frac) (floor r))
+                  (left (aref vector int)))
+             (if (zerop frac)
+                 left
+                 (convex-combination% left (aref vector (1+ int)) frac))))
+         quantiles)))

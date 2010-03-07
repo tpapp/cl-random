@@ -166,3 +166,10 @@ returned by body."
        (let ((,value (locally ,@body)))
          (setf (slot-value ,instance-variable ',slot-name) ,value)
          ,value))))
+
+;;; trivial calculations
+
+(defun convex-combination% (a b alpha)
+  "Convex combination (1-alpha)*a+alpha*b, no error checking."
+  (+ (* (- 1 alpha) a) (* alpha b)))
+
