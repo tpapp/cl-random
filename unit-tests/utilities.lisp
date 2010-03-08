@@ -56,11 +56,17 @@ var-band."
 	      (mean rv) mean (variance rv) variance))
     ok-p))
 
+(defun rel-diff (x y)
+  "Relative difference. (X should be the \"true\" value if the concept
+is meaningful)."
+  (let ((diff (- x y)))
+    (if (zerop x)
+        (if (zerop y)
+            0
+            most-positive-double-float)
+        (abs (/ diff x)))))
+
 (defun x-rel-diff (a b)
   "Relative difference between two objects, elementwise."
-  (xmap t (lambda (x y)
-            (let ((diff (- x y)))
-              (if (zerop diff)
-                  0d0
-                  (abs (/ diff x)))))
+  (xmap t #'rel-diff
         a b))
