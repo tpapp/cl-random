@@ -19,7 +19,7 @@
 
    ;; random
 
-   rv generator draw draw* pdf pdf* mean mean* variance variance* cdf cdf*
+   rv generator generator* draw draw* pdf pdf* mean mean* variance variance* cdf cdf*
    dimensions univariate-continuous-generator univariate-discrete-generator
    univariate multivariate quantile quantile* type dimensions
 
@@ -40,5 +40,9 @@
    ;; statistics
    
    demean-matrix matrix-mean-variance empirical-quantiles
+
+   ;; special-functions
+
+   log-gamma gamma
 
    ))

@@ -19,6 +19,8 @@ initialization of the instance, or on demand.  The consequences or
 changing the slots of RV classes are UNDEFINED, but probably quite
 nasty.  DON'T DO IT."))
 
+(def* generator () "Generator for a random variate of the given type and parameters.")
+
 (defgeneric dimensions (rv)
   (:documentation "Return a list of dimensions for the random
   variable (NIL for scalars)"))
