@@ -20,7 +20,8 @@
     "tests"
     :pathname #P"unit-tests/"
     :components
-    ((:file "special-functions-tests")
+    ((:file "log-infinity-tests")
+     (:file "special-functions-tests")
      (:file "univariate-tests"))))
   :depends-on
   (:cl-utilities :iterate :metabang-bind :xarray :anaphora :lla :named-readtables

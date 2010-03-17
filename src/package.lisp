@@ -17,10 +17,15 @@
    missing not-implemented undefined positive-double-float vector-double-float
    vector-positive-double-float truncation-boundary
 
+   ;; log-infinity
+
+   plus-infinity ~+ ~- ~log ~exp
+
    ;; random
 
-   rv generator generator* draw draw* pdf pdf* mean mean* variance variance* cdf cdf*
-   dimensions univariate-continuous-generator univariate-discrete-generator
+   rv generator generator* draw draw* pdf pdf* log-pdf log-pdf* mean
+   mean* variance variance* cdf cdf* dimensions
+   univariate-continuous-generator univariate-discrete-generator
    univariate multivariate quantile quantile* type dimensions
 
    ;; univariate

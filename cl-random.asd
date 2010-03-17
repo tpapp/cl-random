@@ -20,6 +20,7 @@
     :serial t
     :components
     ((:file "utilities")
+     (:file "log-infinity")
      (:file "special-functions")
      (:file "random")
      (:file "univariate")

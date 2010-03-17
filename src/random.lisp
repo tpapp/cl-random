@@ -19,11 +19,35 @@ initialization of the instance, or on demand.  The consequences or
 changing the slots of RV classes are UNDEFINED, but probably quite
 nasty.  DON'T DO IT."))
 
+(define-abstract-class univariate (rv)
+  ()
+  (:documentation "Base class for univariate random variables.
+  Univariate RV's have densities, distribution functions and
+  quantiles."))
+
+(define-abstract-class multivariate (rv)
+  ;; NOTE: distribution functions could be defined for multivariate
+  ;; RV's of course, but they are rarely used in practice and are a
+  ;; PITA to provide.  Contact the package maintainers if you really
+  ;; need them, but be prepared to (1) provide a really good argument
+  ;; and (2) possibly contribute the relevant code and unit tests.
+  ()
+  (:documentation "Base class for multivariate random variables.
+  Univariate RV's have densities, but NO distribution functions and
+  quantiles."))
+
 (def* generator () "Generator for a random variate of the given type and parameters.")
 
+(defgeneric type (rv)
+  (:documentation "Type of objects returned by draw.")
+  (:method (rv)
+    t))
+
 (defgeneric dimensions (rv)
-  (:documentation "Return a list of dimensions for the random
-  variable (NIL for scalars)"))
+  (:documentation "Dimensions of objects returned by draw if array or
+  similar, otherwise nil (also for scalars, etc).")
+  (:method ((rv univariate))
+    nil))
 
 (defgeneric draw (rv)
   (:documentation "Draw a random variate from rv.")
@@ -39,6 +63,31 @@ nasty.  DON'T DO IT."))
 
 (def* pdf (x) "PDF for a random variate of the given type and parameters.")
 
+(defgeneric log-pdf (rv x)
+  (:documentation "Log probability density function of rv evaluated at x.")
+  (:method ((rv rv) x)
+    (~log (pdf rv x))))
+
+(def* log-pdf (x) "Log PDF for a random variate of the given type and parameters.")
+
+(defgeneric cdf (rv x)
+  (:documentation "Cumulative distribution function of rv evaluated at x.")
+  (:method ((rv univariate) x)
+    (error 'missing))
+  (:method ((rv univariate) x)
+    (error 'not-implemented)))
+
+(def* cdf (x) "CDF (ie Pr(X <= x)) for a random variate of the given
+type and parameters.")
+
+(defgeneric quantile (rv q)
+  (:documentation "Quantile function of rv evaluated at x.")
+  (:method ((rv univariate) q)
+    (error 'missing))
+  (:method ((rv multivariate) q)
+    (error 'undefined)))
+
+(def* quantile (q) "Quantile for a random variate of the given type and parameters.")
 (defgeneric mean (rv)
   (:documentation "Mean of a random variable.")
   (:method ((rv rv))
@@ -66,49 +115,4 @@ nasty.  DON'T DO IT."))
 (deftype univariate-discrete-generator ()
   '(function () fixnum))
 
-(define-abstract-class univariate (rv)
-  ()
-  (:documentation "Base class for univariate random variables.
-  Univariate RV's have densities, distribution functions and
-  quantiles."))
 
-(define-abstract-class multivariate (rv)
-  ;; NOTE: distribution functions could be defined for multivariate
-  ;; RV's of course, but they are rarely used in practice and are a
-  ;; PITA to provide.  Contact the package maintainers if you really
-  ;; need them, but be prepared to (1) provide a really good argument
-  ;; and (2) possibly contribute the relevant code and unit tests.
-  ()
-  (:documentation "Base class for multivariate random variables.
-  Univariate RV's have densities, but NO distribution functions and
-  quantiles."))
-
-(defgeneric type (rv)
-  (:documentation "Type of objects returned by draw.")
-  (:method (rv)
-    t))
-
-(defgeneric dimensions (rv)
-  (:documentation "Dimensions of objects returned by draw if array or
-  similar, otherwise nil (also for scalars, etc).")
-  (:method ((rv univariate))
-    nil))
-
-(defgeneric cdf (rv x)
-  (:documentation "Cumulative distribution function of rv evaluated at x.")
-  (:method ((rv univariate) x)
-    (error 'missing))
-  (:method ((rv univariate) x)
-    (error 'not-implemented)))
-
-(def* cdf (x) "CDF (ie Pr(X <= x)) for a random variate of the given
-type and parameters.")
-
-(defgeneric quantile (rv q)
-  (:documentation "Quantile function of rv evaluated at x.")
-  (:method ((rv univariate) q)
-    (error 'missing))
-  (:method ((rv multivariate) q)
-    (error 'undefined)))
-
-(def* quantile (q) "Quantile for a random variate of the given type and parameters.")
