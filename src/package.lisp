@@ -44,7 +44,7 @@
 
    ;; statistics
    
-   demean-matrix matrix-mean-variance empirical-quantiles
+   matrix-mean demean-matrix matrix-mean-variance empirical-quantiles
 
    ;; special-functions
 
