@@ -192,7 +192,8 @@
           definition for the mean).")
    (mv-normal :reader mv-normal :type mv-normal
               :documentation "multivariate normal for drawing"))
-  (:documentation "Inverse Wishart distribution."))
+  (:documentation "Inverse Wishart distribution.  The PDF p(X) is
+proportional to |X|^-(dimension+nu+1)/2 exp(-trace(inverse-scale^{-1} X^-1))"))
 
 (defmethod initialize-instance :after ((rv inverse-wishart) &key &allow-other-keys)
   (with-slots (inverse-scale mv-normal) rv 

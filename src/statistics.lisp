@@ -11,7 +11,7 @@
          ((:lla-vector mean) (make-nv (lla-type matrix) ncol)))
     (dotimes (col ncol)
       (let* ((start (cm-index2 leading-dimension 0 col))
-             (end (cm-index2 leading-dimension 0 (1+ col))))
+             (end (cm-index2 leading-dimension nrow col)))
         (setf (mean col) (/ (reduce #'+ elements
                                     :start start :end end)
                             nrow))))
@@ -28,8 +28,9 @@
     (dotimes (col ncol)
       (let ((col-mean (mean col)))
         (iter
-          (for index :from (cm-index2 nrow 0 col)
-               :below (cm-index2 nrow 0 (1+ col)))
+          (for index 
+               :from (cm-index2 nrow 0 col)
+               :below (cm-index2 nrow nrow col))
           (decf (aref elements index) col-mean))))
     matrix))
 
