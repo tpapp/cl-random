@@ -94,18 +94,24 @@
          :documentation "\"raw\" conditional posterior for beta, needs to
                         be scaled up by (sqrt tau)")
    (tau :type gamma :reader tau :initarg :tau
-        :documentation "posterior for precision tau"))
+        :documentation "posterior for precision tau")
+   (R^2 :accessor R^2 :initarg :R^2 :documentation
+        "coefficient of determination"))
   (:documentation "The random variates returned are samples from a
   posterior distribution of a Bayesian least squares model with the
   usual reference prior.  The sampled standard deviation (sigma) is
   returned as the second value by the generator or draw."))
 
-(defun linear-regression (y x)
-  (bind (((:values b qr ss nu) (least-squares x y))
-         (sigma (least-squares-xx-inverse qr :reconstruct-p nil)) ; Cholesky decomposition
-         (beta (make-instance 'mv-normal :mu b :sigma-sqrt (component sigma :U)))
+(defun linear-regression (y x &key save-r^2?)
+  (declare (optimize (debug 3)))
+  (bind (((:values b qr ss nu) (least-squares y x))
+         (sigma (least-squares-xx-inverse qr))
+         (beta (make-instance 'mv-normal :mu b :sigma sigma))
          (tau (make-instance 'gamma :alpha (/ nu 2d0) :beta (/ ss 2))))
-    (make-instance 'linear-regression :beta beta :tau tau)))
+    (aprog1 (make-instance 'linear-regression :beta beta :tau tau)
+      (when save-r^2?
+        (let ((ss-total (vector-sum-of-squares (demean-vector y))))
+          (setf (r^2 it) (- 1 (/ ss ss-total))))))))
 
 (defmethod dimensions ((rv linear-regression))
   (values (dimensions (beta rv)) nil))

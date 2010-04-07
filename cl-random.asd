@@ -24,12 +24,8 @@
      (:file "special-functions")
      (:file "random")
      (:file "univariate")
-     (:file "multivariate")))
-   (:module
-    "statistics"
-    :pathname #P"src/"
-    :serial t
-    :components
-    ((:file "statistics"))))
-  :depends-on (:cl-utilities :iterate :metabang-bind :xarray :lla :lift))
+     (:file "statistics")
+     (:file "multivariate"))))
+  :depends-on (:cl-utilities :iterate :metabang-bind :xarray :lla
+                             :anaphora))
 

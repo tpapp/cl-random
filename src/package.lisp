@@ -8,7 +8,8 @@
         :iterate
         :bind
         :lla
-        :xarray)
+        :xarray
+        :anaphora)
   (:shadowing-import-from :iterate :collecting :collect)
   (:export
 
