@@ -7,8 +7,10 @@
   (bind (((:slots-read-only lla-type elements)
           (if (typep vector 'numeric-vector-like)
               vector
-              (as 'numeric-vector vector))))
-    (lla::sum-elements lla-type elements 0 (length elements))))
+              (as 'numeric-vector vector)))
+         (length (length elements)))
+    (/ (lla::sum-elements lla-type elements 0 length)
+       length)))
 
 (defun matrix-mean (matrix)
   "Calculate the mean of each column."
@@ -26,7 +28,7 @@
 
 (defun demean-vector (vector &optional (mean (vector-mean vector)))
   "Subtract mean, return vector."
-  (bind ((vector (copy-as 'numeric-vector-like vector))
+  (bind ((vector (copy-as 'numeric-vector vector))
          ((:slots-read-only lla-type elements) vector))
     (lla::subtract-from-elements lla-type elements 0 (length elements) mean)
     vector))

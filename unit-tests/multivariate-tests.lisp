@@ -8,6 +8,9 @@
 ;;;      -- Tamas
 
 
+(deftestsuite multivariate-tests (cl-random-unit-tests)
+  ())
+
 ;;; multivariate normal
 
 (time
@@ -22,6 +25,22 @@
 
 
 ;;; linear regression
+
+
+(addtest (multivariate-tests)
+  linear-regression
+  (bind ((x #2v(1 1
+                  1 2
+                  1 3))
+         (y #v(1 1 3))
+         (lr (linear-regression y x :save-r^2? t))
+         ((:accessors-r/o mean variance r^2) lr)
+         (residuals (x- y (mm x mean))))
+    (ensure-same (mean lr) #v(-1/3 1) :test #'x=)
+    (ensure-same (variance lr) #2v:hermitian(14/9 -2/3
+                                                  -2/3 1/3)
+                 :test #'x=)
+    (ensure-same r^2 0.75)))
 
 (defparameter *beta* #v(1 2))
 (defparameter *x* (xcollect 500 (lambda ()
