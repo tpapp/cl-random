@@ -69,10 +69,10 @@
 
 ;;; Wishart
 
-(bind ((nu 4)
-       (S (mm t #2v(1 2 3 4)))
+(bind ((nu 400)
+       (S (mm t (clo :dense 1 2 :/ 3 4)))
        (rv (make-instance 'wishart :nu nu :scale S))
-       (draws (xcollect 100000 (lambda () (as 'numeric-vector (draw rv)))))
+       (draws (xcollect 10000 (lambda () (as 'numeric-vector (draw rv)))))
        ((:values mean variance) (matrix-mean-variance draws)))
   (defparameter *rv* rv)
   (x-rel-diff (mean rv)
@@ -80,12 +80,11 @@
   ;; (values (x- (reshape mean 2 2) (mean rv))
   ;;     (xmap t #'abs (mean rv))))
 
-
 ;;; Inverse Wishart
 
-(bind ((nu 5)
-       (S (mm t #2v(1 2 9 4)))
-       (rv (make-instance 'inverse-wishart :nu nu :inverse-scale S))
+(bind ((nu 500)
+       (S (mm t (x* 1000 (clo :dense 1 2 :/ 9 4))))
+       (rv (make-instance 'inverse-wishart :nu nu :scale S))
        (draws (xcollect 100000 (lambda () (as 'numeric-vector (draw rv)))))
        ((:values mean variance) (matrix-mean-variance draws)))
   (x-rel-diff (mean rv) (reshape mean 2 2)))

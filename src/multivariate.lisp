@@ -147,13 +147,12 @@
    (scale :initarg :scale :reader scale
           :type hermitian-matrix
           :documentation "scale matrix")
-   (mv-normal :reader mv-normal :type mv-normal
-              :documentation "multivariate normal for drawing")))
+   (scale-left-root :accessor scale-left-root)))
 
 (defmethod initialize-instance :after ((rv wishart) &key &allow-other-keys)
-  (with-slots (scale mv-normal) rv 
+  (with-slots (scale scale-left-root) rv 
     (check-type scale hermitian-matrix)
-    (setf mv-normal (make-instance 'mv-normal :sigma scale)))
+    (setf scale-left-root (component (cholesky scale :L) :L)))
   rv)
 
 (defmethod dimensions ((rv wishart))
@@ -165,22 +164,24 @@
 (defmethod mean ((rv wishart))
   (x* (nu rv) (scale rv)))
 
-(defun draw-wishart (nu mv-normal)
-  (bind (((k nil) (dimensions mv-normal))
-         ((:lla-matrix w) (make-matrix :double k k :kind :hermitian)))
-    (assert (>= nu k) () "Generator not defined for NU < K.")
-    (dotimes (i nu)
-      (bind (((:lla-vector a) (draw mv-normal)))
-        (dotimes (col k)
-          (iter
-            (for row :from 0 :to col)
-            (incf (w row col) (* (a row) (a col)))))))
-    w))
+(defun draw-standard-wishart-left-root (nu k)
+  "Draw a matrix L such that (mm L t) has Wishart(I,nu)
+distribution (dimension k x k)."
+  (check-type nu integer)
+  (bind ((nu (coerce nu 'double-float))
+         ((:lla-matrix l) (make-matrix :double k k :kind :lower-triangular)))
+    (dotimes (i k)
+      (setf (l (l-index i i)) (sqrt (draw* 'chi-square :nu (- nu i))))
+      (iter
+        (for l-index :from (l-index (1+ i) i) :below (l-index k i))
+        (setf (l l-index) (draw-standard-normal))))
+    l))
 
 (cached-slot (rv wishart generator)
-  (bind (((:slots-read-only nu mv-normal) rv))
+  (bind (((:slots-read-only nu scale-left-root) rv)
+         (k (nrow (scale rv))))
     (lambda ()
-      (draw-wishart nu mv-normal))))
+      (mm (mm scale-left-root (draw-standard-wishart-left-root nu k)) t))))
 
 
 ;;;  INVERSE-WISHART
@@ -190,34 +191,38 @@
 
 (defclass inverse-wishart (multivariate)
   ((nu :initarg :nu :reader nu :type fixnum :documentation "degrees of freedom")
-   (inverse-scale :initarg :inverse-scale :reader inverse-scale
+   (scale :initarg :scale :reader scale
           :type hermitian-matrix
-          :documentation "inverse-scale matrix, that is, the scale of
-          the normal distribution which will be used for drawing
-          Wishart variates, which are then inverted (see also the
-          definition for the mean).")
-   (mv-normal :reader mv-normal :type mv-normal
-              :documentation "multivariate normal for drawing"))
+          :documentation "Scale matrix, that is, the scale of the
+          normal distribution which will be used for drawing Wishart
+          variates, which are then inverted (see also the definition
+          for the mean).  Note that most texts parametrize this
+          distribution with the _inverse_ scale matrix, which is the
+          inverse of scale.")
+   (inverse-scale-left-root
+    :accessor inverse-scale-left-root
+    :documentation "C, where (mm C t) is scale.")  )
   (:documentation "Inverse Wishart distribution.  The PDF p(X) is
-proportional to |X|^-(dimension+nu+1)/2 exp(-trace(inverse-scale^{-1} X^-1))"))
+proportional to |X|^-(dimension+nu+1)/2 exp(-trace(scale^-1 X^-1))"))
 
 (defmethod initialize-instance :after ((rv inverse-wishart) &key &allow-other-keys)
-  (with-slots (inverse-scale mv-normal) rv 
-    (check-type inverse-scale hermitian-matrix)
-    (setf mv-normal (make-instance 'mv-normal :sigma inverse-scale)))
+  (with-slots (scale inverse-scale-left-root) rv 
+    (check-type scale hermitian-matrix)
+    (setf inverse-scale-left-root (invert (component (cholesky scale :L) :L))))
   rv)
 
 (defmethod dimensions ((rv inverse-wishart))
-  (xdims (inverse-scale rv)))
+  (xdims (scale rv)))
 
 (defmethod type ((rv inverse-wishart))
   'hermitian-matrix)
 
 (defmethod mean ((rv inverse-wishart))
-  (with-slots (nu inverse-scale) rv 
-    (x/ (invert inverse-scale) (- nu (nrow inverse-scale) 1))))
+  (with-slots (nu scale) rv 
+    (x/ (invert scale) (- nu (nrow scale) 1))))
 
 (cached-slot (rv inverse-wishart generator)
-  (bind (((:slots-read-only nu mv-normal) rv))
+  (bind (((:slots-read-only nu inverse-scale-left-root) rv)
+         (k (nrow (scale rv))))
     (lambda ()
-      (invert (draw-wishart nu mv-normal)))))
+      (mm t (solve (draw-standard-wishart-left-root nu k) inverse-scale-left-root)))))
