@@ -191,24 +191,20 @@ distribution (dimension k x k)."
 
 (defclass inverse-wishart (multivariate)
   ((nu :initarg :nu :reader nu :type fixnum :documentation "degrees of freedom")
-   (scale :initarg :scale :reader scale
-          :type hermitian-matrix
-          :documentation "Scale matrix, that is, the scale of the
-          normal distribution which will be used for drawing Wishart
-          variates, which are then inverted (see also the definition
-          for the mean).  Note that most texts parametrize this
-          distribution with the _inverse_ scale matrix, which is the
-          inverse of scale.")
-   (inverse-scale-left-root
-    :accessor inverse-scale-left-root
+   (inverse-scale :initarg :inverse-scale :reader inverse-scale
+                  :type hermitian-matrix
+                  :documentation "Inverse scale matrix, to which the
+                  mean is proportional.")
+   (inverse-scale-right-root
+    :accessor inverse-scale-right-root
     :documentation "C, where (mm C t) is scale.")  )
   (:documentation "Inverse Wishart distribution.  The PDF p(X) is
-proportional to |X|^-(dimension+nu+1)/2 exp(-trace(scale^-1 X^-1))"))
+proportional to |X|^-(dimension+nu+1)/2 exp(-trace(inverse-scale X^-1))"))
 
 (defmethod initialize-instance :after ((rv inverse-wishart) &key &allow-other-keys)
-  (with-slots (scale inverse-scale-left-root) rv 
-    (check-type scale hermitian-matrix)
-    (setf inverse-scale-left-root (invert (component (cholesky scale :L) :L))))
+  (with-slots (inverse-scale inverse-scale-right-root) rv 
+    (check-type inverse-scale hermitian-matrix)
+    (setf inverse-scale-right-root (component (cholesky inverse-scale :U) :U)))
   rv)
 
 (defmethod dimensions ((rv inverse-wishart))
@@ -218,11 +214,11 @@ proportional to |X|^-(dimension+nu+1)/2 exp(-trace(scale^-1 X^-1))"))
   'hermitian-matrix)
 
 (defmethod mean ((rv inverse-wishart))
-  (with-slots (nu scale) rv 
-    (x/ (invert scale) (- nu (nrow scale) 1))))
+  (with-slots (nu inverse-scale) rv 
+    (x/ inverse-scale (- nu (nrow inverse-scale) 1))))
 
 (cached-slot (rv inverse-wishart generator)
-  (bind (((:slots-read-only nu inverse-scale-left-root) rv)
-         (k (nrow (scale rv))))
+  (bind (((:slots-read-only nu inverse-scale-right-root) rv)
+         (k (nrow (inverse-scale rv))))
     (lambda ()
-      (mm t (solve (draw-standard-wishart-left-root nu k) inverse-scale-left-root)))))
+      (mm t (solve (draw-standard-wishart-left-root nu k) inverse-scale-right-root)))))
