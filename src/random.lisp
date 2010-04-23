@@ -88,17 +88,14 @@ type and parameters.")
     (error 'undefined)))
 
 (def* quantile (q) "Quantile for a random variate of the given type and parameters.")
-(defgeneric mean (rv)
-  (:documentation "Mean of a random variable.")
-  (:method ((rv rv))
-    (error 'missing)))
+
+(defmethod mean ((rv rv))
+  (error 'missing))
 
 (def* mean () "Mean for a random variate of the given type and parameters.")
 
-(defgeneric variance (rv)
-  (:documentation "Variance of a random variable.")
-  (:method ((rv rv))
-    (error 'missing)))
+(defmethod variance ((rv rv))
+  (error 'missing))
 
 (def* variance () "Variance for a random variate of the given type and parameters.")
 
