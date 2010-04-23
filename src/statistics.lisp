@@ -2,6 +2,23 @@
 
 (in-package #:cl-random)
 
+(defgeneric add-constant-column (object &optional constant)
+  (:documentation "Prepend a column of CONSTANTs before object."))
+
+(defmethod add-constant-column ((matrix dense-matrix-like) &optional (constant 1))
+  "Add a constant column before a numeric vector or a matrix,
+returning a dense matrix."
+  (bind (((:slots-r/o lla-type elements nrow ncol) matrix))
+    (aprog1 (make-matrix lla-type nrow (1+ ncol)
+                         :initial-element constant)
+      (set-restricted matrix)
+      (copy-elements (* nrow ncol)
+                     elements 0 lla-type
+                     (elements it) nrow))))
+
+(defmethod add-constant-column ((nv numeric-vector) &optional (constant 1))
+  (add-constant-column (vector->column nv) constant))
+
 (defun vector-mean (vector)
   "Calculate the mean of the elements."
   (bind (((:slots-read-only lla-type elements)

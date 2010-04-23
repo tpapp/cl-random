@@ -10,6 +10,7 @@
         :lla
         :xarray
         :anaphora)
+  (:import-from :cl-num-utils #:mean #:variance)
   (:shadowing-import-from :iterate :collecting :collect)
   (:export
 
@@ -24,9 +25,9 @@
 
    ;; random
 
-   rv generator generator* draw draw* pdf pdf* log-pdf log-pdf* mean
-   mean* variance variance* cdf cdf* dimensions
-   univariate-continuous-generator univariate-discrete-generator
+   rv generator generator* draw draw* pdf pdf* log-pdf log-pdf* 
+   mean* variance* cdf cdf* dimensions univariate-continuous-generator
+   univariate-discrete-generator
    univariate multivariate quantile quantile* type dimensions
 
    ;; univariate
@@ -44,7 +45,7 @@
 
    ;; statistics
    
-   matrix-mean demean-matrix matrix-mean-variance empirical-quantiles
+   add-constant-column matrix-mean demean-matrix matrix-mean-variance empirical-quantiles
 
    ;; special-functions
 
