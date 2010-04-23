@@ -84,7 +84,7 @@
 
 (bind ((nu 500)
        (S (mm t (x* 1000 (clo :dense 1 2 :/ 9 4))))
-       (rv (make-instance 'inverse-wishart :nu nu :scale S))
-       (draws (xcollect 100000 (lambda () (as 'numeric-vector (draw rv)))))
+       (rv (make-instance 'inverse-wishart :nu nu :inverse-scale S))
+       (draws (xcollect 10000 (lambda () (as 'numeric-vector (draw rv)))))
        ((:values mean variance) (matrix-mean-variance draws)))
   (x-rel-diff (mean rv) (reshape mean 2 2)))
