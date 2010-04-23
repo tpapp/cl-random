@@ -26,6 +26,7 @@
      (:file "univariate")
      (:file "statistics")
      (:file "multivariate"))))
-  :depends-on (:cl-utilities :iterate :metabang-bind :xarray :lla
-                             :anaphora))
+  :depends-on 
+  (:cl-utilities :cl-num-utils :iterate
+   :metabang-bind :xarray :lla :anaphora))
 
