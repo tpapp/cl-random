@@ -2,8 +2,6 @@
 
 (in-package #:cl-random-unit-tests)
 
-(named-readtables:in-readtable lla:v-syntax)
-
 (deftestsuite cl-random-unit-tests () ()
   (:equality-test #'approx=))
 

@@ -13,6 +13,19 @@
 
 ;;; multivariate normal
 
+(addtest (multivariate-tests)
+  mv-normal-pdf
+  (let* ((a (clo 1 2 :/
+                 3 4))
+         (v (mm t a))
+         (rv (make-instance 'mv-normal :mu (clo 1 1) :sigma v))
+         (*lift-equality-test* (lambda (a b)
+                                 (<= (abs (- a b)) 1d-6))))
+    (ensure-same (pdf rv (clo 1 2))
+                 0.02279933)
+    (ensure-same (pdf rv (clo 3 4))
+                 0.061975)))
+
 (time
 (bind ((mean #vd(3 4))
        (variance #2vd:hermitian(1 0.5 0.5 1))

@@ -10,7 +10,7 @@
         :lla
         :xarray
         :anaphora)
-  (:import-from :cl-num-utils #:mean #:variance)
+  (:import-from :cl-num-utils #:mean #:variance #:sse)
   (:shadowing-import-from :iterate :collecting :collect)
   (:export
 
@@ -45,7 +45,8 @@
 
    ;; statistics
    
-   add-constant-column matrix-mean demean-matrix matrix-mean-variance empirical-quantiles
+   add-constant-column column-means demean-columns column-mean-variances
+   empirical-quantiles
 
    ;; special-functions
 

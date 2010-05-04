@@ -19,17 +19,7 @@ returning a dense matrix."
 (defmethod add-constant-column ((nv numeric-vector) &optional (constant 1))
   (add-constant-column (vector->column nv) constant))
 
-(defun vector-mean (vector)
-  "Calculate the mean of the elements."
-  (bind (((:slots-read-only lla-type elements)
-          (if (typep vector 'numeric-vector-like)
-              vector
-              (as 'numeric-vector vector)))
-         (length (length elements)))
-    (/ (lla::sum-elements lla-type elements 0 length)
-       length)))
-
-(defun matrix-mean (matrix)
+(defun column-means (matrix)
   "Calculate the mean of each column."
   (bind (((:slots-read-only lla-type elements nrow ncol)
           (if (typep matrix 'dense-matrix-like)
@@ -43,40 +33,36 @@ returning a dense matrix."
                nrow)))
     mean))
 
-(defun demean-vector (vector &optional (mean (vector-mean vector)))
+(defun demean-vector (vector &optional (mean (mean vector)))
   "Subtract mean, return vector."
   (bind ((vector (copy-as 'numeric-vector vector))
          ((:slots-read-only lla-type elements) vector))
     (lla::subtract-from-elements lla-type elements 0 (length elements) mean)
     vector))
 
-(defun demean-matrix (matrix &optional (mean (matrix-mean matrix)))
+(defun demean-columns (matrix &optional (means (column-means matrix)))
   "Subtract mean of columns (for multivariate observations stacked in
   the rows of a matrix.  Return demeaned-matrix."
   (check-type matrix dense-matrix-like)
   (bind ((matrix (copy-as 'dense-matrix matrix))
          ((:slots-read-only lla-type elements nrow ncol) matrix)
-         ((:lla-vector mean) mean))
+         ((:lla-vector mean) means))
     ;; calculate & subtract mean
     (dotimes (col ncol)
       (lla::subtract-from-elements lla-type elements (cm-index2 nrow 0 col)
                                    (cm-index2 nrow nrow col) (mean col)))
     matrix))
 
-(defun matrix-mean-variance (matrix)
+(defun column-mean-variances (matrix)
   "For multivariate observations stacked in the rows of a matrix,
   return sample mean and (co)variance matrix as (values mean var).
   Their types are numeric-vector and hermitian-matrix, respectively."
   ;; values
-  (bind ((mean (matrix-mean matrix))
-         (matrix (demean-matrix matrix mean)))
-    (values mean
+  (bind ((means (column-means matrix))
+         (matrix (demean-columns matrix means)))
+    (values means
             (mm t matrix (/ (nrow matrix))))))
 
-(defun vector-sum-of-squares (vector)
-  "Sum of the squares of elements."
-  (bind (((:slots-read-only lla-type elements) vector))
-    (lla::sum-squared-elements lla-type elements 0 (length elements))))
 
 (defun empirical-quantiles (vector quantiles)
   "Empirical quantiles of VECTOR (copied with COPY-AS).  QUANTILES has

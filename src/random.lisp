@@ -56,17 +56,20 @@ nasty.  DON'T DO IT."))
 
 (def* draw () "Draw a random variate of the given type and parameters.")
 
-(defgeneric pdf (rv x)
-  (:documentation "Probability density function of rv evaluated at x.")
-  (:method ((rv rv) x)
+(defgeneric pdf (rv x &optional unscaled)
+  (:documentation "Probability density function of rv evaluated at x.
+  If UNSCALED, the implementation is allowed to drop the constant.")
+  (:method ((rv rv) x &optional unscaled)
+    (declare (ignore unscaled))
     (error 'missing)))
 
 (def* pdf (x) "PDF for a random variate of the given type and parameters.")
 
-(defgeneric log-pdf (rv x)
-  (:documentation "Log probability density function of rv evaluated at x.")
-  (:method ((rv rv) x)
-    (~log (pdf rv x))))
+(defgeneric log-pdf (rv x &optional unscaled)
+  (:documentation "Log probability density function of rv evaluated at x. 
+  If UNSCALED, the implementation is allowed to drop the constant.")
+  (:method ((rv rv) x &optional unscaled)
+    (~log (pdf rv x unscaled))))
 
 (def* log-pdf (x) "Log PDF for a random variate of the given type and parameters.")
 

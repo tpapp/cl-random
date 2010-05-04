@@ -23,12 +23,14 @@
 (defmethod variance ((rv uniform))
   (/ (expt (- (right rv) (left rv)) 2) 12d0))
 
-(defmethod pdf ((rv uniform) x)
+(defmethod pdf ((rv uniform) x &optional unscaled)
   (bind (((:slots-read-only left right) rv))
     (cond
       ((< x left) 0d0)
       ((< right x) 0d0)
-      (t (/ (- right left))))))
+      (t (if unscaled
+             1d0
+             (/ (- right left)))))))
 
 (defmethod cdf ((rv uniform) x)
   (bind (((:slots-read-only left right) rv))
@@ -173,9 +175,10 @@ deviation sigma."))
 ;;; precomputed tables.  Need to write and test this, and if it is
 ;;; true, use that method instead.
 
-(defmethod pdf ((rv normal) x)
+(defmethod pdf ((rv normal) x &optional unscaled)
   (declare (optimize (speed 3))
-           (double-float x))
+           (double-float x)
+           (ignore unscaled))
   (bind (((:slots-read-only mu sigma) rv))
     (declare (double-float mu sigma))
     (/ (pdf-standard-normal (to-standard-normal x mu sigma))
@@ -256,7 +259,8 @@ direction. If both are nil, reverts to the normal distribution."))
                 (slot-value rv 'cdf-left) cdf-left)))))
   rv)
 
-(defmethod pdf ((rv truncated-normal) x)
+(defmethod pdf ((rv truncated-normal) x &optional unscaled)
+  (declare (ignore unscaled))
   (check-type x double-float)
   (bind (((:slots-read-only mu sigma mass left right) rv))
     (if (or (<* x left) (>* x right))
@@ -659,7 +663,8 @@ be coercible to vector-double-float."
          (summing (* i i p)))
        (expt (mean rv) 2))))
 
-(defmethod pdf ((rv discrete) i)
+(defmethod pdf ((rv discrete) i &optional unscaled)
+  (declare (ignore unscaled))
   (bind (((:slots-read-only probabilities) rv))
     (if (or (minusp i) (<= (length probabilities) i))
         0

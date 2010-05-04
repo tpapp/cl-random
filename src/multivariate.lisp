@@ -14,7 +14,9 @@
           :type hermitian-matrix
           :documentation "variance matrix")
    (sigma-sqrt :initarg :sigma-sqrt :reader sigma-sqrt :type dense-matrix
-               :documentation "(right) square root of sigma, ie M such that M^T M=sigma")))
+               :documentation "(right) square root of sigma, ie M such that M^T M=sigma")
+   (log-pdf-constant :reader log-pdf-constant
+                     :documentation "Log of the constant part of the PDF.")))
 
 ;; (define-modify-macro multf (factor) *)
 
@@ -42,6 +44,12 @@
       (setf (slot-value rv 'mu) (make-nv (lla-type sigma-or-sigma-sqrt) (nrow sigma-or-sigma-sqrt))))
     rv))
 
+(cached-slot (rv mv-normal log-pdf-constant)
+  (bind (((:slots-r/o sigma-sqrt) rv))
+    (check-type sigma-sqrt upper-triangular-matrix)
+    (- (/ (* (log (* 2 pi)) (nrow sigma-sqrt)) -2)
+       (logdet sigma-sqrt))))
+
 (cached-slot (rv mv-normal sigma)
   (mm t (sigma-sqrt rv)))
 
@@ -64,6 +72,17 @@
   (sigma rv))
 
 ;;;; !!!! define at least pdf
+
+(defmethod log-pdf ((rv mv-normal) x &optional unscaled)
+  (declare (optimize debug))
+  (bind (((:slots-r/o mu sigma-sqrt) rv)
+         (q (* -0.5d0 (mm (solve (transpose sigma-sqrt) (x- x mu)) t))))
+    (if unscaled
+        q
+        (+ q (log-pdf-constant rv)))))
+
+(defmethod pdf ((rv mv-normal) x &optional unscaled)
+  (exp (log-pdf rv x unscaled)))
 
 (cached-slot (rv mv-normal generator)
   (bind (((:slots-read-only mu sigma-sqrt) rv)
@@ -110,8 +129,7 @@
          (tau (make-instance 'gamma :alpha (/ nu 2d0) :beta (/ ss 2))))
     (aprog1 (make-instance 'linear-regression :beta beta :tau tau)
       (when save-r^2?
-        (let ((ss-total (vector-sum-of-squares (demean-vector y))))
-          (setf (r^2 it) (- 1 (/ ss ss-total))))))))
+        (setf (r^2 it) (- 1 (/ ss (sse y))))))))
 
 (defmethod dimensions ((rv linear-regression))
   (values (dimensions (beta rv)) nil))
