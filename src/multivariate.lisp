@@ -8,75 +8,58 @@
 ;;;;  posteriors, etc.
 
 (defclass mv-normal (multivariate)
-  ((mu :initarg :mu :reader mu :type numeric-vector
+  ((mean :initarg :mean :reader mean :type numeric-vector
        :documentation "vector of means")
-   (sigma :initarg :sigma :reader sigma
+   (variance :initarg :variance :reader variance
           :type hermitian-matrix
           :documentation "variance matrix")
-   (sigma-sqrt :initarg :sigma-sqrt :reader sigma-sqrt :type dense-matrix
-               :documentation "(right) square root of sigma, ie M such that M^T M=sigma")
+   (variance-right-sqrt :initarg :variance-right-sqrt :reader variance-right-sqrt :type dense-matrix
+               :documentation "(right) square root of variance, ie M such that M^T M=variance")
    (log-pdf-constant :reader log-pdf-constant
                      :documentation "Log of the constant part of the PDF.")))
 
-;; (define-modify-macro multf (factor) *)
-
-;; (defun sigma-sqrt (sigma)
-;;   "Calculate matrix square root of sigma."
-;;   (bind (((:values val vec) (eigen sigma :vectors-p t))
-;;          ((:slots-read-only (n nrow) (vec-elements elements)) vec)
-;;          (val-elements (elements val)))
-;;     ;; we can modify destructively, since vec is freshly created
-;;     (dotimes (i n)
-;;       (let ((sqrt-diag (sqrt (aref val-elements i))))
-;;         (iter
-;;           (for j :from (cm-index2 n 0 i) :below (cm-index2 n n i))
-;;           (multf (aref vec-elements j) sqrt-diag))))
-;;     vec))
-
 (defmethod initialize-instance :after ((rv mv-normal) &key &allow-other-keys)
-  (let ((sigma-or-sigma-sqrt 
-         (cond 
-           ((slot-boundp rv 'sigma) (sigma rv))
-           ((slot-boundp rv 'sigma-sqrt) (sigma-sqrt rv))
-           (t (error "At least one of SIGMA or SIGMA-SQRT has to be provided.")))))
-    (assert (square-matrix-p sigma-or-sigma-sqrt) ()  "SIGMA/SIGMA-SQRT has to be a square matrix.")
-    (unless (slot-boundp rv 'mu)
-      (setf (slot-value rv 'mu) (make-nv (lla-type sigma-or-sigma-sqrt) (nrow sigma-or-sigma-sqrt))))
-    rv))
+  (let ((variance-or-sqrt
+         (cond
+           ((slot-boundp rv 'variance)
+            (aprog1 (slot-value rv 'variance)
+              (assert (typep it 'hermitian-matrix) ()
+                      "VARIANCE has to be a hermitian matrix.")))
+           ((slot-boundp rv 'variance-right-sqrt)
+            (aprog1 (slot-value rv 'variance-right-sqrt)
+              (assert (square-matrix-p it) ()
+                      "VARIANCE-SQRT has to be a square matrix.")))
+           (t (error "At least one of VARIANCE or VARIANCE-RIGHT-SQRT has to be provided.")))))
+    (unless (slot-boundp rv 'mean)
+      (setf (slot-value rv 'mean) 
+            (make-nv (lla-type variance-or-sqrt) (nrow variance-or-sqrt))))))
 
 (cached-slot (rv mv-normal log-pdf-constant)
-  (bind (((:slots-r/o sigma-sqrt) rv))
-    (check-type sigma-sqrt upper-triangular-matrix)
-    (- (/ (* (log (* 2 pi)) (nrow sigma-sqrt)) -2)
-       (logdet sigma-sqrt))))
+  (bind (((:slots-r/o variance-right-sqrt) rv))
+    (- (/ (* (log (* 2 pi)) (nrow variance-right-sqrt)) -2)
+       (logdet variance-right-sqrt))))
 
-(cached-slot (rv mv-normal sigma)
-  (mm t (sigma-sqrt rv)))
+(cached-slot (rv mv-normal variance)
+  (mm t (variance-right-sqrt rv)))
 
-(cached-slot (rv mv-normal sigma-sqrt)
-  (factor (cholesky (sigma rv) :U)))
+(cached-slot (rv mv-normal variance-right-sqrt)
+  (factor (cholesky (variance rv) :U)))
 
 (define-printer (mv-normal)
-    (format stream "~&MEAN: ~A~%VARIANCE:~%~A~%" (mean rv) (variance rv)))
+  (format stream "~&MEAN: ~A~%VARIANCE:~%~A~%" (mean rv) (variance rv)))
 
 (defmethod dimensions ((rv mv-normal))
-  (xdims (sigma-sqrt rv)))
+  (xdims (variance-right-sqrt rv)))
 
 (defmethod type ((rv mv-normal))
   'numeric-vector)
 
-(defmethod mean ((rv mv-normal))
-  (mu rv))
-
-(defmethod variance ((rv mv-normal))
-  (sigma rv))
-
-;;;; !!!! define at least pdf
+(defun normal-quadratic-form% (x rv)
+  "Calculate (x-mean)^T variance^-1 (x-mean), given X."
+  (mm (solve (transpose (variance-right-sqrt rv)) (x- x (mean rv))) t))
 
 (defmethod log-pdf ((rv mv-normal) x &optional unscaled)
-  (declare (optimize debug))
-  (bind (((:slots-r/o mu sigma-sqrt) rv)
-         (q (* -0.5d0 (mm (solve (transpose sigma-sqrt) (x- x mu)) t))))
+  (bind ((q (* -0.5d0 (normal-quadratic-form% x rv))))
     (if unscaled
         q
         (+ q (log-pdf-constant rv)))))
@@ -85,74 +68,122 @@
   (exp (log-pdf rv x unscaled)))
 
 (cached-slot (rv mv-normal generator)
-  (bind (((:slots-read-only mu sigma-sqrt) rv)
-         (n (xdim mu 0)))
+  (bind (((:slots-read-only mean variance-right-sqrt) rv)
+         (n (xdim mean 0)))
     (lambda (&optional (scale 1d0))
       (let* ((x (make-nv :double n))
              (x-elements (elements x)))
         (dotimes (i n)
           (setf (aref x-elements i) (draw-standard-normal)))
-        (x+ mu (mm x sigma-sqrt scale))))))
+        (x+ mean (mm x variance-right-sqrt scale))))))
 
-;;;;
-;;;;  LINEAR-REGRESSION
-;;;;
-;;;;  This distribution is for drawing from the posterior (beta,sigma)
-;;;;  of a linear regression y = X beta + epsilon, where epsilon ~
-;;;;  N(0,sigma^2).  Internally, the implementation uses the precision
-;;;;  tau = sigma^(-2).  See Lancaster (2004, Chapter 3) for the
-;;;;  formulas.
-;;;;
-;;;;  LINEAR-REGRESSION behaves as if the random variable was BETA for
-;;;;  calculating the mean, variance, drawing random values, etc.  For
-;;;;  the latter, the generator returns a value of SIGMA as a second
-;;;;  value.
 
-(defclass linear-regression (multivariate)
-  ((beta :type mv-normal :reader beta :initarg :beta
-         :documentation "\"raw\" conditional posterior for beta, needs to
-                        be scaled up by (sqrt tau)")
-   (tau :type gamma :reader tau :initarg :tau
-        :documentation "posterior for precision tau")
-   (R^2 :accessor R^2 :initarg :R^2 :documentation
-        "coefficient of determination"))
-  (:documentation "The random variates returned are samples from a
-  posterior distribution of a Bayesian least squares model with the
-  usual reference prior.  The sampled standard deviation (sigma) is
-  returned as the second value by the generator or draw."))
+;;;  MULTIVARIATE T distribution
+;;;
+;;;  When drawing numbers, the scaling factor (with distribution
+;;;  inverse-chi-square, df nu) returned as the second value.
 
-(defun linear-regression (y x &key save-r^2?)
-  (declare (optimize (debug 3)))
-  (bind (((:values b qr ss nu) (least-squares y x))
-         (sigma (least-squares-xx-inverse qr))
-         (beta (make-instance 'mv-normal :mu b :sigma sigma))
-         (tau (make-instance 'gamma :alpha (/ nu 2d0) :beta (/ ss 2))))
-    (aprog1 (make-instance 'linear-regression :beta beta :tau tau)
-      (when save-r^2?
-        (setf (r^2 it) (- 1 (/ ss (sse y))))))))
+(defclass mv-t (multivariate)
+  ((scaling-factor :accessor scaling-factor
+                   :type inverse-chi-square
+                   :documentation "distribution that scales the variance of draws matrix.")
+   (mv-normal :accessor mv-normal
+              :type mv-normal :documentation "distribution for obtaining normal draws")
+   (log-pdf-constant :reader log-pdf-constant
+                     :documentation "Log of the constant part of the PDF.")))
 
-(defmethod dimensions ((rv linear-regression))
-  (values (dimensions (beta rv)) nil))
+(defmethod nu ((rv mv-t))
+  (nu (scaling-factor rv)))
 
-(defmethod type ((rv linear-regression))
-  (values 'numeric-vector 'double-float))
+(defmethod initialize-instance :after ((rv mv-t) &key (mean nil mean?) (sigma nil sigma?)
+                                       (sigma-right-sqrt nil sigma-right-sqrt?) nu
+                                       &allow-other-keys)
+  (bind (((:flet @ (present? value keyword))
+          (when present?
+            (list keyword value)))
+         ((:slots mv-normal scaling-factor) rv))
+    (setf mv-normal
+          (apply #'make-instance 'mv-normal
+                 (concatenate 'list 
+                              (@ mean? mean :mean)
+                              (@ sigma? sigma :variance)
+                              (@ sigma-right-sqrt? sigma-right-sqrt :variance-right-sqrt)))
+          scaling-factor
+          (make-instance 'inverse-chi-square :nu (float nu 0d0)))))
 
-(defmethod mean ((rv linear-regression))
-  (mean (beta rv)))
+(cached-slot (rv mv-t log-pdf-constant)
+  (bind (((:accessors-r/o mv-normal nu) rv)
+         ((:slots-r/o variance-right-sqrt) mv-normal)
+         (d (nrow variance-right-sqrt)))
+    (- (log-gamma (/ (+ nu d) 2d0))
+       (log-gamma (/ nu 2d0))
+       (* (+ (log nu) (log pi)) (/ d 2d0))
+       (logdet variance-right-sqrt))))
 
-(defmethod variance ((rv linear-regression))
-  (x* (variance (beta rv)) (/ (mean (tau rv)))))
+(define-printer (mv-t)
+  (with-slots (mv-normal scaling-factor) rv
+    (format stream "~&NU: ~A  MEAN: ~A~%SIGMA:~%~A~%" (nu scaling-factor)
+            (mean mv-normal) (variance mv-normal))))
 
-(cached-slot (rv linear-regression generator)
-  (bind (((:slots-read-only beta tau) rv)
-         (beta-generator (generator beta))
-         (tau-generator (generator tau)))
+(defmethod dimensions ((rv mv-t))
+  (dimensions (mv-normal rv)))
+
+(defmethod type ((rv mv-t))
+  'numeric-vector)
+
+(defmethod mean ((rv mv-t))
+  (assert (< 1 (nu rv)))
+  (mean (mv-normal rv)))
+
+(defmethod variance ((rv mv-t))
+  (bind (((:accessors-r/o nu) rv))
+    (assert (< 2 nu))
+    (x* (variance (mv-normal rv)) (/ nu (- nu 2d0)))))
+
+(defmethod log-pdf ((rv mv-t) x &optional unscaled?)
+  (bind (((:accessors-r/o nu mv-normal) rv)
+         (d (size (mean rv)))
+         (q (* (log (1+ (/ (normal-quadratic-form% x mv-normal)
+                           nu)))
+               (/ (+ nu d) -2d0))))
+    (if unscaled?
+        q
+        (+ q (log-pdf-constant rv)))))
+
+(defmethod pdf ((rv mv-t) x &optional unscaled?)
+  (exp (log-pdf rv x unscaled?)))
+
+(cached-slot (rv mv-t generator)
+  (bind (((:slots-read-only scaling-factor mv-normal) rv)
+         (scaling-factor-generator (generator scaling-factor))
+         (mv-normal-generator (generator mv-normal)))
     (lambda ()
-      (let ((sigma (/ (sqrt (funcall tau-generator)))))
-        (values (funcall beta-generator sigma)
-                sigma)))))
-   
-;;;; ??? implement pdf -- Tamas
+      (let ((scaling-factor (funcall scaling-factor-generator)))
+        (values 
+          (funcall mv-normal-generator (sqrt scaling-factor))
+          scaling-factor)))))
+
+
+;;;  LINEAR-REGRESSION
+;;;
+;;;  This is a helper function to run obtain the posterior
+;;;  distribution of linear regressions.
+
+(defun linear-regression (y x &key r^2?)
+  "Return the following values: 1. an MV-T distribution for drawing
+  means from the distribution.  2. The mean of the variance posterior.
+  Multiplied by the second value returned when drawing from the MV-T
+  distribution, this yields the variance corresponding to that draw.
+  3. When R^2?, return the R^2 value."
+  (bind (((:values b qr ss nu) (least-squares y x))
+         (s^2 (/ ss nu))
+         (sigma (least-squares-xx-inverse qr)))
+    (values
+      (make-instance 'mv-t :mean b :sigma (x* s^2 sigma) :nu nu)
+      s^2
+      (when r^2?
+        (- 1 (/ ss (sse y)))))))
+
 
 ;;;  WISHART
 ;;;
