@@ -19,19 +19,22 @@ returning a dense matrix."
 (defmethod add-constant-column ((nv numeric-vector) &optional (constant 1))
   (add-constant-column (vector->column nv) constant))
 
-(defun column-means (matrix)
-  "Calculate the mean of each column."
+(defun column-sums (matrix)
+  "Calculate the sum of each column, returned as a numeric-vector."
   (bind (((:slots-read-only lla-type elements nrow ncol)
           (if (typep matrix 'dense-matrix-like)
               (set-restricted matrix)
               (as 'dense-matrix matrix)))
-         ((:lla-vector mean) (make-nv lla-type ncol)))
+         ((:lla-vector sum) (make-nv lla-type ncol)))
     (dotimes (col ncol)
-      (setf (mean col) 
-            (/ (lla::sum-elements lla-type elements (cm-index2 nrow 0 col)
-                                     (cm-index2 nrow nrow col))
-               nrow)))
-    mean))
+      (setf (sum col) 
+            (lla::sum-elements lla-type elements (cm-index2 nrow 0 col)
+                               (cm-index2 nrow nrow col))))
+    sum))
+
+(defun column-means (matrix)
+  "Calculate the mean of each column, returned as a numeric-vector."
+  (x/ (column-sums matrix) (nrow matrix)))
 
 (defun demean-vector (vector &optional (mean (mean vector)))
   "Subtract mean, return vector."
