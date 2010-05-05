@@ -1,7 +1,6 @@
 ;;; -*- Mode:Lisp; Syntax:ANSI-Common-Lisp; Coding:utf-8 -*-
 
 (in-package #:cl-random-unit-tests)
-(in-readtable lla:v-syntax)
 
 ;;;  !!! Currently, results from the code below are just "eyeballed",
 ;;;      they need to be incorporated into the unit testing framework
@@ -18,44 +17,77 @@
   (let* ((a (clo 1 2 :/
                  3 4))
          (v (mm t a))
-         (rv (make-instance 'mv-normal :mu (clo 1 1) :sigma v))
+         (rv (make-instance 'mv-normal :mean (clo 1 1) :variance v))
          (*lift-equality-test* (lambda (a b)
                                  (<= (abs (- a b)) 1d-6))))
+    (ensure-same (cl-random::log-pdf-constant rv)
+                 (- (* (logdet v) -0.5)
+                    (log (* 2 pi))))
     (ensure-same (pdf rv (clo 1 2))
                  0.02279933)
     (ensure-same (pdf rv (clo 3 4))
                  0.061975)))
 
 (time
-(bind ((mean #vd(3 4))
-       (variance #2vd:hermitian(1 0.5 0.5 1))
-       (rv (make-instance 'mv-normal :mu mean :sigma variance))
-       (matrix (xcollect 100000 (lambda () (draw rv))))
-       ((:values sample-mean sample-variance)
-        (matrix-mean-variance matrix)))
-  (values sample-mean
-          sample-variance)))
+ (bind ((mean (clo 3 4))
+        (variance (clo :hermitian
+                       1 0.5 :/
+                       0.5 1))
+        (rv (make-instance 'mv-normal :mean mean :variance variance))
+        (matrix (xcollect 100000 (lambda () (draw rv))))
+        ((:values sample-mean sample-variance)
+         (column-mean-variances matrix)))
+   (values sample-mean
+           sample-variance)))
 
+;;; multivariate normal
+
+(addtest (multivariate-tests)
+  mv-t-pdf
+  (let* ((sigma (mm t (clo 1 2 :/
+                           3 4)))
+         (rv (make-instance 'mv-t :sigma sigma :nu 8))
+         (*lift-equality-test* (lambda (a b)
+                                 (<= (abs (- a b)) 1d-6))))
+    (defparameter *t* rv)
+    (ensure-same (log-pdf rv (clo 0 0))
+                 -2.531024)
+    (ensure-same (log-pdf rv (clo 1 2))
+                 -3.119939)
+    (ensure-same (pdf rv (clo 3 4))
+                 0.04415984)))
+
+(time
+ (bind ((mean (clo 3 4))
+        (sigma (clo :hermitian
+                       1 0.5 :/
+                       0.5 1))
+        (rv (make-instance 'mv-t :mean mean :sigma sigma :nu 10))
+        (matrix (xcollect 100000 (lambda () (draw rv))))
+        ((:values sample-mean sample-variance)
+         (column-mean-variances matrix)))
+   (values sample-mean
+           sample-variance)))
 
 ;;; linear regression
 
 
 (addtest (multivariate-tests)
   linear-regression
-  (bind ((x #2v(1 1
-                  1 2
-                  1 3))
-         (y #v(1 1 3))
-         (lr (linear-regression y x :save-r^2? t))
-         ((:accessors-r/o mean variance r^2) lr)
-         (residuals (x- y (mm x mean))))
-    (ensure-same (mean lr) #v(-1/3 1) :test #'x=)
-    (ensure-same (variance lr) #2v:hermitian(14/9 -2/3
-                                                  -2/3 1/3)
-                 :test #'x=)
+  (bind ((x (clo 1 1 :/
+                 1 2
+                 1 3))
+         (y (clo 1 1 3))
+         ((:values lr s^2 r^2) (linear-regression y x :r^2? t))
+         ((:accessors-r/o mean variance) (mv-normal lr))
+         (*lift-equality-test* #'x=))
+    (ensure-same mean (clo -1/3 1))
+    (ensure-same variance (clo :hermitian 
+                               14/9 -2/3 :/
+                               -2/3 1/3))
     (ensure-same r^2 0.75)))
 
-(defparameter *beta* #v(1 2))
+(defparameter *beta* (clo 1 2))
 (defparameter *x* (xcollect 500 (lambda ()
                                   (vector (* 3 (draw-standard-normal))
                                           (+ 5 (draw-standard-normal))))
@@ -64,21 +96,23 @@
                         (mm *x* *beta*)
                         (xcollect 500 (lambda ()
                                         (* 9d0 (draw-standard-normal))))))
-(defparameter *ls* (linear-regression *y* *x*))
+(bind (((:values lr s^2 nil) (linear-regression *y* *x*)))
+  (defparameter *lr* lr)
+  (defparameter *s^2* s^2))
 
-(defparameter *sigmamean*
+(defparameter *sigmasq-mean*
   (let ((n 100000))
-    (/ (iter
+    (* (iter
          (repeat n)
-         (for (values beta sigma) := (draw *ls*))
+         (for (values beta sigma) := (draw *lr*))
          (summing sigma))
-       n)))
+       (/ *s^2* n))))
 
-(bind ((matrix (xcollect 1000000 (generator *ls*)))
+(bind ((matrix (xcollect 100000 (generator *lr*)))
        ((:values sample-mean sample-variance)
-        (matrix-mean-variance matrix)))
+        (column-mean-variances matrix)))
   (defparameter *sample-variance* sample-variance))
-(x-rel-diff *sample-variance* (variance *ls*))  ; should be near 1
+(x-rel-diff *sample-variance* (variance *lr*))  ; should be near 0
 
 ;;; Wishart
 
