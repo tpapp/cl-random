@@ -9,7 +9,8 @@
         :bind
         :lla
         :xarray
-        :anaphora)
+        :anaphora
+        :cl-num-utils)
   (:import-from :cl-num-utils #:mean #:variance #:sse)
   (:shadowing-import-from :iterate :collecting :collect)
   (:export
@@ -41,12 +42,12 @@
 
    ;; multivariate
 
-   mv-normal linear-regression tau r^2 wishart nu scale inverse-wishart
+   mv-normal mv-t linear-regression wishart nu scale inverse-wishart
 
    ;; statistics
    
-   add-constant-column column-means demean-columns column-mean-variances
-   empirical-quantiles
+   add-constant-column column-sums column-means demean-columns
+   column-mean-variances empirical-quantiles
 
    ;; special-functions
 
