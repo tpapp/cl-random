@@ -2,17 +2,16 @@
 
 (defpackage #:cl-random
     (:nicknames :rv)
-  (:shadow #:type)
   (:use :common-lisp
-	:cl-utilities
+;;	:cl-utilities
+        :alexandria
         :iterate
         :bind
         :lla
-        :xarray
         :anaphora
         :cl-num-utils)
-  (:import-from :cl-num-utils #:mean #:variance #:sse)
   (:shadowing-import-from :iterate :collecting :collect)
+  (:shadow :mean :variance)
   (:export
 
    ;; utilities
@@ -26,10 +25,9 @@
 
    ;; random
 
-   rv generator generator* draw draw* pdf pdf* log-pdf log-pdf* 
-   mean* variance* cdf cdf* dimensions univariate-continuous-generator
-   univariate-discrete-generator
-   univariate multivariate quantile quantile* type dimensions
+   rv generator generator* rv-type dimensions draw draw* pdf pdf* log-pdf log-pdf* 
+   mean* variance* cdf cdf* univariate-continuous-generator
+   univariate-discrete-generator univariate multivariate quantile quantile*
 
    ;; univariate
 
@@ -52,5 +50,9 @@
    ;; special-functions
 
    log-gamma gamma
+
+   ;; design-matrix
+   
+   design-matrix
 
    ))

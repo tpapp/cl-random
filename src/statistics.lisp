@@ -3,57 +3,67 @@
 (in-package #:cl-random)
 
 (defgeneric add-constant-column (object &optional constant)
-  (:documentation "Prepend a column of CONSTANTs before object."))
+  (:documentation "Prepend a column of CONSTANTs (defaults to 1) before object."))
 
 (defmethod add-constant-column ((matrix dense-matrix-like) &optional (constant 1))
-  "Add a constant column before a numeric vector or a matrix,
+  "Add a constant column before a vector or a matrix,
 returning a dense matrix."
   (bind (((:slots-r/o lla-type elements nrow ncol) matrix))
     (aprog1 (make-matrix lla-type nrow (1+ ncol)
                          :initial-element constant)
       (set-restricted matrix)
-      (copy-elements (* nrow ncol)
-                     elements 0 lla-type
-                     (elements it) nrow))))
+      (copy-elements elements 0
+                     (elements it) nrow
+                     (* nrow ncol)))))
 
-(defmethod add-constant-column ((nv numeric-vector) &optional (constant 1))
-  (add-constant-column (vector->column nv) constant))
+(defmethod add-constant-column ((vector vector) &optional (constant 1))
+  (add-constant-column (as-column vector) constant))
 
 (defun column-sums (matrix)
   "Calculate the sum of each column, returned as a numeric-vector."
-  (bind (((:slots-read-only lla-type elements nrow ncol)
+  (bind (((:slots-r/o  elements nrow ncol)
           (if (typep matrix 'dense-matrix-like)
               (set-restricted matrix)
-              (as 'dense-matrix matrix)))
-         ((:lla-vector sum) (make-nv lla-type ncol)))
+              (as-matrix matrix)))
+         ((:lla-vector sum) (make-similar-vector elements ncol)))
     (dotimes (col ncol)
       (setf (sum col) 
-            (lla::sum-elements lla-type elements (cm-index2 nrow 0 col)
-                               (cm-index2 nrow nrow col))))
+            (lla::sum-elements% elements (cm-index2 nrow 0 col)
+                                (cm-index2 nrow nrow col))))
     sum))
 
 (defun column-means (matrix)
   "Calculate the mean of each column, returned as a numeric-vector."
-  (x/ (column-sums matrix) (nrow matrix)))
+  (e/ (column-sums matrix) (nrow matrix)))
+
+(defun subtract-from-elements% (elements start end number)
+  (declare (optimize speed (safety 0))
+           (fixnum start end))
+  (lla::with-vector-type-expansion (elements)
+    (lambda (lla-type)
+      `(let ((number (coerce* number ,lla-type)))
+         (declare (type ,(lla::lla->lisp-type lla-type) number))
+         (iter
+           (for (the fixnum i) :from start :below end)
+           (declare (iterate:declare-variables))
+           (decf (aref elements i) number)))))
+  (values))
 
 (defun demean-vector (vector &optional (mean (mean vector)))
   "Subtract mean, return vector."
-  (bind ((vector (copy-as 'numeric-vector vector))
-         ((:slots-read-only lla-type elements) vector))
-    (lla::subtract-from-elements lla-type elements 0 (length elements) mean)
-    vector))
+  (aprog1 (copy-vector vector)
+    (subtract-from-elements% it 0 (length it) mean)))
 
 (defun demean-columns (matrix &optional (means (column-means matrix)))
   "Subtract mean of columns (for multivariate observations stacked in
   the rows of a matrix.  Return demeaned-matrix."
   (check-type matrix dense-matrix-like)
-  (bind ((matrix (copy-as 'dense-matrix matrix))
-         ((:slots-read-only lla-type elements nrow ncol) matrix)
-         ((:lla-vector mean) means))
-    ;; calculate & subtract mean
-    (dotimes (col ncol)
-      (lla::subtract-from-elements lla-type elements (cm-index2 nrow 0 col)
-                                   (cm-index2 nrow nrow col) (mean col)))
+  (aprog1 (copy-matrix matrix :copy? t :kind :dense)
+    ;; subtract mean
+    (bind (((:slots-r/o elements nrow ncol) it))
+      (dotimes (col ncol)
+        (subtract-from-elements% elements (cm-index2 nrow 0 col)
+                                 (cm-index2 nrow nrow col) (aref means col))))
     matrix))
 
 (defun column-mean-variances (matrix)
@@ -66,12 +76,13 @@ returning a dense matrix."
     (values means
             (mm t matrix (/ (nrow matrix))))))
 
-
-(defun empirical-quantiles (vector quantiles)
+(defun empirical-quantiles (vector quantiles &key destructive?)
   "Empirical quantiles of VECTOR (copied with COPY-AS).  QUANTILES has
 to be a sequence, and the result is of the same type.  Elements are
 interpolated linearly."
-  (let* ((vector (sort (copy-as 'vector vector) #'<=))
+  (let* ((vector (sort (if destructive? 
+                           vector
+                           (copy-vector vector)) #'<=))
          (n (length vector)))
     (map (type-of quantiles)
          (lambda (q)

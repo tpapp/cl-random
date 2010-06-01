@@ -38,7 +38,7 @@ nasty.  DON'T DO IT."))
 
 (def* generator () "Generator for a random variate of the given type and parameters.")
 
-(defgeneric type (rv)
+(defgeneric rv-type (rv)
   (:documentation "Type of objects returned by draw.")
   (:method (rv)
     t))

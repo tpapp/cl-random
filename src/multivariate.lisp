@@ -8,13 +8,15 @@
 ;;;;  posteriors, etc.
 
 (defclass mv-normal (multivariate)
-  ((mean :initarg :mean :reader mean :type numeric-vector
+  ((mean :initarg :mean :reader mean :type vector
        :documentation "vector of means")
    (variance :initarg :variance :reader variance
           :type hermitian-matrix
           :documentation "variance matrix")
-   (variance-right-sqrt :initarg :variance-right-sqrt :reader variance-right-sqrt :type dense-matrix
-               :documentation "(right) square root of variance, ie M such that M^T M=variance")
+   (variance-right-sqrt 
+    :initarg :variance-right-sqrt
+    :reader variance-right-sqrt :type dense-matrix
+    :documentation "(right) square root of variance, ie M such that M^T M=variance")
    (log-pdf-constant :reader log-pdf-constant
                      :documentation "Log of the constant part of the PDF.")))
 
@@ -27,12 +29,14 @@
                       "VARIANCE has to be a hermitian matrix.")))
            ((slot-boundp rv 'variance-right-sqrt)
             (aprog1 (slot-value rv 'variance-right-sqrt)
-              (assert (square-matrix-p it) ()
+              (assert (square-matrix? it) ()
                       "VARIANCE-SQRT has to be a square matrix.")))
-           (t (error "At least one of VARIANCE or VARIANCE-RIGHT-SQRT has to be provided.")))))
+           (t (error "At least one of VARIANCE or VARIANCE-RIGHT-SQRT ~
+                      has to be provided.")))))
     (unless (slot-boundp rv 'mean)
-      (setf (slot-value rv 'mean) 
-            (make-nv (lla-type variance-or-sqrt) (nrow variance-or-sqrt))))))
+      (setf (slot-value rv 'mean)
+            (lla-vector (array-lla-type (elements variance-or-sqrt))
+                        (nrow variance-or-sqrt))))))
 
 (cached-slot (rv mv-normal log-pdf-constant)
   (bind (((:slots-r/o variance-right-sqrt) rv))
@@ -49,14 +53,14 @@
   (format stream "~&MEAN: ~A~%VARIANCE:~%~A~%" (mean rv) (variance rv)))
 
 (defmethod dimensions ((rv mv-normal))
-  (xdims (variance-right-sqrt rv)))
+  (list (length (mean rv))))
 
-(defmethod type ((rv mv-normal))
-  'numeric-vector)
+(defmethod rv-type ((rv mv-normal))
+  'simple-array1)
 
 (defun normal-quadratic-form% (x rv)
   "Calculate (x-mean)^T variance^-1 (x-mean), given X."
-  (mm (solve (transpose (variance-right-sqrt rv)) (x- x (mean rv))) t))
+  (mm (solve (transpose (variance-right-sqrt rv)) (e- x (mean rv))) t))
 
 (defmethod log-pdf ((rv mv-normal) x &optional unscaled)
   (bind ((q (* -0.5d0 (normal-quadratic-form% x rv))))
@@ -69,14 +73,23 @@
 
 (cached-slot (rv mv-normal generator)
   (bind (((:slots-read-only mean variance-right-sqrt) rv)
-         (n (xdim mean 0)))
+         (n (length mean)))
     (lambda (&optional (scale 1d0))
-      (let* ((x (make-nv :double n))
-             (x-elements (elements x)))
+      (let* ((x (lla-vector :double n)))
         (dotimes (i n)
-          (setf (aref x-elements i) (draw-standard-normal)))
-        (x+ mean (mm x variance-right-sqrt scale))))))
+          (setf (aref x i) (draw-standard-normal)))
+        (e+ mean (mm x variance-right-sqrt scale))))))
 
+(defmethod sub ((rv mv-normal) &rest ranges)
+  (bind (((range) ranges)
+         ((:slots-r/o mean variance) rv))
+    (if (typep range 'fixnum)
+        (make-instance 'normal
+                       :mu (sub mean range)
+                       :sd (sqrt (sub variance range range)))
+        (make-instance 'mv-normal
+                       :mean (sub mean range)
+                       :variance (sub variance range range)))))
 
 ;;;  MULTIVARIATE T distribution
 ;;;
@@ -85,31 +98,52 @@
 
 (defclass mv-t (multivariate)
   ((scaling-factor :accessor scaling-factor
+                   :initarg :scaling-factor
                    :type inverse-chi-square
-                   :documentation "distribution that scales the variance of draws matrix.")
+                   :documentation
+                   "distribution that scales the variance of draws.")
    (mv-normal :accessor mv-normal
-              :type mv-normal :documentation "distribution for obtaining normal draws")
+              :initarg :mv-normal
+              :type mv-normal :documentation
+              "distribution for obtaining normal draws")
    (log-pdf-constant :reader log-pdf-constant
                      :documentation "Log of the constant part of the PDF.")))
 
 (defmethod nu ((rv mv-t))
   (nu (scaling-factor rv)))
 
-(defmethod initialize-instance :after ((rv mv-t) &key (mean nil mean?) (sigma nil sigma?)
-                                       (sigma-right-sqrt nil sigma-right-sqrt?) nu
+(defmethod initialize-instance :after ((rv mv-t) &key 
+                                       (mean nil mean?) 
+                                       (sigma nil sigma?)
+                                       (sigma-right-sqrt nil sigma-right-sqrt?)
+                                       nu
+                                       (mv-normal nil mv-normal?)
+                                       (scaling-factor nil scaling-factor?)
                                        &allow-other-keys)
   (bind (((:flet @ (present? value keyword))
           (when present?
-            (list keyword value)))
-         ((:slots mv-normal scaling-factor) rv))
-    (setf mv-normal
-          (apply #'make-instance 'mv-normal
-                 (concatenate 'list 
-                              (@ mean? mean :mean)
-                              (@ sigma? sigma :variance)
-                              (@ sigma-right-sqrt? sigma-right-sqrt :variance-right-sqrt)))
-          scaling-factor
-          (make-instance 'inverse-chi-square :nu (float nu 0d0)))))
+            (list keyword value))))
+    (if mv-normal?
+        (check-type mv-normal mv-normal)
+        (setf (mv-normal rv)
+              (apply #'make-instance 'mv-normal
+                     (concatenate 'list 
+                                  (@ mean? mean :mean)
+                                  (@ sigma? sigma :variance)
+                                  (@ sigma-right-sqrt? sigma-right-sqrt
+                                     :variance-right-sqrt)))))
+    (if scaling-factor?
+        (check-type scaling-factor inverse-chi-square)
+        (setf (scaling-factor rv)
+              (make-instance 'inverse-chi-square :nu (float nu 0d0))))))
+
+(defmethod sub ((rv mv-t) &rest ranges)
+  (bind (((:slots-r/o mv-normal scaling-factor) rv)
+         ((range) ranges))
+    (if (typep range 'fixnum)
+        (error "not implemented")
+        (make-instance 'mv-t :mv-normal (sub mv-normal range)
+                       :scaling-factor scaling-factor))))
 
 (cached-slot (rv mv-t log-pdf-constant)
   (bind (((:accessors-r/o mv-normal nu) rv)
@@ -128,7 +162,7 @@
 (defmethod dimensions ((rv mv-t))
   (dimensions (mv-normal rv)))
 
-(defmethod type ((rv mv-t))
+(defmethod rv-type ((rv mv-t))
   'numeric-vector)
 
 (defmethod mean ((rv mv-t))
@@ -138,7 +172,7 @@
 (defmethod variance ((rv mv-t))
   (bind (((:accessors-r/o nu) rv))
     (assert (< 2 nu))
-    (x* (variance (mv-normal rv)) (/ nu (- nu 2d0)))))
+    (e* (variance (mv-normal rv)) (/ nu (- nu 2d0)))))
 
 (defmethod log-pdf ((rv mv-t) x &optional unscaled?)
   (bind (((:accessors-r/o nu mv-normal) rv)
@@ -179,7 +213,7 @@
          (s^2 (/ ss nu))
          (sigma (least-squares-xx-inverse qr)))
     (values
-      (make-instance 'mv-t :mean b :sigma (x* s^2 sigma) :nu nu)
+      (make-instance 'mv-t :mean b :sigma (e* s^2 sigma) :nu nu)
       s^2
       (when r^2?
         (- 1 (/ ss (sse y)))))))
@@ -205,13 +239,14 @@
   rv)
 
 (defmethod dimensions ((rv wishart))
-  (xdims (scale rv)))
+  (bind ((n (nrow (scale rv))))
+    (list n n)))
 
-(defmethod type ((rv wishart))
+(defmethod rv-type ((rv wishart))
   'hermitian-matrix)
 
 (defmethod mean ((rv wishart))
-  (x* (nu rv) (scale rv)))
+  (e* (nu rv) (scale rv)))
 
 (defun draw-standard-wishart-left-root (nu k)
   "Draw a matrix L such that (mm L t) has Wishart(I,nu)
@@ -250,21 +285,23 @@ distribution (dimension k x k)."
   (:documentation "Inverse Wishart distribution.  The PDF p(X) is
 proportional to |X|^-(dimension+nu+1)/2 exp(-trace(inverse-scale X^-1))"))
 
-(defmethod initialize-instance :after ((rv inverse-wishart) &key &allow-other-keys)
+(defmethod initialize-instance :after ((rv inverse-wishart)
+                                       &key &allow-other-keys)
   (with-slots (inverse-scale inverse-scale-right-root) rv 
     (check-type inverse-scale hermitian-matrix)
     (setf inverse-scale-right-root (component (cholesky inverse-scale :U) :U)))
   rv)
 
 (defmethod dimensions ((rv inverse-wishart))
-  (xdims (scale rv)))
+  (let ((n (nrow (scale rv))))
+    (list n n)))
 
-(defmethod type ((rv inverse-wishart))
+(defmethod rv-type ((rv inverse-wishart))
   'hermitian-matrix)
 
 (defmethod mean ((rv inverse-wishart))
   (with-slots (nu inverse-scale) rv 
-    (x/ inverse-scale (- nu (nrow inverse-scale) 1))))
+    (e/ inverse-scale (- nu (nrow inverse-scale) 1))))
 
 (cached-slot (rv inverse-wishart generator)
   (bind (((:slots-read-only nu inverse-scale-right-root) rv)

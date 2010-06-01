@@ -614,7 +614,7 @@ distributions (eg Dirichlet, etc), too."
   (:documentation "General discrete distribution with given
 probabilities.  Random variates are integers, starting from 0."))
 
-(defmethod type ((rv discrete))
+(defmethod rv-type ((rv discrete))
   'fixnum)
 
 (define-printer-with-slots discrete probabilities)
