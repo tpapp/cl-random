@@ -25,8 +25,8 @@
      (:file "random")
      (:file "univariate")
      (:file "statistics")
-     (:file "multivariate"))))
+     (:file "multivariate")
+     (:file "design-matrix"))))
   :depends-on 
-  (:cl-utilities :cl-num-utils :iterate
-   :metabang-bind :xarray :lla :anaphora))
+  (:alexandria :cl-num-utils :iterate :metabang-bind :lla :anaphora))
 
