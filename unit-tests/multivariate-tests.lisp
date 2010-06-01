@@ -40,7 +40,7 @@
    (values sample-mean
            sample-variance)))
 
-;;; multivariate normal
+;;; multivariate t
 
 (addtest (multivariate-tests)
   mv-t-pdf
