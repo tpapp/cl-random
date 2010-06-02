@@ -59,26 +59,16 @@
                                       (cm-index2 nrow 0 counter))
                             counters))
               (col (next-index)))
-          (d:v col indexes)
           (dotimes (row nrow)
-            (d:v row)
             (setf (mref interaction row col)
                   (iter interaction
                     (for index :in-vector indexes)
                     (for elements% :in-vector elements)
                     (let ((element (aref elements% (+ index row))))
-                      (d:v element)
                       (when (zerop element)
                         (return-from interaction zero))
                       (multiplying element))))))))
     interaction))
-
-(interaction-matrix ;(clo 1 2 3) 
-                    
-                    (clo 0 1 :/
-                         1 0
-                         0 1)
-                    (as-matrix (clo :diagonal 1 1 1)))
 
 (defun process-factor (vector &key (key #'identity)
                        (predicate #'<) (test #'=))
@@ -98,13 +88,15 @@
             keys)))
 
 (defun factor-matrix (indexes levels)
-  "Return a design matrix for a factor."
+  "Return a design matrix for a factor.  First column is dropped, otherwise
+the matrix would be full rank."
   (let* ((nrow (length indexes))
-         (matrix (make-matrix :integer nrow (length levels))))
+         (matrix (make-matrix :integer nrow (1- (length levels)))))
     (iter
       (for row :from 0)
       (for index :in-vector indexes)
-      (setf (mref matrix row index) 1))
+      (unless (zerop index)
+        (setf (mref matrix row (1- index)) 1)))
     matrix))
 
 (defun polynomial-matrix (vector power)
@@ -144,7 +136,8 @@ symbol size)."
 refers to columns via the index IX.  FACTORS should be a list, of either a name
 in IX or (IX &rest OPTIONS), where OPTIONS are passed directly to
 PROCESS-FACTOR.  When CONSTANT is non-nil, a constant column with this name will
-be added.
+be added.  Return IX specification, the matrix, and a list of factors and levels
+as values.
 
 Example: 
   (design-matrix (clo :integer
@@ -152,23 +145,24 @@ Example:
                   4 5 6)
                  (make-ix '(a b c))
                  '(a b (:poly c 2) (* b c))
-                 :factors '(a))
+                 :factors '(a))(:CONSTANT (A 1) B (C-POLY 2) B*C)
  =>
-  (:CONSTANT (A 2) B (C-POLY 2) B*C),
-  #<DENSE-MATRIX :INTEGER with 2 x 7 elements
-  1 1 0 2 3  9  6
-  1 0 1 5 6 36 30>
+  (:CONSTANT (A 1) B (C-POLY 2) B*C)
+  #<DENSE-MATRIX :INTEGER with 2 x 6 elements
+  1 0 2 3  9  6
+  1 1 5 6 36 30>,
+  ((A #(1 4)))
 "
   (bind (((:flet column (name))
           (sub matrix t (ix ix name)))
-         (factors (map 'vector
-                      (lambda (factor)
-                        (bind (((name &rest options) (ensure-list factor))
-                               ((:values indexes levels)
-                                (apply #'process-factor
-                                       (column name) options)))
-                          (list name (factor-matrix indexes levels))))
-                      factors)))
+         (factors (mapcar (lambda (factor)
+                            (bind (((name &rest options) (ensure-list factor))
+                                   ((:values indexes levels)
+                                    (apply #'process-factor
+                                           (column name) options)))
+                              (list name (sub levels '(1 . 0))
+                                    (factor-matrix indexes levels))))
+                          factors)))
     (labels ((find-factor (name)
                (find name factors :key #'car))
              (traverse-list (specifications &optional (top-level? t))
@@ -184,7 +178,7 @@ Example:
                ;; these, for interactions.
                (cond
                  ((atom spec) (aif (find-factor spec)
-                                   (let ((matrix (second it)))
+                                   (let ((matrix (third it)))
                                      (values (list spec (ncol matrix))
                                              matrix))
                                    (values spec (as-column (column spec)))))
@@ -206,5 +200,8 @@ Example:
           (setf ixs (cons constant ixs)
                 matrices (cons (lla-vector :integer (nrow (first matrices)) 1)
                                matrices)))
-        (values ixs
-                (apply #'stack-horizontally (flatten matrices)))))))
+        (values (make-ix ixs)
+                (apply #'stack-horizontally (flatten matrices))
+                (mapcar (lambda (factor)
+                          (list (first factor) (second factor)))
+                        factors))))))
