@@ -24,5 +24,5 @@
      (:file "special-functions-tests")
      (:file "univariate-tests"))))
   :depends-on
-  (:cl-utilities :iterate :metabang-bind :xarray :anaphora :lla :named-readtables
-                 :cl-random :lift :cl-num-utils))
+  (:cl-utilities :iterate :metabang-bind :anaphora :lla :cl-random
+                 :lift :cl-num-utils))
