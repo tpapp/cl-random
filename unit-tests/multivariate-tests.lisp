@@ -29,14 +29,14 @@
                  0.061975)))
 
 (time
- (bind ((mean (clo 3 4))
-        (variance (clo :hermitian
-                       1 0.5 :/
-                       0.5 1))
+ (bind ((mean (clo :double 3 4))
+        (variance (clo :hermitian :double
+                       3 0.5 :/
+                       0.5 2))
         (rv (make-instance 'mv-normal :mean mean :variance variance))
-        (matrix (xcollect 100000 (lambda () (draw rv))))
+        (matrix (collect-rows 100000 (lambda () (draw rv))))
         ((:values sample-mean sample-variance)
-         (column-mean-variances matrix)))
+         (column-mean-variances (as-matrix matrix))))
    (values sample-mean
            sample-variance)))
 
@@ -88,13 +88,13 @@
     (ensure-same r^2 0.75)))
 
 (defparameter *beta* (clo 1 2))
-(defparameter *x* (xcollect 500 (lambda ()
-                                  (vector (* 3 (draw-standard-normal))
-                                          (+ 5 (draw-standard-normal))))
-                            'dense-matrix))
-(defparameter *y* (xmap '(numeric-vector :lla-type :double) #'+
-                        (mm *x* *beta*)
-                        (xcollect 500 (lambda ()
+(defparameter *x* (collect-rows 5000 (lambda ()
+                                       (vector (* 3 (draw-standard-normal))
+                                               (+ 5 (draw-standard-normal))))
+                                'dense-matrix))
+(defparameter *y* (e+ (mm *x* *beta*)
+                      (collect-vector (nrow *x*) 
+                                      (lambda ()
                                         (* 9d0 (draw-standard-normal))))))
 (bind (((:values lr s^2 nil) (linear-regression *y* *x*)))
   (defparameter *lr* lr)
