@@ -34,9 +34,9 @@
                        3 0.5 :/
                        0.5 2))
         (rv (make-instance 'mv-normal :mean mean :variance variance))
-        (matrix (collect-rows 100000 (lambda () (draw rv))))
+        (matrix (collect-rows 100000 (lambda () (draw rv)) 'dense-matrix))
         ((:values sample-mean sample-variance)
-         (column-mean-variances (as-matrix matrix))))
+         (column-mean-variances matrix)))
    (values sample-mean
            sample-variance)))
 
@@ -63,7 +63,7 @@
                        1 0.5 :/
                        0.5 1))
         (rv (make-instance 'mv-t :mean mean :sigma sigma :nu 10))
-        (matrix (xcollect 100000 (lambda () (draw rv))))
+        (matrix (collect-rows 100000 (lambda () (draw rv)) 'dense-matrix))
         ((:values sample-mean sample-variance)
          (column-mean-variances matrix)))
    (values sample-mean
@@ -80,7 +80,7 @@
          (y (clo 1 1 3))
          ((:values lr s^2 r^2) (linear-regression y x :r^2? t))
          ((:accessors-r/o mean variance) (mv-normal lr))
-         (*lift-equality-test* #'x=))
+         (*lift-equality-test* #'lla=))
     (ensure-same mean (clo -1/3 1))
     (ensure-same variance (clo :hermitian 
                                14/9 -2/3 :/
