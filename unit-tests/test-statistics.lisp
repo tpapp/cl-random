@@ -3,14 +3,26 @@
 (in-package #:cl-random-unit-tests)
 
 (deftestsuite statistics-tests (cl-random-unit-tests)
-  ())
+  ()
+  (:equality-test #'lla=))
 
 (addtest (statistics-tests)
   matrix-mean-variance
   (bind (((:values mean variance)
-          (matrix-mean-variance #2v(1 4
-                                      3 8)))
-         (*lift-equality-test* #'x=))
-    (ensure-same mean #v(2 6))
-    (ensure-same variance #2v:hermitian(1 2 0 4))))
+          (column-mean-variances (clo :double
+                                      1 4 :/
+                                      3 8))))
+    (ensure-same mean (clo :double 2 6))
+    (ensure-same variance (clo :double :hermitian
+                               2 4 :/
+                               * 8))))
 
+(addtest (statistics-tests)
+  rescale-by-sd
+  (bind ((m (clo :double
+                 1 4 :/
+                 2 6
+                 3 8))
+         ((:values rescaled sd) (rescale-by-sd)))
+    (ensure-same ))
+  )

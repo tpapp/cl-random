@@ -3,7 +3,7 @@
 (defpackage #:cl-random
     (:nicknames :rv)
   (:use :common-lisp
-;;	:cl-utilities
+        ;;	:cl-utilities
         :alexandria
         :iterate
         :bind
@@ -25,8 +25,8 @@
 
    ;; random
 
-   rv generator generator* rv-type dimensions draw draw* pdf pdf* log-pdf log-pdf* 
-   mean* variance* cdf cdf* univariate-continuous-generator
+   rv generator generator* rv-type dimensions draw draw* pdf pdf* log-pdf 
+   log-pdf* mean* variance* cdf cdf* univariate-continuous-generator
    univariate-discrete-generator univariate multivariate quantile quantile*
 
    ;; univariate
@@ -40,12 +40,13 @@
 
    ;; multivariate
 
-   mv-normal mv-t linear-regression wishart nu scale inverse-wishart
+   mv-normal mv-t xx-inverse-right-sqrt linear-regression wishart nu scale
+   inverse-wishart
 
    ;; statistics
    
-   add-constant-column column-sums column-means demean-columns
-   column-mean-variances empirical-quantiles
+   add-constant-column column-sums column-means demean-columns column-variances
+   column-mean-variances rescale-by-sd empirical-quantiles
 
    ;; special-functions
 

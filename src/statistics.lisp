@@ -66,6 +66,12 @@ returning a dense matrix."
                                  (cm-index2 nrow nrow col) (aref means col))))
     matrix))
 
+(defun column-variances (matrix &optional (means (column-means matrix)))
+  "Variance matrix of columns.  If MEANS is nil, it is not subtracted."
+  (when means
+    (setf matrix (demean-columns matrix means)))
+  (mm t matrix (/ (1- (nrow matrix)))))
+
 (defun column-mean-variances (matrix)
   "For multivariate observations stacked in the rows of a matrix,
   return sample mean and (co)variance matrix as (values mean var).
@@ -74,7 +80,15 @@ returning a dense matrix."
   (bind ((means (column-means matrix))
          (matrix (demean-columns matrix means)))
     (values means
-            (mm t matrix (/ (nrow matrix))))))
+            (column-variances matrix nil))))
+
+(defun rescale-by-sd (matrix)
+  "Rescale matrix by standard deviations, which are returned as a second value."
+  (let* ((matrix (demean-columns matrix))
+         (variances (column-variances matrix nil))
+         (sd (esqrt (as-diagonal variances))))
+    (values (mm matrix (e/ sd))
+            (elements sd))))
 
 (defun empirical-quantiles (vector quantiles &key destructive?)
   "Empirical quantiles of VECTOR (copied with COPY-AS).  QUANTILES has
