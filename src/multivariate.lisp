@@ -9,7 +9,7 @@
 
 (defclass mv-normal (multivariate)
   ((mean :initarg :mean :reader mean :type vector
-       :documentation "vector of means")
+         :documentation "vector of means")
    (variance :initarg :variance :reader variance
           :type hermitian-matrix
           :documentation "variance matrix")
@@ -203,17 +203,25 @@
 ;;;  This is a helper function to run obtain the posterior
 ;;;  distribution of linear regressions.
 
-(defun linear-regression (y x &key r^2?)
+(defun xx-inverse-right-sqrt (x &optional (tolerance 0))
+  "Calculate the right square root of (X'X)^-1, using SVD.  Tolerance is used
+when inverting the singular values."
+  (bind (((:values s nil vt) (svd x :right :all)))
+    (mm (invert s :tolerance tolerance) vt)))
+
+(defun linear-regression (y x &key r^2? (method :qr))
   "Return the following values: 1. an MV-T distribution for drawing
   means from the distribution.  2. The mean of the variance posterior.
   Multiplied by the second value returned when drawing from the MV-T
   distribution, this yields the variance corresponding to that draw.
   3. When R^2?, return the R^2 value."
-  (bind (((:values b qr ss nu) (least-squares y x))
-         (s^2 (/ ss nu))
-         (sigma (least-squares-xx-inverse qr)))
+  (bind (((:values b ss nu) (least-squares y x :method method))
+         (s^2 (/ ss nu)))
+    (d:v nu s^2)
     (values
-      (make-instance 'mv-t :mean b :sigma (e* s^2 sigma) :nu nu)
+      (make-instance 'mv-t :mean b
+                     :sigma-right-sqrt (e* (sqrt s^2) (xx-inverse-right-sqrt x))
+                     :nu nu)
       s^2
       (when r^2?
         (- 1 (/ ss (sse y)))))))
