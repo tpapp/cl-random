@@ -11,7 +11,7 @@
         :anaphora
         :cl-num-utils)
   (:shadowing-import-from :iterate :collecting :collect)
-  (:shadow :mean :variance)
+  (:shadowing-import-from :cl-num-utils :mean :variance)
   (:export
 
    ;; utilities
