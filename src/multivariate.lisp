@@ -217,7 +217,6 @@ when inverting the singular values."
   3. When R^2?, return the R^2 value."
   (bind (((:values b ss nu) (least-squares y x :method method))
          (s^2 (/ ss nu)))
-    (d:v nu s^2)
     (values
       (make-instance 'mv-t :mean b
                      :sigma-right-sqrt (e* (sqrt s^2) (xx-inverse-right-sqrt x))
