@@ -11,7 +11,7 @@
         :anaphora
         :cl-num-utils)
   (:shadowing-import-from :iterate :collecting :collect)
-  (:shadowing-import-from :cl-num-utils :mean :variance)
+  (:shadowing-import-from :cl-num-utils :mean :variance :xor) ; also in alexandria
   (:export
 
    ;; utilities
@@ -55,5 +55,11 @@
    ;; design-matrix
    
    design-matrix
+
+   ;; optimization
+
+   numdiff numdiff1 numdiff* numdiff1* bfgs-parameters linesearch-max-iter
+   numdiff-epsilon rho sigma alpha-max tau1 tau2 tau3 kappa 
+   *default-bfgs-parameters* bfgs-minimize
 
    ))
