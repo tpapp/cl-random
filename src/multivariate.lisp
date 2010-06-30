@@ -35,8 +35,8 @@
                       has to be provided.")))))
     (unless (slot-boundp rv 'mean)
       (setf (slot-value rv 'mean)
-            (lla-vector (array-lla-type (elements variance-or-sqrt))
-                        (nrow variance-or-sqrt))))))
+            (lla-vector (nrow variance-or-sqrt)
+                        (array-lla-type (elements variance-or-sqrt)))))))
 
 (cached-slot (rv mv-normal log-pdf-constant)
   (bind (((:slots-r/o variance-right-sqrt) rv))
@@ -260,7 +260,7 @@ when inverting the singular values."
 distribution (dimension k x k)."
   (check-type nu integer)
   (bind ((nu (coerce nu 'double-float))
-         ((:lla-matrix l) (make-matrix :double k k :kind :lower-triangular)))
+         ((:lla-matrix l) (make-matrix k k :double :kind :lower-triangular)))
     (dotimes (i k)
       (setf (l (l-index i i)) (sqrt (draw* 'chi-square :nu (- nu i))))
       (iter

@@ -9,8 +9,7 @@
   "Add a constant column before a vector or a matrix,
 returning a dense matrix."
   (bind (((:slots-r/o lla-type elements nrow ncol) matrix))
-    (aprog1 (make-matrix lla-type nrow (1+ ncol)
-                         :initial-element constant)
+    (aprog1 (make-matrix nrow (1+ ncol) lla-type :initial-element constant)
       (set-restricted matrix)
       (copy-elements elements 0
                      (elements it) nrow

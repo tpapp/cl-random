@@ -12,27 +12,6 @@
 ;;; 
 ;;; interaction := (* covariate1 covariate2 ...)
 
-(defun dm-size (specification &optional (top-level? t))
-  (cond
-    ((atom specification) nil)
-    ((eq (car specification) '^)
-     (bind (((symbol exponent) (cdr specification)))
-       (check-type symbol symbol)
-       (check-type exponent (integer 0))
-       exponent))
-    ((eq (car specification) '*)
-     (assert top-level? () "Interactions are allow allowed at the top level.")
-     (map 'vector (lambda (s) (dm-size s nil)) (cdr specification)))
-    (t (error "Invalid specification ~A" specification))))
-
-(dm-size 'foo)
-(dm-size '(^ foo 4))
-(dm-size '(* foo (^ bar 4)))
-
-(defclass factor ()
-  ()
-  )
-
 (defun interaction-matrix (&rest matrices)
   "Return the interaction matrix.  Last indexes change the fastest."
   (bind ((matrices (mapcar (lambda (matrix)
@@ -49,7 +28,7 @@
          (elements (map 'vector #'elements matrices))
          (lla-type (reduce #'lla::common-lla-type elements :key #'array-lla-type))
          (zero (zero* lla-type))
-         (interaction (make-matrix lla-type nrow (reduce #'* ncols))))
+         (interaction (make-matrix nrow (reduce #'* ncols) lla-type)))
     (assert (every (lambda (matrix) (= nrow (nrow matrix))) matrices))
     (with-range-indexing ((make-array n :initial-element t)
                           ncols next-index :end? end? :counters counters)
@@ -91,7 +70,7 @@
   "Return a design matrix for a factor.  First column is dropped, otherwise
 the matrix would be full rank."
   (let* ((nrow (length indexes))
-         (matrix (make-matrix :integer nrow (1- (length levels)))))
+         (matrix (make-matrix nrow (1- (length levels) :integer))))
     (iter
       (for row :from 0)
       (for index :in-vector indexes)
@@ -103,7 +82,7 @@ the matrix would be full rank."
   "Matrix for a polynomial."
   (check-type power (integer 1))
   (let* ((length (length vector))
-         (matrix (make-matrix (array-lla-type vector) length power)))
+         (matrix (make-matrix length power (array-lla-type vector))))
     (iter
       (for row :from 0)
       (for v :in-vector vector)
@@ -131,7 +110,7 @@ symbol size)."
              (list interaction-name size)))))))
 
 (defun design-matrix (matrix ix specifications &key factors
-                      (constant :constant))
+                      (constant :constant) rescale?)
   "Build design matrix from columns of MATRIX, using SPECIFICATIONS, which
 refers to columns via the index IX.  FACTORS should be a list, of either a name
 in IX or (IX &rest OPTIONS), where OPTIONS are passed directly to
@@ -198,7 +177,7 @@ Example:
       (bind (((:values ixs matrices) (traverse-list specifications)))
         (when constant
           (setf ixs (cons constant ixs)
-                matrices (cons (lla-vector :integer (nrow (first matrices)) 1)
+                matrices (cons (lla-vector (nrow (first matrices)) :integer 1)
                                matrices)))
         (values (make-ix ixs)
                 (apply #'stack-horizontally (flatten matrices))

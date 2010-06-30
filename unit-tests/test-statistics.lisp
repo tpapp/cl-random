@@ -23,6 +23,9 @@
                  1 4 :/
                  2 6
                  3 8))
-         ((:values rescaled sd) (rescale-by-sd)))
-    (ensure-same ))
-  )
+         ((:values rescaled sd) (rescale-by-sd m)))
+    (ensure-same rescaled (clo :double
+                               -1 -1 :/
+                               0 0 
+                               1 1))
+    (ensure-same sd (clo :double 1 2))))
