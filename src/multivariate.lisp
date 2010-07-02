@@ -75,7 +75,7 @@
   (bind (((:slots-read-only mean variance-right-sqrt) rv)
          (n (length mean)))
     (lambda (&optional (scale 1d0))
-      (let* ((x (lla-vector :double n)))
+      (let* ((x (lla-vector n :double)))
         (dotimes (i n)
           (setf (aref x i) (draw-standard-normal)))
         (e+ mean (mm x variance-right-sqrt scale))))))
