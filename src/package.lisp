@@ -58,8 +58,9 @@
 
    ;; optimization
 
-   numdiff numdiff1 numdiff* numdiff1* bfgs-parameters linesearch-max-iter
-   numdiff-epsilon rho sigma alpha-max tau1 tau2 tau3 kappa 
-   *default-bfgs-parameters* bfgs-minimize
+   bfgs-objective simple-double-vector richardson-derivative3 num-gradient
+   num-hessian bfgs-parameters linesearch-max-iter numdiff-epsilon relative rho
+   sigma alpha-max tau1 tau2 tau3 kappa step-reduction max-bisections
+   max-expansions *default-bfgs-parameters* bfgs-minimize
 
    ))

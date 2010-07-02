@@ -26,7 +26,8 @@
      (:file "univariate")
      (:file "statistics")
      (:file "multivariate")
-     (:file "design-matrix"))))
+     (:file "design-matrix")
+     (:file "optimization"))))
   :depends-on 
   (:alexandria :cl-num-utils :iterate :metabang-bind :lla :anaphora))
 
