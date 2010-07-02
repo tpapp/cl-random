@@ -70,7 +70,7 @@
   "Return a design matrix for a factor.  First column is dropped, otherwise
 the matrix would be full rank."
   (let* ((nrow (length indexes))
-         (matrix (make-matrix nrow (1- (length levels) :integer))))
+         (matrix (make-matrix nrow (1- (length levels)) :integer)))
     (iter
       (for row :from 0)
       (for index :in-vector indexes)
