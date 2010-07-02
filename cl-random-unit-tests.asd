@@ -25,4 +25,4 @@
      (:file "univariate-tests"))))
   :depends-on
   (:cl-utilities :iterate :metabang-bind :anaphora :lla :cl-random
-                 :lift :cl-num-utils))
+                 :lift :cl-num-utils :tpapp-utils))
