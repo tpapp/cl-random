@@ -1,5 +1,11 @@
 (in-package :cl-random)
 
+(defun check-mean-variance-compatibility (mean variance)
+  "Assert that the mean is a vector, and its dimensions are compatible with
+variance."
+  (assert (and (vectorp mean) 
+               (= (length mean) (nrow variance) (ncol variance)))))
+
 ;;;;
 ;;;;  MULTIVARIATE-NORMAL distribution
 ;;;;
@@ -33,10 +39,13 @@
                       "VARIANCE-SQRT has to be a square matrix.")))
            (t (error "At least one of VARIANCE or VARIANCE-RIGHT-SQRT ~
                       has to be provided.")))))
-    (unless (slot-boundp rv 'mean)
-      (setf (slot-value rv 'mean)
-            (lla-vector (nrow variance-or-sqrt)
-                        (array-lla-type (elements variance-or-sqrt)))))))
+    (if (slot-boundp rv 'mean)
+        (check-mean-variance-compatibility (slot-value rv 'mean)
+                                           variance-or-sqrt)
+        (setf (slot-value rv 'mean)
+              (lla-vector (nrow variance-or-sqrt)
+                          (array-lla-type (elements variance-or-sqrt))
+                          0)))))
 
 (cached-slot (rv mv-normal log-pdf-constant)
   (bind (((:slots-r/o variance-right-sqrt) rv))
@@ -60,7 +69,7 @@
 
 (defun normal-quadratic-form% (x rv)
   "Calculate (x-mean)^T variance^-1 (x-mean), given X."
-  (mm (solve (transpose (variance-right-sqrt rv)) (e- x (mean rv))) t))
+  (dot (solve (transpose (variance-right-sqrt rv)) (e- x (mean rv))) t))
 
 (defmethod log-pdf ((rv mv-normal) x &optional unscaled)
   (bind ((q (* -0.5d0 (normal-quadratic-form% x rv))))
@@ -196,35 +205,6 @@
         (values 
           (funcall mv-normal-generator (sqrt scaling-factor))
           scaling-factor)))))
-
-
-;;;  LINEAR-REGRESSION
-;;;
-;;;  This is a helper function to run obtain the posterior
-;;;  distribution of linear regressions.
-
-(defun xx-inverse-right-sqrt (x &optional (tolerance 0))
-  "Calculate the right square root of (X'X)^-1, using SVD.  Tolerance is used
-when inverting the singular values."
-  (bind (((:values s nil vt) (svd x :right :all)))
-    (mm (invert s :tolerance tolerance) vt)))
-
-(defun linear-regression (y x &key r^2? (method :qr))
-  "Return the following values: 1. an MV-T distribution for drawing
-  means from the distribution.  2. The mean of the variance posterior.
-  Multiplied by the second value returned when drawing from the MV-T
-  distribution, this yields the variance corresponding to that draw.
-  3. When R^2?, return the R^2 value."
-  (bind (((:values b ss nu) (least-squares y x :method method))
-         (s^2 (/ ss nu)))
-    (values
-      (make-instance 'mv-t :mean b
-                     :sigma-right-sqrt (e* (sqrt s^2) (xx-inverse-right-sqrt x))
-                     :nu nu)
-      s^2
-      (when r^2?
-        (- 1 (/ ss (sse y)))))))
-
 
 ;;;  WISHART
 ;;;

@@ -27,6 +27,7 @@
      (:file "statistics")
      (:file "multivariate")
      (:file "design-matrix")
+     (:file "regressions")
      (:file "optimization"))))
   :depends-on 
   (:alexandria :cl-num-utils :iterate :metabang-bind :lla :anaphora))

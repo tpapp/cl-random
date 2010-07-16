@@ -40,13 +40,18 @@
 
    ;; multivariate
 
-   mv-normal mv-t xx-inverse-right-sqrt linear-regression wishart nu scale
+   mv-normal variance-right-sqrt log-pdf-constant mv-t wishart nu scale
    inverse-wishart
 
    ;; statistics
    
    add-constant-column column-sums column-means demean-columns column-variances
    column-mean-variances rescale-by-sd empirical-quantiles
+
+   ;; regressions
+
+   dummy-observations linear-regression-kv xx-inverse-right-sqrt
+   linear-regression 
 
    ;; special-functions
 
