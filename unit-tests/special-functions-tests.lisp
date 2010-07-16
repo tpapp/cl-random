@@ -17,7 +17,7 @@
 
 (defun gamma-relative-precision (i)
   (let ((g (gamma-int i)))
-    (rel-diff g (gamma i))))
+    (reldiff g (gamma i))))
 
 (addtest (special-functions-tests)
   gamma-integer
