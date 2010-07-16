@@ -25,43 +25,51 @@
 ;;; linear regression
 
 (addtest (regressions-tests)
-  linear-regression
+  linear-regression-exact
   (bind ((x (clo 1 1 :/
                  1 2
                  1 3))
          (y (clo 1 1 3))
-         ((:values lr s^2 r^2) (linear-regression y x :r^2? t))
-         ((:accessors-r/o mean variance) (mv-normal lr))
-         (*lift-equality-test* #'lla=))
+         (lr (linear-regression y x :r^2? t))
+         ((:accessors-r/o mean variance) (mv-normal lr)))
     (ensure-same mean (clo -1/3 1))
     (ensure-same variance (clo :hermitian 
                                14/9 -2/3 :/
                                -2/3 1/3))
-    (ensure-same r^2 0.75)))
+    (ensure-same (r^2 lr) 0.75)))
 
-(defparameter *beta* (clo 1 2))
-(defparameter *x* (collect-rows 5000 (lambda ()
-                                       (vector (* 3 (draw-standard-normal))
-                                               (+ 5 (draw-standard-normal))))
-                                'dense-matrix))
-(defparameter *y* (e+ (mm *x* *beta*)
-                      (collect-vector (nrow *x*) 
-                                      (lambda ()
-                                        (* 9d0 (draw-standard-normal))))))
-(bind (((:values lr s^2 nil) (linear-regression *y* *x*)))
-  (defparameter *lr* lr)
-  (defparameter *s^2* s^2))
-
-(defparameter *sigmasq-mean*
-  (let ((n 100000))
-    (* (iter
-         (repeat n)
-         (for (values beta sigma) := (draw *lr*))
-         (summing sigma))
-       (/ *s^2* n))))
-
-(bind ((matrix (xcollect 100000 (generator *lr*)))
-       ((:values sample-mean sample-variance)
-        (column-mean-variances matrix)))
-  (defparameter *sample-variance* sample-variance))
-(x-rel-diff *sample-variance* (variance *lr*))  ; should be near 0
+(addtest (regressions-tests)
+  linear-regression-random
+  (let* (;; sample
+         (n 1000)
+         (sigma 9d0)
+         (beta (clo 1 2))
+         (x (collect-rows n (lambda ()
+                              (vector (* 3 (draw-standard-normal))
+                                      (+ 5 (draw-standard-normal))))
+                          'dense-matrix))
+         (y (e+ (mm x beta)
+                (lla-vector n :double (generator* 'normal :sigma sigma))))
+         ;; regressions
+         (lr (linear-regression y x))
+         ;; posterior draws
+         (m 1000000)
+         (beta-draws (make-matrix m (length beta) :double))
+         (sigma-draws (lla-vector m :double)))
+    ;; ;; draw posterior
+    (iter
+      (for index :from 0 :below m)
+      (bind (((:values beta sigma) (draw lr)))
+        (setf (sub beta-draws index t) beta
+              (aref sigma-draws index) sigma)))
+    ;; ;; check mean of sigma
+    (ensure (< (reldiff (* (s^2 lr) (mean (scaling-factor lr)))
+                        (mean sigma-draws))
+               1d-2))
+    (bind (((:values b-m b-v) (column-mean-variances beta-draws))
+           (m-rd (ereldiff (mean lr) b-m))
+           (v-rd (ereldiff (variance lr) b-v)))
+      (format t "~2&mean: ~A mean reldiff: ~A~%" (mean lr) m-rd)
+      (format t "~2&variance: ~A~%variance reldiff: ~A~%" (variance lr) m-rd)
+      (ensure (< (emax m-rd) 1d-3))
+      (ensure (< (emax v-rd) 1d-2)))))

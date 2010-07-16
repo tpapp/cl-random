@@ -13,11 +13,11 @@
     (values (solve r-t mean)
             (invert r-t))))
 
+
 ;;; LINEAR-REGRESSION-KV
 ;;; 
 ;;; Linear regression with a known variance matrix.  Not used directly in
 ;;; practice, but useful for Gibbs sampling.
-
 
 (defun linear-regression-kv (y x &key variance-right-sqrt prior)
   "Linear regression of Y on X with known variance matrix.  VARIANCE-RIGHT-SQRT
@@ -53,20 +53,41 @@ when inverting the singular values."
   (bind (((:values s nil vt) (svd x :right :all)))
     (mm (invert s :tolerance tolerance) vt)))
 
+(defclass linear-regression (mv-t)
+  ((s^2 :accessor s^2 :initarg :s^2 :documentation "sum of squared errors")
+   (r^2 :accessor r^2 :initarg :r^2 :documentation "R^2"))
+  (:documentation "Class representing linear regressions.  Basically a
+  multivariate T distribution, but the generator returns the randomly drawn
+  sigma^2 as the second value (scaled correctly by s^2)."))
+
+(cached-slot (rv linear-regression generator)
+  (bind (((:slots-read-only scaling-factor mv-normal s^2) rv)
+         (scaling-factor-generator (generator scaling-factor))
+         (mv-normal-generator (generator mv-normal)))
+    (lambda ()
+      (let ((scaling-factor (funcall scaling-factor-generator)))
+        (values 
+          (funcall mv-normal-generator (sqrt scaling-factor))
+          (* scaling-factor s^2))))))
+
 (defun linear-regression (y x &key r^2? (method :qr))
   "Return the following values: 1. an MV-T distribution for drawing
   means from the distribution.  2. The mean of the variance posterior.
   Multiplied by the second value returned when drawing from the MV-T
   distribution, this yields the variance corresponding to that draw.
   3. When R^2?, return the R^2 value."
-  (bind (((:values b ss nu) (least-squares y x :method method))
+  (bind (((:values b ss nu other-values) (least-squares y x :method method))
          (s^2 (/ ss nu)))
-    (values
-      (make-instance 'mv-t :mean b
-                     :sigma-right-sqrt (e* (sqrt s^2) 
-                                           (xx-inverse-right-sqrt x))
-                     :nu nu)
-      s^2
+    (aprog1
+        (make-instance 'linear-regression
+                       :mean b
+                       :sigma-right-sqrt 
+                       (e* (sqrt s^2)
+                           (if (eq method :qr)
+                               (qr-xx-inverse-sqrt (getf other-values :qr))
+                               (xx-inverse-right-sqrt x)))
+                       :nu nu
+                       :s^2 s^2)
       (when r^2?
-        (- 1 (/ ss (sse y)))))))
+        (setf (r^2 it) (- 1 (/ ss (sse y))))))))
 
