@@ -89,13 +89,15 @@ returning a dense matrix."
     (values (mm matrix (e/ sd))
             (elements sd))))
 
-(defun empirical-quantiles (vector quantiles &key destructive?)
-  "Empirical quantiles of VECTOR (copied with COPY-AS).  QUANTILES has
-to be a sequence, and the result is of the same type.  Elements are
-interpolated linearly."
-  (let* ((vector (sort (if destructive? 
-                           vector
-                           (copy-vector vector)) #'<=))
+(defun empirical-quantiles (vector quantiles &key destructive? sorted?)
+  "Empirical quantiles of VECTOR (copied with COPY-SEQ).  QUANTILES has to be a
+sequence, and the result is of the same type.  Elements are interpolated
+linearly.  If SORTED?, copying and sorting is skipped (and of course the vector
+is not modified)."
+  (let* ((vector (cond
+                   (sorted? vector)
+                   (destructive? (sort vector #'<=))
+                   (t (sort (copy-seq vector) #'<=))))
          (n (length vector)))
     (map (type-of quantiles)
          (lambda (q)
