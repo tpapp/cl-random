@@ -483,7 +483,8 @@ too small), in this case, no argument is changed.."
                       ;; use-df-for-linesearch?
                       (linesearch :ww)
                       (bfgs-parameters *default-bfgs-parameters*)
-                      finish-silently?)
+                      finish-silently?
+                      tracer)
   (bind (((:slots-r/o numdiff-epsilon relative) bfgs-parameters)
          (linesearch (ecase linesearch
                        (:armijo #'linesearch-armijo)
@@ -529,6 +530,8 @@ too small), in this case, no argument is changed.."
     (loop-max-iter (max-iter (if finish-silently?
                                   (done)
                                   (error 'reached-max-iter)))
+      (when tracer
+        (funcall tracer update-count :fx fx :x x))
       (let ((df0 (negative-quadratic-form dfx (elements H) s)))
         (if (minusp df0)
             ;; descent direction, try line search
