@@ -40,8 +40,8 @@
 
    ;; multivariate
 
-   mv-normal variance-right-sqrt log-pdf-constant mv-t wishart nu scale
-   inverse-wishart
+   mv-normal variance-right-sqrt log-pdf-constant mv-t scaling-factor nu wishart
+   scale inverse-wishart
 
    ;; statistics
    
@@ -51,7 +51,7 @@
    ;; regressions
 
    dummy-observations linear-regression-kv xx-inverse-right-sqrt
-   linear-regression 
+   linear-regression s^2 r^2
 
    ;; special-functions
 
