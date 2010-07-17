@@ -68,4 +68,4 @@ is meaningful).  The returnes value is always nonnegative."
 
 (defun ereldiff (a b)
   "Relative difference between two objects, elementwise."
-  (emap #'rel-diff a b))
+  (emap #'reldiff a b))
