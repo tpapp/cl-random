@@ -56,22 +56,39 @@ nasty.  DON'T DO IT."))
 
 (def* draw () "Draw a random variate of the given type and parameters.")
 
-(defgeneric pdf (rv x &optional unscaled)
-  (:documentation "Probability density function of rv evaluated at x.
-  If UNSCALED, the implementation is allowed to drop the constant.")
-  (:method ((rv rv) x &optional unscaled)
-    (declare (ignore unscaled))
-    (error 'missing)))
+;;; Density functions
+;;; 
+;;; Since the there is a bijection between the pdf and the log pdf, only one of
+;;; them needs to be provided.  Most applications work with logs because of
+;;; overflows, so that is the primary one which needs to be defined, and the pdf
+;;; is derived from that by default.
 
-(def* pdf (x) "PDF for a random variate of the given type and parameters.")
+(defun scale-log-pdf (rv unscaled? unscaled)
+  "Scale UNSCALED part of log PDF, depending on UNSCALED?."
+  (if unscaled?
+      unscaled
+      (+ (log-pdf-constant rv) unscaled)))
 
-(defgeneric log-pdf (rv x &optional unscaled)
-  (:documentation "Log probability density function of rv evaluated at x. 
-  If UNSCALED, the implementation is allowed to drop the constant.")
-  (:method ((rv rv) x &optional unscaled)
-    (~log (pdf rv x unscaled))))
+(defclass log-pdf-constant ()
+  ((log-pdf-constant :reader log-pdf-constant
+                     :documentation "Log of the constant part of the PDF."))
+  (:documentation "Mixin class, saving the log PDF constant for reuse."))
+
+(defgeneric log-pdf (rv x &optional unscaled?)
+  (:documentation "Log probability density function of rv evaluated at x.  When
+  UNSCALED?, the implementation is allowed to drop the constant, but has to do
+  it consistently for calls using the same RV.  When the PDF is zero, LOG-PDF
+  returns NIL."))
 
 (def* log-pdf (x) "Log PDF for a random variate of the given type and parameters.")
+
+(defgeneric pdf (rv x &optional unscaled?)
+  (:documentation "Probability density function of rv evaluated at x.  When
+  UNSCALED?, the implementation is allowed to drop the constant.")
+  (:method ((rv rv) x &optional unscaled?)
+    (~exp (log-pdf rv x unscaled?))))
+
+(def* pdf (x) "PDF for a random variate of the given type and parameters.")
 
 (defgeneric cdf (rv x)
   (:documentation "Cumulative distribution function of rv evaluated at x.")
@@ -114,5 +131,3 @@ type and parameters.")
 
 (deftype univariate-discrete-generator ()
   '(function () fixnum))
-
-

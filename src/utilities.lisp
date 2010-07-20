@@ -154,7 +154,7 @@ used) until condition is satisfied, then return value."
 
 ;;;; Slots calculated when needed.
 
-(defmacro cached-slot ((instance-variable class slot-name) &body body)
+(defmacro define-cached-slot ((instance-variable class slot-name) &body body)
   "Define a slot-unbound method for slot-name, using the value
 returned by body."
   (check-type instance-variable symbol)

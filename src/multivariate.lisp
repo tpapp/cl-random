@@ -13,7 +13,7 @@ variance."
 ;;;;  multiplied by a scale factor, which is useful for sampling from
 ;;;;  posteriors, etc.
 
-(defclass mv-normal (multivariate)
+(defclass mv-normal (multivariate log-pdf-constant)
   ((mean :initarg :mean :reader mean :type vector
          :documentation "vector of means")
    (variance :initarg :variance :reader variance
@@ -22,9 +22,7 @@ variance."
    (variance-right-sqrt 
     :initarg :variance-right-sqrt
     :reader variance-right-sqrt :type dense-matrix
-    :documentation "(right) square root of variance, ie M such that M^T M=variance")
-   (log-pdf-constant :reader log-pdf-constant
-                     :documentation "Log of the constant part of the PDF.")))
+    :documentation "(right) square root of variance, ie M such that M^T M=variance")))
 
 (defmethod initialize-instance :after ((rv mv-normal) &key &allow-other-keys)
   (let ((variance-or-sqrt
@@ -47,15 +45,15 @@ variance."
                           (array-lla-type (elements variance-or-sqrt))
                           0)))))
 
-(cached-slot (rv mv-normal log-pdf-constant)
+(define-cached-slot (rv mv-normal log-pdf-constant)
   (bind (((:slots-r/o variance-right-sqrt) rv))
     (- (/ (* (log (* 2 pi)) (nrow variance-right-sqrt)) -2)
        (logdet variance-right-sqrt))))
 
-(cached-slot (rv mv-normal variance)
+(define-cached-slot (rv mv-normal variance)
   (mm t (variance-right-sqrt rv)))
 
-(cached-slot (rv mv-normal variance-right-sqrt)
+(define-cached-slot (rv mv-normal variance-right-sqrt)
   (factor (cholesky (variance rv) :U)))
 
 (define-printer (mv-normal)
@@ -71,16 +69,10 @@ variance."
   "Calculate (x-mean)^T variance^-1 (x-mean), given X."
   (dot (solve (transpose (variance-right-sqrt rv)) (e- x (mean rv))) t))
 
-(defmethod log-pdf ((rv mv-normal) x &optional unscaled)
-  (bind ((q (* -0.5d0 (normal-quadratic-form% x rv))))
-    (if unscaled
-        q
-        (+ q (log-pdf-constant rv)))))
+(defmethod log-pdf ((rv mv-normal) x &optional unscaled?)
+  (scale-log-pdf rv unscaled? (* -0.5d0 (normal-quadratic-form% x rv))))
 
-(defmethod pdf ((rv mv-normal) x &optional unscaled)
-  (exp (log-pdf rv x unscaled)))
-
-(cached-slot (rv mv-normal generator)
+(define-cached-slot (rv mv-normal generator)
   (bind (((:slots-read-only mean variance-right-sqrt) rv)
          (n (length mean)))
     (lambda (&optional (scale 1d0))
@@ -105,7 +97,7 @@ variance."
 ;;;  When drawing numbers, the scaling factor (with distribution
 ;;;  inverse-chi-square, df nu) returned as the second value.
 
-(defclass mv-t (multivariate)
+(defclass mv-t (multivariate log-pdf-constant)
   ((scaling-factor :accessor scaling-factor
                    :initarg :scaling-factor
                    :type inverse-chi-square
@@ -114,9 +106,7 @@ variance."
    (mv-normal :accessor mv-normal
               :initarg :mv-normal
               :type mv-normal :documentation
-              "distribution for obtaining normal draws")
-   (log-pdf-constant :reader log-pdf-constant
-                     :documentation "Log of the constant part of the PDF.")))
+              "distribution for obtaining normal draws")))
 
 (defmethod nu ((rv mv-t))
   (nu (scaling-factor rv)))
@@ -154,7 +144,7 @@ variance."
         (make-instance 'mv-t :mv-normal (sub mv-normal range)
                        :scaling-factor scaling-factor))))
 
-(cached-slot (rv mv-t log-pdf-constant)
+(define-cached-slot (rv mv-t log-pdf-constant)
   (bind (((:accessors-r/o mv-normal nu) rv)
          ((:slots-r/o variance-right-sqrt) mv-normal)
          (d (nrow variance-right-sqrt)))
@@ -185,18 +175,13 @@ variance."
 
 (defmethod log-pdf ((rv mv-t) x &optional unscaled?)
   (bind (((:accessors-r/o nu mv-normal) rv)
-         (d (size (mean rv)))
-         (q (* (log (1+ (/ (normal-quadratic-form% x mv-normal)
-                           nu)))
-               (/ (+ nu d) -2d0))))
-    (if unscaled?
-        q
-        (+ q (log-pdf-constant rv)))))
+         (d (size (mean rv))))
+    (scale-log-pdf rv unscaled? 
+                   (* (log (1+ (/ (normal-quadratic-form% x mv-normal)
+                                  nu)))
+                      (/ (+ nu d) -2d0)))))
 
-(defmethod pdf ((rv mv-t) x &optional unscaled?)
-  (exp (log-pdf rv x unscaled?)))
-
-(cached-slot (rv mv-t generator)
+(define-cached-slot (rv mv-t generator)
   (bind (((:slots-read-only scaling-factor mv-normal) rv)
          (scaling-factor-generator (generator scaling-factor))
          (mv-normal-generator (generator mv-normal)))
@@ -248,7 +233,7 @@ distribution (dimension k x k)."
         (setf (l l-index) (draw-standard-normal))))
     l))
 
-(cached-slot (rv wishart generator)
+(define-cached-slot (rv wishart generator)
   (bind (((:slots-read-only nu scale-left-root) rv)
          (k (nrow (scale rv))))
     (lambda ()
@@ -290,8 +275,9 @@ proportional to |X|^-(dimension+nu+1)/2 exp(-trace(inverse-scale X^-1))"))
   (with-slots (nu inverse-scale) rv 
     (e/ inverse-scale (- nu (nrow inverse-scale) 1))))
 
-(cached-slot (rv inverse-wishart generator)
+(define-cached-slot (rv inverse-wishart generator)
   (bind (((:slots-read-only nu inverse-scale-right-root) rv)
          (k (nrow (inverse-scale rv))))
     (lambda ()
-      (mm t (solve (draw-standard-wishart-left-root nu k) inverse-scale-right-root)))))
+      (mm t (solve (draw-standard-wishart-left-root nu k)
+                   inverse-scale-right-root)))))

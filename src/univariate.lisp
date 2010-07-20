@@ -39,7 +39,7 @@
       ((< right x) 1d0)
       (t (/ (- x left) (- right left))))))
 
-(cached-slot (rv uniform generator)
+(define-cached-slot (rv uniform generator)
   (bind (((:slots-read-only left right) rv)
          (width (- right left)))
     (lambda ()
@@ -67,7 +67,7 @@ beta*exp(-beta*x)."))
 
 (define-printer-with-slots exponential beta)
 
-(cached-slot (rv exponential generator)
+(define-cached-slot (rv exponential generator)
   (bind (((:slots-read-only beta) rv))
     (declare (double-float beta))
     (check-type beta positive-double-float)
@@ -91,7 +91,7 @@ beta*exp(-beta*x)."))
 ;;;; distributions.
 ;;;; ****************************************************************
 
-(defclass normal (univariate)
+(defclass normal (univariate log-pdf-constant)
   ((mu :initarg :mu :initform 0d0 :reader mu :type double-float)
    (sigma :initarg :sigma :initform 1d0 :reader sigma :type positive-double-float))
   (:documentation "Normal distribution with mean mu and standard
@@ -104,7 +104,6 @@ deviation sigma."))
 
 (defmethod variance ((rv normal))
   (expt (sigma rv) 2))
-
 
 (declaim (inline pdf-standard-normal cdf-standard-normal draw-standard-normal))
 
@@ -175,6 +174,13 @@ deviation sigma."))
 ;;; precomputed tables.  Need to write and test this, and if it is
 ;;; true, use that method instead.
 
+(define-cached-slot (rv normal log-pdf-constant)
+  (- (* -0.5d0 (log (* 2 pi)))
+     (log (sigma rv))))
+
+(defmethod log-pdf ((rv normal) x &optional unscaled?)
+  (scale-log-pdf rv unscaled? (/ (expt (/ (- x (mu rv)) (sigma rv)) 2) -2)))
+
 (defmethod pdf ((rv normal) x &optional unscaled)
   (declare (optimize (speed 3))
            (double-float x)
@@ -194,7 +200,7 @@ deviation sigma."))
 ;; !! do quantile, based on the links in Marsaglia's articles, ie
 ;; !! rootfinding using the CDF from a good guess
 
-(cached-slot (rv normal generator)
+(define-cached-slot (rv normal generator)
   (declare (optimize (speed 3)))
   (bind (((:slots-read-only mu sigma) rv))
     (declare (double-float mu sigma))
@@ -309,7 +315,7 @@ exp(right^2) as appropriate.  width is right-left."
         (rho (* coefficient (exp (* (expt z 2) -0.5d0)))))
        (<= (random 1d0) rho) z))
 
-(cached-slot (rv truncated-normal generator)
+(define-cached-slot (rv truncated-normal generator)
   (declare (optimize (speed 3)))
   (bind (((:slots-read-only mu sigma left right) rv))
     (declare (double-float mu sigma)
@@ -389,7 +395,7 @@ exp(right^2) as appropriate.  width is right-left."
 ;;;; generator for a given alpha.
 ;;;; ****************************************************************
 
-(defclass gamma (univariate)
+(defclass gamma (univariate log-pdf-constant)
   ((alpha :initarg :alpha :initform 1d0 
           :type positive-double-float :reader alpha
           :documentation "shape parameter")
@@ -410,6 +416,17 @@ exp(right^2) as appropriate.  width is right-left."
 
 (defmethod variance ((rv gamma))
   (* (alpha rv) (expt (beta rv) -2)))
+
+(define-cached-slot (rv gamma log-pdf-constant)
+  (bind (((:slots-r/o alpha beta) rv))
+    (- (* alpha (log beta))
+       (log-gamma alpha))))
+
+(defmethod log-pdf ((rv gamma) x &optional unscaled?)
+  (when (plusp x)
+    (scale-log-pdf rv unscaled? 
+                   (- (* (1- (alpha rv)) (log x))
+                      (* (beta rv) x)))))
 
 (declaim (inline standard-gamma1-d-c draw-standard-gamma1
                  generator-standard-gamma))
@@ -462,7 +479,7 @@ distributions (eg Dirichlet, etc), too."
         (lambda ()
           (draw-standard-gamma1 alpha d c)))))
 
-(cached-slot (rv gamma generator)
+(define-cached-slot (rv gamma generator)
   (declare (optimize (speed 3)))
   (bind (((:slots-read-only alpha beta) rv)
          (standard-generator (generator-standard-gamma alpha)))
@@ -470,6 +487,8 @@ distributions (eg Dirichlet, etc), too."
              (univariate-continuous-generator standard-generator))
     (lambda ()
       (/ (funcall standard-generator) beta))))
+
+
 
 ;;;; ****************************************************************
 ;;;; Inverse gamma distribution.
@@ -503,7 +522,7 @@ distributions (eg Dirichlet, etc), too."
       (error "Mean is defined only for ALPHA > 2"))
     (/ (expt beta 2) (expt (1- alpha) 2) (- alpha 2))))
 
-(cached-slot (rv inverse-gamma generator)
+(define-cached-slot (rv inverse-gamma generator)
   (declare (optimize (speed 3)))
   (bind (((:slots-read-only alpha beta) rv)
          (standard-generator (generator-standard-gamma alpha)))
@@ -582,7 +601,7 @@ distributions (eg Dirichlet, etc), too."
          (sum (+ alpha beta)))
     (/ (* alpha beta) (* (expt sum 2) (1+ sum)))))
     
-(cached-slot (rv beta generator)
+(define-cached-slot (rv beta generator)
   (declare (optimize (speed 3)))
   (bind (((:slots-read-only alpha beta) rv)
          (alpha-gen (generator-standard-gamma alpha))
@@ -648,14 +667,14 @@ be coercible to vector-double-float."
        (setf probabilities (normalize-vector probabilities)))))
   rv)
 
-(cached-slot (rv discrete mean)
+(define-cached-slot (rv discrete mean)
   (bind (((:slots-read-only probabilities) rv))
     (iter
       (for p :in-vector probabilities)
       (for i :from 0)
       (summing (* i p)))))
 
-(cached-slot (rv discrete variance)
+(define-cached-slot (rv discrete variance)
   (bind (((:slots-read-only probabilities) rv))
     (- (iter
          (for p :in-vector probabilities)
@@ -680,7 +699,7 @@ be coercible to vector-double-float."
            (for j :from 0 :to i)
            (summing (aref probabilities j)))))))
 
-(cached-slot (rv discrete generator)
+(define-cached-slot (rv discrete generator)
   (declare (optimize (speed 3)))
   (bind (((:slots-read-only probabilities) rv)
          (n (length probabilities)))
