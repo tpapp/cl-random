@@ -79,6 +79,21 @@
   (ensure (same-mean-variance (make-instance 'truncated-normal :mu 5d0 :sigma 9d0))))
 
 
+;; log-normal distribution
+
+(addtest (cl-random-unit-tests)
+  log-normal-pdf
+  (let ((rv (make-instance 'log-normal :mu 5d0 :sigma 19d0)))
+    (ensure-same (pdf rv 2d0) 0.0102321986262048220 :test #'rel=)
+    (ensure-same (pdf rv 16d0)  0.0013033232558763653d0 :test #'rel=)
+    (ensure-same (pdf rv 102d0)  0.0002058124737511057d0 :test #'rel=)))
+
+(addtest (cl-random-unit-tests)
+  log-normal-draws
+  (ensure (same-mean-variance (make-instance 'log-normal)))
+  (ensure (same-mean-variance (make-instance 'log-normal :mu 10d0)))
+  (ensure (same-mean-variance (make-instance 'log-normal :sigma 0.5d0))))
+
 ;; gamma distribution
 
 (addtest (cl-random-unit-tests)

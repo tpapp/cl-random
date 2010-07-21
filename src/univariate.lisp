@@ -1,8 +1,8 @@
 (in-package :cl-random)
 
-;;;; ****************************************************************
-;;;; Uniform distribution.
-;;;; ****************************************************************
+;;; ****************************************************************
+;;; Uniform distribution.
+;;; ****************************************************************
 
 (defclass uniform (univariate)
   ((left :initarg :left :initform 0d0 :reader left
@@ -45,12 +45,12 @@
     (lambda ()
       (+ left (* width (random 1d0))))))
 
-;;;; ****************************************************************
-;;;; Exponential distribution.
-;;;;
-;;;; Also provides the primitive draw-standard-exponential, which is
-;;;; useful for constructing other distributions.
-;;;; ****************************************************************
+;;; ****************************************************************
+;;; Exponential distribution.
+;;;
+;;; Also provides the primitive draw-standard-exponential, which is
+;;; useful for constructing other distributions.
+;;; ****************************************************************
 
 (declaim (inline draw-standard-exponential))
 (defun draw-standard-exponential ()
@@ -83,13 +83,13 @@ beta*exp(-beta*x)."))
   (expt (beta rv) -2))
 
 
-;;;; ****************************************************************
-;;;; Normal distribution (univariate).
-;;;;
-;;;; Also provides some primitives (mostly for standardized normal)
-;;;; that are useful for constructing/drawing from other
-;;;; distributions.
-;;;; ****************************************************************
+;;; ****************************************************************
+;;; Normal distribution (univariate).
+;;;
+;;; Also provides some primitives (mostly for standardized normal)
+;;; that are useful for constructing/drawing from other
+;;; distributions.
+;;; ****************************************************************
 
 (defclass normal (univariate log-pdf-constant)
   ((mu :initarg :mu :initform 0d0 :reader mu :type double-float)
@@ -208,9 +208,9 @@ deviation sigma."))
       (from-standard-normal (draw-standard-normal) mu sigma))))
 
 
-;;;; ****************************************************************
-;;;; Truncated normal distribution (univariate).
-;;;; ****************************************************************
+;;; ****************************************************************
+;;; Truncated normal distribution (univariate).
+;;; ****************************************************************
 
 (defclass truncated-normal (univariate)
   ((mu :initarg :mu :initform 0d0 :reader mu :type double-float)
@@ -341,13 +341,15 @@ exp(right^2) as appropriate.  width is right-left."
                             (<= left x right) x)))
              ;; narrow & contains zero: always use uniform-based reject/accept
              (contains-zero-p
-              (lambda* (draw-left-right-truncated-standard-normal left width 1d0)))
+              (lambda* (draw-left-right-truncated-standard-normal
+                        left width 1d0)))
              ;; whole support above 0, need to test
              ((< 0d0 left)
               (let ((alpha (truncated-normal-optimal-alpha left)))
                 (if (truncated-normal-left-p alpha left right)
                     ;; optimal to try and reject if not good
-                    (lambda* (try ((x (draw-left-truncated-standard-normal left alpha)))
+                    (lambda* (try ((x (draw-left-truncated-standard-normal
+                                       left alpha)))
                                   (<= x right) x))
                     ;; optimal to use the uniform-based reject/accept
                     (lambda* (draw-left-right-truncated-standard-normal 
@@ -387,6 +389,47 @@ exp(right^2) as appropriate.  width is right-left."
         ;; this is a standard normal, no truncation
         (t (lambda* (draw-standard-normal)))))))
   
+;;; ****************************************************************
+;;; Lognormal distribution
+;;; ****************************************************************
+
+(defclass log-normal (univariate log-pdf-constant)
+  ((mu :initarg :mu :initform 0d0 :reader mu :type double-float)
+   (sigma :initarg :sigma :initform 1d0 :reader sigma
+          :type positive-double-float))
+  (:documentation "Log-normal distribution with location mu and scale sigma."))
+
+(define-printer-with-slots log-normal mu sigma)
+
+(defmethod mean ((rv log-normal))
+  (exp (+ (mu rv) (/ (expt (sigma rv) 2) 2))))
+
+(defmethod variance ((rv log-normal))
+  (bind (((:slots-r/o mu sigma) rv)
+         (sigma^2 (expt sigma 2)))
+    (* (1- (exp sigma^2))
+       (exp (+ (* 2 mu) sigma^2)))))
+
+(define-cached-slot (rv log-normal log-pdf-constant)
+  (- (+ (log (sigma rv)) (log (sqrt (* 2 pi))))))
+
+(defmethod log-pdf ((rv log-normal) x &optional unscaled?)
+  (when (plusp x)
+    (bind (((:slots-r/o mu sigma) rv)
+           (log-x (log x)))
+      (scale-log-pdf rv unscaled? 
+                     (- (/ (expt (- log-x mu) 2) (expt sigma 2) -2)
+                        log-x)))))
+
+(defmethod cdf ((rv log-normal) x)
+  (if (plusp x)
+      (cdf-standard-normal (to-standard-normal (log x) (mu rv) (sigma rv)))
+      0d0))
+
+(define-cached-slot (rv log-normal generator)
+  (bind (((:slots-r/o mu sigma) rv))
+    (lambda ()
+      (exp (from-standard-normal (draw-standard-normal) mu sigma)))))
 
 ;;;; ****************************************************************
 ;;;; Gamma distribution.
