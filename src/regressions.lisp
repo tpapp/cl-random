@@ -47,6 +47,11 @@ generate dummy observations with the eponymous function."
     (make-instance 'mv-normal :mean beta :variance-right-sqrt
                    (qr-xx-inverse-sqrt (getf other-values :qr)))))
 
+(defmethod dummy-observations ((rv normal) &key)
+  (bind (((:slots-r/o mu sigma) rv))
+    (values (clo :double (/ mu sigma))
+            (clo :double (/ sigma)))))
+
 (defmethod dummy-observations ((rv mv-normal) &key)
   (bind (((:slots-r/o mean variance-right-sqrt) rv)
          (r-t (transpose variance-right-sqrt)))
@@ -71,7 +76,7 @@ when inverting the singular values."
   multivariate T distribution, but the generator returns the randomly drawn
   sigma^2 as the second value (scaled correctly by s^2)."))
 
-(cached-slot (rv linear-regression generator)
+(define-cached-slot (rv linear-regression generator)
   (bind (((:slots-read-only scaling-factor mv-normal s^2) rv)
          (scaling-factor-generator (generator scaling-factor))
          (mv-normal-generator (generator mv-normal)))
