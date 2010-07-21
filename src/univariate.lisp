@@ -494,7 +494,7 @@ distributions (eg Dirichlet, etc), too."
 ;;;; Inverse gamma distribution.
 ;;;; ****************************************************************
 
-(defclass inverse-gamma (univariate)
+(defclass inverse-gamma (univariate log-pdf-constant)
   ((alpha :initarg :alpha :initform 1d0 
           :type positive-double-float :reader alpha
           :documentation "shape parameter")
@@ -521,6 +521,16 @@ distributions (eg Dirichlet, etc), too."
     (unless (< 2 alpha)
       (error "Mean is defined only for ALPHA > 2"))
     (/ (expt beta 2) (expt (1- alpha) 2) (- alpha 2))))
+
+(define-cached-slot (rv inverse-gamma log-pdf-constant)
+  (bind (((:slots-r/o alpha beta) rv))
+    (- (* alpha (log beta))
+       (log-gamma alpha))))
+
+(defmethod log-pdf ((rv inverse-gamma) x &optional unscaled?)
+  (when (plusp x)
+   (scale-log-pdf rv unscaled? (- (* (- (1+ (alpha rv))) (log x))
+                                  (/ (beta rv) x)))))
 
 (define-cached-slot (rv inverse-gamma generator)
   (declare (optimize (speed 3)))
