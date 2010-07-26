@@ -28,21 +28,36 @@ type."
 ;;; Linear regression with a known variance matrix.  Not used directly in
 ;;; practice, but useful for Gibbs sampling.
 
-(defun linear-regression-kv (y x &key variance-right-sqrt prior)
-  "Linear regression of Y on X with known variance matrix, returned as an
-MV-NORMAL distribution.  VARIANCE-RIGHT-SQRT is the rigth square root of the
-variance matrix, assumed to be the identity if not given.  PRIOR is used to
-generate dummy observations with the eponymous function."
+(defgeneric linear-regression-kv (y x &key variance-right-sqrt prior)
+  (:documentation "Linear regression of Y on X with known variance matrix,
+returned as an MV-NORMAL distribution (or NORMAL, if X is a vector).
+VARIANCE-RIGHT-SQRT is the rigth square root of the variance matrix (or the
+standard deviation if X is a vector), assumed to be the identity if not given.
+Numbers are interpreted as the common variance.  PRIOR is used to generate dummy
+observations with the eponymous function."))
+
+(defmethod linear-regression-kv ((y vector) (x vector) &key
+                                 variance-right-sqrt prior)
+  (sub (linear-regression-kv y (as-column x) 
+                             :variance-right-sqrt variance-right-sqrt
+                             :prior prior)
+       0))
+
+(defmethod linear-regression-kv ((y vector) (x dense-matrix-like) &key
+                                 variance-right-sqrt prior)
   (check-type y vector)
   (check-type x dense-matrix-like)
   ;; apply variance matrix if given
-  (when variance-right-sqrt
-    ;; ?? maybe we could stack and solve once, for efficiency
-    (setf x (solve variance-right-sqrt x))
-    (setf y (solve variance-right-sqrt y)))
+  (typecase variance-right-sqrt
+    (null)                              ; do nothing
+    (number (setf x (e/ x variance-right-sqrt)
+                  y (e/ y variance-right-sqrt)))
+    (t ;; ?? maybe we could stack and solve once, for efficiency
+       (setf x (solve variance-right-sqrt x)
+             y (solve variance-right-sqrt y))))
   ;; attach prior to transformed data; dummy observations don't need to be
   ;; rescaled as they come directly from the prior
-  (bind (((:values y x) (add-prior-dummies y x prior 'mv-normal))
+  (bind (((:values y x) (add-prior-dummies y x prior '(or normal mv-normal)))
          ((:values beta nil nil other-values) (least-squares y x :method :qr)))
     (make-instance 'mv-normal :mean beta :variance-right-sqrt
                    (qr-xx-inverse-sqrt (getf other-values :qr)))))
@@ -75,6 +90,16 @@ when inverting the singular values."
   (:documentation "Class representing linear regressions.  Basically a
   multivariate T distribution, but the generator returns the randomly drawn
   sigma^2 as the second value (scaled correctly by s^2)."))
+
+(defmethod mean ((rv linear-regression))
+  (bind (((:slots-r/o scaling-factor s^2) rv))
+    (values (call-next-method rv)
+            (* s^2 (mean scaling-factor)))))
+
+(defmethod variance ((rv linear-regression))
+    (bind (((:slots-r/o scaling-factor s^2) rv))
+    (values (call-next-method rv)
+            (* (expt s^2 2) (variance scaling-factor)))))
 
 (define-cached-slot (rv linear-regression generator)
   (bind (((:slots-read-only scaling-factor mv-normal s^2) rv)
