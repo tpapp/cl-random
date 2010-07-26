@@ -8,8 +8,9 @@
 (defmethod add-constant-column ((matrix dense-matrix-like) &optional (constant 1))
   "Add a constant column before a vector or a matrix,
 returning a dense matrix."
-  (bind (((:slots-r/o lla-type elements nrow ncol) matrix))
-    (aprog1 (make-matrix nrow (1+ ncol) lla-type :initial-element constant)
+  (bind (((:slots-r/o elements nrow ncol) matrix))
+    (aprog1 (make-matrix nrow (1+ ncol) (array-lla-type elements)
+                         :initial-element constant)
       (set-restricted matrix)
       (copy-elements elements 0
                      (elements it) nrow
