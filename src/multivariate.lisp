@@ -86,8 +86,8 @@ variance."
          ((:slots-r/o mean variance) rv))
     (if (typep range 'fixnum)
         (make-instance 'normal
-                       :mu (sub mean range)
-                       :sd (sqrt (sub variance range range)))
+                       :mu (float (sub mean range) 1d0)
+                       :sigma (float (sqrt (sub variance range range)) 1d0))
         (make-instance 'mv-normal
                        :mean (sub mean range)
                        :variance (sub variance range range)))))
@@ -140,7 +140,7 @@ variance."
   (bind (((:slots-r/o mv-normal scaling-factor) rv)
          ((range) ranges))
     (if (typep range 'fixnum)
-        (error "not implemented")
+        (error "not implemented")       ; need univariate t
         (make-instance 'mv-t :mv-normal (sub mv-normal range)
                        :scaling-factor scaling-factor))))
 
