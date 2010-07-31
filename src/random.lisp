@@ -114,8 +114,8 @@ type and parameters.")
 
 (def* mean () "Mean for a random variate of the given type and parameters.")
 
-(defmethod variance ((rv rv))
-  (error 'missing))
+(defgeneric variance (rv)
+  (:documentation "Return the variance of a probability distribution."))
 
 (def* variance () "Variance for a random variate of the given type and parameters.")
 
