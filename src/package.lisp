@@ -10,8 +10,9 @@
         :lla
         :anaphora
         :cl-num-utils)
+  (:shadow :variance)                   ; in alexandria
   (:shadowing-import-from :iterate :collecting :collect)
-  (:shadowing-import-from :cl-num-utils :mean :variance :xor) ; also in alexandria
+  (:shadowing-import-from :cl-num-utils :mean :xor) ; also in alexandria
   (:export
 
    ;; utilities
@@ -26,7 +27,7 @@
    ;; random
 
    rv generator generator* rv-type dimensions draw draw* pdf pdf* log-pdf 
-   log-pdf* mean* variance* cdf cdf* univariate-continuous-generator
+   log-pdf* mean* variance variance* cdf cdf* univariate-continuous-generator
    univariate-discrete-generator univariate multivariate quantile quantile*
 
    ;; univariate
