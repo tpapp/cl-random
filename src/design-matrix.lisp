@@ -33,7 +33,6 @@
     (with-range-indexing ((make-array n :initial-element t)
                           ncols next-index :end? end? :counters counters)
       (iter
-        (until end?)
         (let ((indexes (map 'vector (lambda (counter)
                                       (cm-index2 nrow 0 counter))
                             counters))
@@ -46,7 +45,8 @@
                     (let ((element (aref elements% (+ index row))))
                       (when (zerop element)
                         (return-from interaction zero))
-                      (multiplying element))))))))
+                      (multiplying element))))))
+        (until end?)))
     interaction))
 
 (defun process-factor (vector &key (key #'identity)
