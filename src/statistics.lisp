@@ -110,3 +110,8 @@ is not modified)."
                  left
                  (convex-combination% left (aref vector (1+ int)) frac))))
          quantiles)))
+
+(defun variance->correlation (variance)
+  "Calculate correlation matrix from variance matrix."
+  (let ((scaling (emap (lambda (d) (/ (sqrt d))) (as-diagonal variance))))
+    (mmm scaling variance scaling)))
