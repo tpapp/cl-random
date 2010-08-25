@@ -20,7 +20,7 @@ type."
   (if prior
       (bind (((:values y-dummy x-dummy) (dummy-observations prior)))
         (values (concat y y-dummy)
-                (stack-vertically x x-dummy)))
+                (stack :matrix :vertically x x-dummy)))
       (values y x)))
 
 ;;; LINEAR-REGRESSION-KV
@@ -119,9 +119,9 @@ when inverting the singular values."
          (k (length mean))
          (r-t (transpose (e/ variance-right-sqrt s))))
     (values (concat (solve r-t mean) (lla-vector nu :double s))
-            (stack-vertically (invert r-t) 
-                              (make-matrix nu k :double
-                                           :initial-element 0d0)))))
+            (stack :matrix :vertically (invert r-t) 
+                   (make-matrix nu k :double
+                                :initial-element 0d0)))))
 
 (defun linear-regression (y x &key r^2? (method :qr) prior)
   "Return the following values: 1. an MV-T distribution for drawing

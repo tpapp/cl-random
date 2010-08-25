@@ -30,8 +30,8 @@
          (zero (zero* lla-type))
          (interaction (make-matrix nrow (reduce #'* ncols) lla-type)))
     (assert (every (lambda (matrix) (= nrow (nrow matrix))) matrices))
-    (with-range-indexing ((make-array n :initial-element t)
-                          ncols next-index :end? end? :counters counters)
+    (with-indexing ((make-array n :initial-element t)
+                    ncols next-index :end? end? :counters counters)
       (iter
         (let ((indexes (map 'vector (lambda (counter)
                                       (cm-index2 nrow 0 counter))
@@ -40,7 +40,7 @@
           (dotimes (row nrow)
             (setf (mref interaction row col)
                   (iter interaction
-                    (for index :in-vector indexes)
+                        (for index :in-vector indexes)
                     (for elements% :in-vector elements)
                     (let ((element (aref elements% (+ index row))))
                       (when (zerop element)
@@ -177,10 +177,10 @@ Example:
       (bind (((:values ixs matrices) (traverse-list specifications)))
         (when constant
           (setf ixs (cons constant ixs)
-                matrices (cons (lla-vector (nrow (first matrices)) :integer 1)
+                matrices (cons (lla-array (nrow (first matrices)) :integer 1)
                                matrices)))
         (values (make-ix ixs)
-                (apply #'stack-horizontally (flatten matrices))
+                (apply #'stack :matrix :h (flatten matrices))
                 (mapcar (lambda (factor)
                           (list (first factor) (second factor)))
                         factors))))))
