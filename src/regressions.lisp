@@ -118,7 +118,7 @@ when inverting the singular values."
          ((:slots-r/o mean variance-right-sqrt) mv-normal)
          (k (length mean))
          (r-t (transpose (e/ variance-right-sqrt s))))
-    (values (concat (solve r-t mean) (lla-vector nu :double s))
+    (values (concat (solve r-t mean) (lla-array nu :double s))
             (stack :matrix :vertically (invert r-t) 
                    (make-matrix nu k :double
                                 :initial-element 0d0)))))

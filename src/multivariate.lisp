@@ -41,7 +41,7 @@ variance."
         (check-mean-variance-compatibility (slot-value rv 'mean)
                                            variance-or-sqrt)
         (setf (slot-value rv 'mean)
-              (lla-vector (nrow variance-or-sqrt)
+              (lla-array (nrow variance-or-sqrt)
                           (array-lla-type (elements variance-or-sqrt))
                           0)))))
 
@@ -76,7 +76,7 @@ variance."
   (bind (((:slots-read-only mean variance-right-sqrt) rv)
          (n (length mean)))
     (lambda (&optional (scale 1d0))
-      (let* ((x (lla-vector n :double)))
+      (let* ((x (lla-array n :double)))
         (dotimes (i n)
           (setf (aref x i) (draw-standard-normal)))
         (e+ mean (mm x variance-right-sqrt scale))))))

@@ -18,7 +18,7 @@
 
 (defun num-gradient (f x &key (fx (funcall f x))
                      (epsilon +numdiff-epsilon+)
-                     (dfx (lla-vector (length x) :double)))
+                     (dfx (lla-array (length x) :double)))
   "Calculate numerical gradient of F at X, and place it in DFX, which is
 returned.  Uses Richardson extrapolation w/ forward differencing."
   (declare (optimize speed)
@@ -48,8 +48,8 @@ returned.  Uses Richardson extrapolation w/ forward differencing."
            (type bfgs-objective f))
   (let* ((n (length x))
          (y (copy-vector x :double))
-         (fy (lla-vector n :double))
-         (ddfx (lla-vector (expt n 2) :double))
+         (fy (lla-array n :double))
+         (ddfx (lla-array (expt n 2) :double))
          (epsilon^2 (expt epsilon 2)))
     (declare (type (simple-array double-float (*)) y fy))
     (dotimes (i n)                      ; column
@@ -351,7 +351,7 @@ All vectors are assumed to have element type DOUBLE-FLOAT."
     negative-xAX))
 
 (defun x+direction (x direction alpha &optional 
-                    (z (lla-vector (length x) :double)) (relative 16d0))
+                    (z (lla-array (length x) :double)) (relative 16d0))
   "Calculate X+ALPHA*DIRECTION, place it in Z.  All vectors (X, DIRECTION,
 Z) are assumed to have element type double-float (not checked), and the same
 length (not checked).  ALPHA is a double-float.  RELATIVE is added to elements
@@ -491,9 +491,9 @@ too small), in this case, no argument is changed.."
                        (:ww #'linesearch-ww)))
          (n (length x))
          (x (copy-vector x :double))
-         (z (lla-vector n :double))     ; work area: x+direction*alpha
-         (s (lla-vector n :double))     ; direction, then stepsize
-         (y (lla-vector n :double))     ; work area
+         (z (lla-array n :double))     ; work area: x+direction*alpha
+         (s (lla-array n :double))     ; direction, then stepsize
+         (y (lla-array n :double))     ; work area
          dfx                            ; gradient
          (f-eval-count 0)
          ((:flet f (x))
