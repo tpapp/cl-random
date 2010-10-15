@@ -69,10 +69,6 @@
 ;;;; Types
 ;;;;
 
-(deftype positive-double-float ()
-  `(and double-float
-	(satisfies plusp)))
-
 (deftype truncation-boundary ()
   '(or double-float null))
 
