@@ -129,7 +129,11 @@ when inverting the singular values."
   Multiplied by the second value returned when drawing from the MV-T
   distribution, this yields the variance corresponding to that draw.
   3. When R^2?, return the R^2 value."
-  (bind (((:values y x) (add-prior-dummies y x prior 'linear-regression))
+  (bind ((x (typecase x
+              (dense-matrix x)
+              (vector (as-column x))
+              (t (as-matrix x))))
+         ((:values y x) (add-prior-dummies y x prior 'linear-regression))
          ((:values b ss nu other-values) (least-squares y x :method method))
          (s^2 (/ ss nu)))
     (aprog1
