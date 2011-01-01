@@ -1,4 +1,4 @@
-(defsystem :cl-random-unit-tests
+(defsystem :cl-random-tests
   :description "Unit tests for CL-RANDOM."
   :version "alpha"
   :author "Tamas K Papp <tkpapp@gmail.com"
@@ -7,22 +7,22 @@
   :components
   ((:module 
     "package-init"
-    :pathname #P"unit-tests/"
+    :pathname #P"tests/"
     :components
     ((:file "package")))
    (:module
     "utilities-and-setup"
-    :pathname #P"unit-tests/"
+    :pathname #P"tests/"
     :components
     ((:file "utilities")
      (:file "setup")))
    (:module 
     "tests"
-    :pathname #P"unit-tests/"
+    :pathname #P"tests/"
     :components
     ((:file "log-infinity-tests")
      (:file "special-functions-tests")
      (:file "univariate-tests"))))
   :depends-on
   (:cl-utilities :iterate :metabang-bind :anaphora :lla :cl-random
-                 :lift :cl-num-utils :tpapp-utils))
+                 :lift :cl-num-utils :tpapp-utils :random-sample))
