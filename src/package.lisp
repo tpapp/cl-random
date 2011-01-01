@@ -10,9 +10,9 @@
         :lla
         :anaphora
         :cl-num-utils)
-  (:shadow :variance)                   ; in alexandria
+  (:shadow :mean :variance)                   ; in alexandria
   (:shadowing-import-from :iterate :collecting :collect)
-  (:shadowing-import-from :cl-num-utils :mean :xor) ; also in alexandria
+  (:shadowing-import-from :cl-num-utils :xor) ; also in alexandria
   (:export
 
    ;; utilities
@@ -24,49 +24,46 @@
 
    plus-infinity ~+ ~- ~log ~exp
 
+   ;; special-functions
+
+   log-gamma-function gamma-function
+
    ;; random
 
-   rv generator generator* rv-type dimensions draw draw* pdf pdf* log-pdf 
-   log-pdf* mean* variance variance* cdf cdf* univariate-continuous-generator
-   univariate-discrete-generator univariate multivariate quantile quantile*
+   rv generator mean variance cdf log-pdf pdf quantile
 
    ;; univariate
 
-   uniform left right draw-standard-exponential exponential beta
-   normal mu sigma pdf-standard-normal cdf-standard-normal
-   draw-standard-normal to-standard-normal from-standard-normal
-   truncated-normal left right log-normal gamma alpha beta
-   generator-standard-gamma inverse-gamma chi-square inverse-chi-square
-   beta discrete probabilities
+   uniform left right
+   exponential beta
+   normal mean sd
+   log-normal log-mean log-sd
+   gamma alpha beta inverse-gamma chi-square nu inverse-chi-square scale
 
    ;; multivariate
 
-   mv-normal variance-right-sqrt log-pdf-constant mv-t scaling-factor nu wishart
-   scale inverse-wishart
+   ;; mv-normal variance-right-sqrt log-pdf-constant mv-t scaling-factor nu wishart
+   ;; scale inverse-wishart
 
    ;; statistics
    
-   add-constant-column column-sums column-means demean-columns column-variances
-   column-mean-variances rescale-by-sd empirical-quantiles variance->correlation
+   ;; add-constant-column column-sums column-means demean-columns column-variances
+   ;; column-mean-variances rescale-by-sd empirical-quantiles variance->correlation
 
    ;; regressions
 
-   dummy-observations linear-regression-kv xx-inverse-right-sqrt
-   linear-regression s^2 r^2
-
-   ;; special-functions
-
-   log-gamma gamma
+   ;; dummy-observations linear-regression-kv xx-inverse-right-sqrt
+   ;; linear-regression s^2 r^2
 
    ;; design-matrix
    
-   design-matrix
+   ;; design-matrix
 
    ;; optimization
 
-   bfgs-objective simple-double-vector richardson-derivative3 num-gradient
-   num-hessian bfgs-parameters linesearch-max-iter numdiff-epsilon relative rho
-   sigma alpha-max tau1 tau2 tau3 kappa step-reduction max-bisections
-   max-expansions *default-bfgs-parameters* bfgs-minimize
+   ;; bfgs-objective simple-double-vector richardson-derivative3 num-gradient
+   ;; num-hessian bfgs-parameters linesearch-max-iter numdiff-epsilon relative rho
+   ;; sigma alpha-max tau1 tau2 tau3 kappa step-reduction max-bisections
+   ;; max-expansions *default-bfgs-parameters* bfgs-minimize
 
    ))

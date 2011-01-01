@@ -21,7 +21,7 @@ calculating the Gamma function using the Lanczos method."
 
 (defun gamma-reflection% (z)
   "Gamma(z-1)Gamma(z) = (gamma-reflection% z)"
-  (/ pi (sin (* pi z))))
+  (/ +pi+ (sin (* +pi+ z))))
 
 (defun within-integer? (z &optional (tol 0))
   "Return non-NIL iff Z is within TOL of an integer (in either
@@ -37,10 +37,10 @@ conditions can be ensured."
            (optimize (speed 3) (safety 0)))
   (assert (plusp z))
   (let ((z% (+ z 6.5d0)))
-    (+ (the double-float (log (gamma-sum%))) (log (sqrt (* 2 pi))) (- z%)
+    (+ (the double-float (log (gamma-sum%))) (log (sqrt (* 2 +pi+))) (- z%)
        (* (- z 0.5d0) (log z%)))))
 
-(defun log-gamma (z)
+(defun log-gamma-function (z)
   "Log gamma function (using the Lanczos method)."
   (let ((z (coerce z 'double-float)))
     (cond
@@ -61,10 +61,10 @@ conditions can be ensured."
            (optimize (speed 3) (safety 0)))
   (assert (plusp z))
   (let ((z% (+ z 6.5d0)))
-    (* (gamma-sum%) (sqrt (* 2 pi)) (exp (- z%))
+    (* (gamma-sum%) (sqrt (* 2 +pi+)) (exp (- z%))
        (expt z% (- z 0.5d0)))))
 
-(defun gamma (z)
+(defun gamma-function (z)
   "Gamma function (using the Lanczos method)."
   (let ((z (coerce z 'double-float)))
     (cond

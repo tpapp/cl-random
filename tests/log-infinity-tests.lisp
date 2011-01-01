@@ -1,8 +1,8 @@
 ;;; -*- Mode:Lisp; Syntax:ANSI-Common-Lisp; Coding:utf-8 -*-
 
-(in-package #:cl-random-unit-tests)
+(in-package #:cl-random-tests)
 
-(deftestsuite log-infinity-tests (cl-random-unit-tests)
+(deftestsuite log-infinity-tests (cl-random-tests)
   ())
 
 (addtest (log-infinity-tests)

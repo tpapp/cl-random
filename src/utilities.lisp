@@ -7,22 +7,6 @@
 ;;; I see them, maybe put into a common library? not really worth the
 ;;; overhead in work I guess -- Tamas
 
-(defmacro define-abstract-class (classname super-list &body body)
-  "A wrapper for DEFCLASS that lets you define abstract base classes.
-   If you try to instantiate an object of this class, a warning is signaled."
-  `(progn
-     (defclass ,classname ,super-list ,@body)
-
-     ;; Protect against abstract class instantiation.
-
-     ;; We could remove this programmatically later using a
-     ;; compile-time constant (or even check the optimization options
-     ;; and remove it if SAFETY is set low enough).
-     (defmethod initialize-instance :before ((x ,classname) &key)
-       (if (eql (type-of x) ',classname)
-	   (warn "~A is an abstract base class and not to be instantiated." 
-                 (quote ',classname))))))
-
 (defun concat-to-string (args)
   (apply #'concatenate 'string
                  (mapcar (lambda (arg)
@@ -49,23 +33,6 @@
      (,name (apply #'make-instance rv args) ,@other-args)))
 
 
-;;;; Conditions
-;;;;
-;;;; Errors are used to signal missing features (which are planned in
-;;;; the future) and things that are missing because they don't make
-;;;; sense (undefined, eg the mean of a Cauchy distribution) or are
-;;;; impractical/not needed/not planned (not-implemented, eg
-;;;;  multivariate distribution functions).
-
-(define-condition missing (error)
-  ())
-
-(define-condition not-implemented (error)
-  ())
-
-(define-condition undefined (error)
-  ())
-
 ;;;; Types
 ;;;;
 
@@ -81,12 +48,6 @@
 (deftype vector-positive-double-float (&optional n)
   `(and (vector-double-float ,n)
         (satisfies vector-plusp)))
-
-(defmacro check-type* (value typespec)
-  "Like check-type, except that this error is not correctable."
-  (once-only (value)
-    `(assert (typep ,value ',typespec) ()
-             'type-error :datum ,value :expected-type ',typespec)))
 
 ;;;; Comparisons for truncated distributions.
 ;;;;
@@ -127,41 +88,65 @@ used) until condition is satisfied, then return value."
 ;;;; An acceptable default way of printing: just enumerate slots that
 ;;;; characterize the distribution.
 
-(defun print-with-slots (rv stream slots)
-  "A slot can be a symbol (used with slot-value)."
-  (print-unreadable-object (rv stream :type t)
-    (dolist (slot slots)
-      (format stream " ~A=~A" (symbol-name slot) (slot-value rv slot)))))
+;; (defun print-with-slots (rv stream slots)
+;;   "A slot can be a symbol (used with slot-value)."
+;;   (print-unreadable-object (rv stream :type t)
+;;     (dolist (slot slots)
+;;       (format stream " ~A=~A" (symbol-name slot) (slot-value rv slot)))))
 
-(defmacro define-printer ((class &key (instance 'rv) (stream 'stream)) &body body)
-  (check-type class symbol)
-  (check-type instance symbol)
-  (check-type stream symbol)
-  `(defmethod print-object ((,instance ,class) ,stream)
-     (print-unreadable-object (,instance ,stream :type t)
+;; (defmacro define-printer ((class &key (instance 'rv) (stream 'stream)) &body body)
+;;   (check-type class symbol)
+;;   (check-type instance symbol)
+;;   (check-type stream symbol)
+;;   `(defmethod print-object ((,instance ,class) ,stream)
+;;      (print-unreadable-object (,instance ,stream :type t)
+;;        ,@body)))
+
+;; (defmacro define-printer-with-slots (class &rest slots)
+;;   (check-type class symbol)
+;;   (check-type slots list)
+;;   (assert (every #'symbolp slots))
+;;   `(defmethod print-object ((rv ,class) stream)
+;;      (print-with-slots rv stream ',slots)))
+
+;; ;;;; Slots calculated when needed.
+
+;; (defmacro define-cached-slot ((instance-variable class slot-name) &body body)
+;;   "Define a slot-unbound method for slot-name, using the value
+;; returned by body."
+;;   (check-type instance-variable symbol)
+;;   (check-type class symbol)
+;;   (check-type slot-name symbol)
+;;   (with-unique-names (value)
+;;     `(defmethod slot-unbound (class (,instance-variable ,class)
+;;                               (slot-name (eql ',slot-name)))
+;;        (let ((,value (locally ,@body)))
+;;          (setf (slot-value ,instance-variable ',slot-name) ,value)
+;;          ,value))))
+
+;;; we use doubles for most calculations
+
+(defconstant +pi+ (float pi 1d0)
+  "Pi, with double precision.  Defined because cl:pi is long-float and we need
+  double-float.")
+
+(defconstant +normal-log-pdf-constant+ (* -0.5d0 (log (* 2 +pi+))))
+
+(defmacro with-doubles (bindings &body body)
+  "Coerces value to DOUBLE-FLOAT, and binds it to VAR in (VAR VALUE) bindings.
+If the binding is a symbol, or VALUE is missing, VAR will be used instead.  All
+variables are declared DOUBLE-FLOAT in the body."
+  (let ((bindings (mapcar (lambda (binding)
+                            (bind (((variable &optional (value variable))
+                                    (if (atom binding)
+                                        (list binding binding)
+                                        binding)))
+                              (check-type variable (and symbol (not null)))
+                              `(,variable (coerce ,value 'double-float))))
+                          bindings)))
+    `(let ,bindings
+       (declare (type double-float ,@(mapcar #'first bindings)))
        ,@body)))
-
-(defmacro define-printer-with-slots (class &rest slots)
-  (check-type class symbol)
-  (check-type slots list)
-  (assert (every #'symbolp slots))
-  `(defmethod print-object ((rv ,class) stream)
-     (print-with-slots rv stream ',slots)))
-
-;;;; Slots calculated when needed.
-
-(defmacro define-cached-slot ((instance-variable class slot-name) &body body)
-  "Define a slot-unbound method for slot-name, using the value
-returned by body."
-  (check-type instance-variable symbol)
-  (check-type class symbol)
-  (check-type slot-name symbol)
-  (with-unique-names (value)
-    `(defmethod slot-unbound (class (,instance-variable ,class)
-                              (slot-name (eql ',slot-name)))
-       (let ((,value (locally ,@body)))
-         (setf (slot-value ,instance-variable ',slot-name) ,value)
-         ,value))))
 
 ;;; trivial calculations
 
