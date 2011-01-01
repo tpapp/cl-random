@@ -24,11 +24,12 @@
      (:file "special-functions")
      (:file "random")
      (:file "univariate")
-     (:file "statistics")
-     (:file "multivariate")
-     (:file "design-matrix")
-     (:file "regressions")
-     (:file "optimization"))))
+     ;; (:file "statistics")
+     ;; (:file "multivariate")
+     ;; (:file "design-matrix")
+     ;; (:file "regressions")
+     ;; (:file "optimization")
+)))
   :depends-on 
   (:alexandria :cl-num-utils :iterate :metabang-bind :lla :anaphora))
 
