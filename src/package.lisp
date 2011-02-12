@@ -48,7 +48,7 @@
    ;; statistics
    
    ;; add-constant-column column-sums column-means demean-columns column-variances
-   ;; column-mean-variances rescale-by-sd empirical-quantiles variance->correlation
+   ;; column-mean-variances rescale-by-sd variance->correlation
 
    ;; regressions
 

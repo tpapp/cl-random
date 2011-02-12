@@ -147,10 +147,3 @@ variables are declared DOUBLE-FLOAT in the body."
     `(let ,bindings
        (declare (type double-float ,@(mapcar #'first bindings)))
        ,@body)))
-
-;;; trivial calculations
-
-(defun convex-combination% (a b alpha)
-  "Convex combination (1-alpha)*a+alpha*b, no error checking."
-  (+ (* (- 1 alpha) a) (* alpha b)))
-

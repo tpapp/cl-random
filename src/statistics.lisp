@@ -90,27 +90,6 @@ returning a dense matrix."
     (values (mm matrix (e/ sd))
             (elements sd))))
 
-(defun empirical-quantiles (vector quantiles &key destructive? sorted?)
-  "Empirical quantiles of VECTOR (copied with COPY-SEQ).  QUANTILES has to be a
-sequence, and the result is of the same type.  Elements are interpolated
-linearly.  If SORTED?, copying and sorting is skipped (and of course the vector
-is not modified)."
-  (let* ((vector (cond
-                   (sorted? vector)
-                   (destructive? (sort vector #'<=))
-                   (t (sort (copy-seq vector) #'<=))))
-         (n (length vector)))
-    (map (type-of quantiles)
-         (lambda (q)
-           (assert (<= 0 q 1) () "Quantile ~A is not in [0,1]." q)
-           (bind ((r (* q (1- n)))
-                  ((:values int frac) (floor r))
-                  (left (aref vector int)))
-             (if (zerop frac)
-                 left
-                 (convex-combination% left (aref vector (1+ int)) frac))))
-         quantiles)))
-
 (defun variance->correlation (variance)
   "Calculate correlation matrix from variance matrix."
   (let ((scaling (emap (lambda (d) (/ (sqrt d))) (as-diagonal variance))))
