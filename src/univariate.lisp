@@ -495,94 +495,50 @@ x^(alpha-1)*(1-x)^(beta-1)."
 ;;; especially in cases when the normalization resulted in rationals
 ;;; -- comparisons for the latter are quite slow.
 
-;; (defclass discrete (univariate)
-;;   ((probabilities :initarg :probabilities
-;;                   :type vector
-;;                   :reader probabilities
-;;                   :documentation "normalized probabilities")
-;;    (mean :type real :reader mean)
-;;    (variance :type real :reader variance))
-;;   (:documentation "General discrete distribution with given
-;; probabilities.  Random variates are integers, starting from 0."))
+(define-rv discrete (probabilities)
+  (let* ((probabilities (as-double-float-probabilities probabilities))
+         (p (copy-seq probabilities))   ; this is modified
+         (n (length probabilities))
+         (alias (make-array n :element-type 'fixnum))
+         (prob (make-array n :element-type 'double-float))
+         (n-double (as-double-float n))
+         (threshold (/ n-double))
+         small
+         large)
+    ;; separate using threshold
+    (dotimes (i n)
+      (if (> (aref p i) threshold)
+          (push i large)
+          (push i small)))
+    ;; reshuffle
+    (loop :while (and small large) :do
+          (let* ((j (pop small))
+                 (k (pop large)))
+            (setf (aref prob j) (* n-double (aref p j))
+                  (aref alias j) k)
+            (if (< threshold (incf (aref p k)
+                                   (- (aref p j) threshold)))
+                (push k large)
+                (push k small))))
+    ;; the rest use 1
+    (loop :for s :in small :do (setf (aref prob s) 1d0))
+    (loop :for l :in large :do (setf (aref prob l) 1d0))
+    ;; definition of body
+    (lazy-let* ((mean (iter 
+                        (for p :in-vector probabilities :with-index i)
+                        (summing (* p i))))
+                (variance (iter
+                            (for p :in-vector probabilities :with-index i)
+                            (summing (* p (expt (- i mean) 2)))))
+                (cdf (cumulative-sum probabilities 
+                                     :result-type 'double-float-vector)))
+      (features ((probabilities probabilities)
+                 (mean mean)
+                 (variance variance)
+                 (cdf (aref cdf x)))
+        (flambda
+          (multiple-value-bind (j p) (floor (random n-double))
+            (if (<= p (aref prob j))
+                j
+                (aref alias j))))))))
 
-;; (defmethod rv-type ((rv discrete))
-;;   'fixnum)
-
-;; (define-printer-with-slots discrete probabilities)
-
-;; (defun normalize-vector (vector)
-;;   "Normalize vector, no checks."
-;;   (let ((sum (iter
-;;                (for v :in-vector vector)
-;;                (summing v))))
-;;     (map 'vector-double-float (lambda (x) (coerce (/ x sum) 'double-float)) vector)))
-
-;; (defmethod initialize-instance :after ((rv discrete) &key normalized-p skip-checks-p
-;;                                        &allow-other-keys)
-;;   "Normalized-p indicates that probabilities have been normalized to
-;; sum to 0, skip-checks-p makes the initializer ignore sanity checks (eg
-;; positive probabilities).  If normalized-p, probabilities has to
-;; be coercible to vector-double-float."
-;;   (with-slots (probabilities) rv
-;;     (cond
-;;       ((and normalized-p skip-checks-p) ; nothing to do, except a typecheck
-;;        (setf probabilities (coerce probabilities 'vector-double-float)))
-;;       (normalized-p                     ; check nonnegativity & type
-;;        (setf probabilities (coerce probabilities 'vector-double-float))
-;;        (check-type probabilities vector-positive-double-float))
-;;       (skip-checks-p                    ; need to normalize
-;;        (check-type probabilities vector)
-;;        (setf probabilities (normalize-vector probabilities)))
-;;       (t                                ; check and normalize
-;;        (check-type probabilities vector)
-;;        (assert (every #'plusp probabilities))
-;;        (setf probabilities (normalize-vector probabilities)))))
-;;   rv)
-
-;; (define-cached-slot (rv discrete mean)
-;;   (bind (((:slots-read-only probabilities) rv))
-;;     (iter
-;;       (for p :in-vector probabilities)
-;;       (for i :from 0)
-;;       (summing (* i p)))))
-
-;; (define-cached-slot (rv discrete variance)
-;;   (bind (((:slots-read-only probabilities) rv))
-;;     (- (iter
-;;          (for p :in-vector probabilities)
-;;          (for i :from 0)
-;;          (summing (* i i p)))
-;;        (expt (mean rv) 2))))
-
-;; (defmethod pdf ((rv discrete) i &optional unscaled)
-;;   (declare (ignore unscaled))
-;;   (bind (((:slots-read-only probabilities) rv))
-;;     (if (or (minusp i) (<= (length probabilities) i))
-;;         0
-;;         (aref probabilities i))))
-
-;; (defmethod cdf ((rv discrete) i)
-;;   ;; ?? not cached, should we?
-;;   (bind (((:slots-read-only probabilities) rv))
-;;     (cond
-;;       ((minusp i) 0)
-;;       ((<= (length probabilities) i) 1)
-;;       (t (iter
-;;            (for j :from 0 :to i)
-;;            (summing (aref probabilities j)))))))
-
-;; (define-cached-slot (rv discrete generator)
-;;   (declare (optimize (speed 3)))
-;;   (bind (((:slots-read-only probabilities) rv)
-;;          (n (length probabilities)))
-;;     (declare (vector-double-float probabilities))
-;;     (lambda ()
-;;       (let ((x (random 1d0)))
-;;         (block comparison
-;;           (dotimes (i n)
-;;             (let ((p (aref probabilities i)))
-;;               (if (< x p)
-;;                   (return-from comparison i)
-;;                   (decf x p))))
-;;           ;; fallback, mathematically it has a zero chance
-;;           0)))))

@@ -39,15 +39,8 @@
 (deftype truncation-boundary ()
   '(or double-float null))
 
-(deftype vector-double-float (&optional n)
+(deftype double-float-vector (&optional n)
   `(simple-array double-float (,n)))
-
-(defun vector-plusp (v)
-  (every #'plusp v))
-
-(deftype vector-positive-double-float (&optional n)
-  `(and (vector-double-float ,n)
-        (satisfies vector-plusp)))
 
 ;;;; Comparisons for truncated distributions.
 ;;;;
@@ -132,6 +125,34 @@ used) until condition is satisfied, then return value."
 
 (defconstant +normal-log-pdf-constant+ (* -0.5d0 (log (* 2 +pi+))))
 
+(declaim (inline as-double-float as-double-float-vector))
+
+(defun as-double-float (x)
+  "Return the argument coerced to a DOUBLE-FLOAT."
+  (coerce x 'double-float))
+
+(deftype double-float-vector (&optional (n '*))
+  `(simple-array double-float (,n)))
+
+(defun as-double-float-vector (vector)
+  (map 'double-float-vector #'as-double-float vector))
+
+(defun as-double-float-probabilities (vector)
+  "Normalize vector as probabilities, assert that all are positive, return them as a
+VECTOR-DOUBLE-FLOAT.  Vector is always copied."
+  ;; !! still gives notes, make this faster if necessary
+  (declare (optimize speed))
+  (let* ((vector (as-double-float-vector vector))
+         (sum (reduce #'+ vector)))
+    (declare (type double-float sum)
+             (type double-float-vector vector))
+    (map 'double-float-vector
+         (lambda (x)
+           (declare (type double-float x))
+           (assert (<= 0 x) (x) "Element is not positive.")
+           (/ x sum))
+         vector)))
+
 (defmacro with-doubles (bindings &body body)
   "Coerces value to DOUBLE-FLOAT, and binds it to VAR in (VAR VALUE) bindings.
 If the binding is a symbol, or VALUE is missing, VAR will be used instead.  All
@@ -142,8 +163,9 @@ variables are declared DOUBLE-FLOAT in the body."
                                         (list binding binding)
                                         binding)))
                               (check-type variable (and symbol (not null)))
-                              `(,variable (coerce ,value 'double-float))))
+                              `(,variable (as-double-float ,value))))
                           bindings)))
     `(let ,bindings
        (declare (type double-float ,@(mapcar #'first bindings)))
        ,@body)))
+

@@ -20,9 +20,9 @@
     "tests"
     :pathname #P"tests/"
     :components
-    ((:file "log-infinity-tests")
-     (:file "special-functions-tests")
-     (:file "univariate-tests"))))
+    ((:file "log-infinity")
+     (:file "special-functions")
+     (:file "univariate"))))
   :depends-on
-  (:cl-utilities :iterate :metabang-bind :anaphora :lla :cl-random
-                 :lift :cl-num-utils :tpapp-utils :random-sample))
+  (cl-utilities iterate metabang-bind anaphora lift cl-num-utils random-sample
+                cl-random ))

@@ -143,12 +143,48 @@
 
 ;; general discrete distribution
 
-;; (addtest (cl-random-tests)
-;;   discrete-draws
-;;   (ensure (same-sample-mean-variance (make-instance 'discrete
-;;                                              :probabilities #(1 2.d0 3))))
-;;   (ensure (same-sample-mean-variance (make-instance 'discrete 
-;;                                              :probabilities (vector 9 pi 3))))
-;;   (ensure (same-sample-mean-variance (make-instance 'discrete
-;;                                              :probabilities #(0.5d0 0.3d0 0.2d0)
-;;                                              :normalized-p t))))
+(defun empirical-frequencies (discrete-rv &key (n 100000))
+  "Count realizations for each value."
+  (check-type n fixnum)
+  (let ((count (make-array (length (funcall discrete-rv 'probabilities))
+                           :element-type 'fixnum :initial-element 0)))
+    (loop repeat n
+          do (incf (aref count (funcall discrete-rv))))
+    count))
+
+(defun average-relative-deviation (frequencies probabilities &key
+                                   (n (reduce #'+ frequencies)))
+  "Sum of the absolute values of relative deviations from expected probabilities."
+  (assert (= (length frequencies) (length probabilities)))
+  (mean (map 'vector 
+             (lambda (f p)
+               (let ((e (* n p)))
+                 (/ (abs (- f e)) e)))
+             frequencies probabilities)))
+
+(defun discrete-deviation (discrete-rv &key (n 100000))
+  "Probably a chi-square test would be better, but this isn't very important."
+  (average-relative-deviation (empirical-frequencies discrete-rv :n n)
+                              (funcall discrete-rv 'probabilities)
+                              :n n))
+
+(addtest (cl-random-tests)
+  discrete-moments
+  (let ((rv0 (discrete #(1/4 1/4 1/2)))
+        (rv1 (discrete #(1/3 1/6 1/3))) ; rescaled
+        (*lift-equality-test* #'equalp))
+    ;; first distribution
+    (ensure-same (funcall rv0 'probabilities) #(0.25d0 0.25 0.5))
+    (ensure-same (mean rv0) 1.25)
+    (ensure-same (variance rv0) 0.6875)
+    (ensure-same (cdf rv0 1) 0.5)
+    ;; second distribution -- this is rescaled to sum to 1
+    (ensure-same (funcall rv1 'probabilities) #(0.4d0 0.2d0 0.4d0))
+    (ensure-same (mean rv1) 1)
+    (ensure-same (variance rv1) 0.8d0)
+    (ensure-same (cdf rv1 0) 0.4d0)))
+
+(addtest (cl-random-tests)
+  discrete-draws
+  (ensure (< (discrete-deviation (discrete #(1/6 1/2 1/3))) 0.01))
+  (ensure (< (discrete-deviation (discrete #(1/6 1/2 1/3 9 17 21))) 0.05)))

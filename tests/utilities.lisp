@@ -43,7 +43,7 @@ var-band."
 
 (defun sample-mean-variance (n rv)
   (let ((sample (rs:replicate n rv)))
-    (values (rs:mean sample) (rs:variance sample))))
+    (values (mean sample) (variance sample))))
 
 (defun reldiff (x y)
   "Relative difference. (X should be the \"true\" value if the concept

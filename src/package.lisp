@@ -3,22 +3,19 @@
 (defpackage #:cl-random
     (:nicknames :rv)
   (:use :common-lisp
-        ;;	:cl-utilities
         :alexandria
         :iterate
         :bind
-        :lla
         :anaphora
         :cl-num-utils)
-  (:shadow :mean :variance)                   ; in alexandria
-  (:shadowing-import-from :iterate :collecting :collect)
-  (:shadowing-import-from :cl-num-utils :xor) ; also in alexandria
+  (:shadowing-import-from cl-num-utils xor mean variance) ; also in alexandria
   (:export
 
    ;; utilities
 
-   missing not-implemented undefined positive-double-float vector-double-float
-   vector-positive-double-float truncation-boundary
+   missing not-implemented undefined positive-double-float as-double-float 
+   double-float-vector as-double-float-vector truncation-boundary
+   as-double-float-probabilities
 
    ;; log-infinity
 
@@ -39,6 +36,7 @@
    normal mean sd
    log-normal log-mean log-sd
    gamma alpha beta inverse-gamma chi-square nu inverse-chi-square scale
+   discrete probabilities
 
    ;; multivariate
 

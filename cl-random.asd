@@ -31,5 +31,5 @@
      ;; (:file "optimization")
 )))
   :depends-on 
-  (:alexandria :cl-num-utils :iterate :metabang-bind :lla :anaphora))
+  (alexandria cl-num-utils iterate metabang-bind anaphora))
 

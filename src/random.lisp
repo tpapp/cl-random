@@ -63,19 +63,18 @@ Overridden locally within DEFINE-RV.  Anaphoric, captures the variable X."
                    ,@features-body))))
          ,@body))))
 
-(defmacro define-query-function (feature &optional args)
-  (if args
-      `(defun ,feature (rv x)
-         (funcall rv ',feature x))
-      `(defun ,feature (rv)
-         (funcall rv ',feature))))
+(defmacro define-query-function (name &key generic? arguments (feature name))
+  `(,(if generic? 'defmethod 'defun) ,feature
+     (,(if generic? '(rv function) 'rv) ,@(ensure-list arguments))
+     (funcall rv ',feature ,@(typecase arguments
+                               (null nil)
+                               (list `((list ,@arguments)))
+                               (otherwise (list arguments))))))
 
-(declaim (inline mean variance cdf log-pdf pdf quantile))
-
-(define-query-function mean)
-(define-query-function variance)
-(define-query-function cdf x)
-(define-query-function quantile x)
+(define-query-function mean :generic? t)
+(define-query-function variance :generic? t)
+(define-query-function cdf :arguments x)
+(define-query-function quantile :arguments x)
 
 (defun log-pdf (rv x &optional (normalized? t))
   (funcall rv 'log-pdf (cons x normalized?)))
