@@ -24,6 +24,7 @@
      (:file "special-functions")
      (:file "random")
      (:file "univariate")
+     (:file "continuous-time")
      ;; (:file "statistics")
      ;; (:file "multivariate")
      ;; (:file "design-matrix")

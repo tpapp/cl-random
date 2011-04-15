@@ -27,7 +27,7 @@
 
    ;; random
 
-   rv generator mean variance cdf log-pdf pdf quantile
+   undefined-feature draw mean variance cdf log-pdf pdf quantile
 
    ;; univariate
 
@@ -37,6 +37,10 @@
    log-normal log-mean log-sd
    gamma alpha beta inverse-gamma chi-square nu inverse-chi-square scale
    discrete probabilities
+
+   ;; continuous-time
+   
+   uniformized-markov-jump
 
    ;; multivariate
 

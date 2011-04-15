@@ -63,6 +63,12 @@ Overridden locally within DEFINE-RV.  Anaphoric, captures the variable X."
                    ,@features-body))))
          ,@body))))
 
+(declaim (inline draw))
+
+(defun draw (rv)
+  "Convenience function for drawing random variates."
+  (funcall rv))
+
 (defmacro define-query-function (name &key generic? arguments (feature name))
   `(,(if generic? 'defmethod 'defun) ,feature
      (,(if generic? '(rv function) 'rv) ,@(ensure-list arguments))
