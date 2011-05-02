@@ -10,6 +10,7 @@ the sum of keys, however, it can be specified to be larger, in which case the ma
 chain may remain in the same state and return NO-CHANGE as the second value.  Defines
 features DURATION and JUMP, which return the two underlying random variables."
   (bind ((rates (as-double-float-vector rates))
+         (keys (when keys (coerce keys 'vector)))
          (n (length rates))
          (total-rate (sum rates))
          ((:values transition-rate probabilities) 
