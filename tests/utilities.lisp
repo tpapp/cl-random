@@ -42,7 +42,7 @@ var-band."
     ok-p))
 
 (defun sample-mean-variance (n rv)
-  (let ((sample (rs:replicate n rv)))
+  (let ((sample (rs:replicate n (generator rv))))
     (values (mean sample) (variance sample))))
 
 (defun reldiff (x y)

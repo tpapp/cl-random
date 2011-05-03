@@ -146,10 +146,10 @@
 (defun empirical-frequencies (discrete-rv &key (n 100000))
   "Count realizations for each value."
   (check-type n fixnum)
-  (let ((count (make-array (length (funcall discrete-rv 'probabilities))
+  (let ((count (make-array (length (probabilities discrete-rv))
                            :element-type 'fixnum :initial-element 0)))
     (loop repeat n
-          do (incf (aref count (funcall discrete-rv))))
+          do (incf (aref count (draw discrete-rv))))
     count))
 
 (defun average-relative-deviation (frequencies probabilities &key
@@ -165,7 +165,7 @@
 (defun discrete-deviation (discrete-rv &key (n 100000))
   "Probably a chi-square test would be better, but this isn't very important."
   (average-relative-deviation (empirical-frequencies discrete-rv :n n)
-                              (funcall discrete-rv 'probabilities)
+                              (probabilities discrete-rv)
                               :n n))
 
 (addtest (cl-random-tests)
@@ -174,12 +174,12 @@
         (rv1 (discrete #(1/3 1/6 1/3))) ; rescaled
         (*lift-equality-test* #'equalp))
     ;; first distribution
-    (ensure-same (funcall rv0 'probabilities) #(0.25d0 0.25 0.5))
+    (ensure-same (probabilities rv0) #(0.25d0 0.25 0.5))
     (ensure-same (mean rv0) 1.25)
     (ensure-same (variance rv0) 0.6875)
     (ensure-same (cdf rv0 1) 0.5)
     ;; second distribution -- this is rescaled to sum to 1
-    (ensure-same (funcall rv1 'probabilities) #(0.4d0 0.2d0 0.4d0))
+    (ensure-same (probabilities rv1) #(0.4d0 0.2d0 0.4d0))
     (ensure-same (mean rv1) 1)
     (ensure-same (variance rv1) 0.8d0)
     (ensure-same (cdf rv1 0) 0.4d0)))

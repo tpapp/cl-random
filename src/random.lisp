@@ -1,120 +1,89 @@
 (in-package :cl-random)
 
-(deftype undefined-feature-status ()
-  '(member missing undefined not-implemented))
+(defmacro define-rv (name constructor-lambda-list options slots constructor-form
+                     &rest methods)
+  "Define a random variable, abstracting from the representation.  Syntax:
 
-(define-condition undefined-feature (error)
-  ((rv :accessor rv :initarg :rv)
-   (feature :accessor feature :initarg :feature)
-   (status :accessor status :initarg :status :initform 'missing
-           :type undefined-feature-status
-           :documentation "UNDEFINED is for concepts which do not exist/make
-  sense for a given distribution (eg the mean of a Cachy distribution).  MISSING
-  is for features which should be present, but are not yet implemented (this is
-  a bug in the library).  NOT-IMPLEMENTED means that it was impractical to write
-  and left it out, but may be included if somebody writes it.")))
+NAME is a symbol
 
-(defmethod print-object ((undefined-feature undefined-feature) stream)
-  (with-slots (rv feature status) undefined-feature
-    (format stream "~A is ~A for ~A random variables."
-            feature status rv)))
+CONSTRUCTOR-LAMBDA-LIST will be used to wrap the CONSTRUCTOR-FORM, which can use the
+locally define macro (MAKE :slot-name value1 ...) to initialize slots.
 
-(defmacro flambda (&body body)
-  "Defined as a toplevel macro to facilitate formatting in the editor.
-Overridden locally within FEATURES of DEFINE-RV."
-  (declare (ignore body)))
+SLOTS is a list of (slot-name &key type read-only reader) slot specifications.
 
-(defmacro features ((&rest clauses) &body body)
-  "Defined as a toplevel macro to facilitate formatting in the editor.
-Overridden locally within DEFINE-RV.  Anaphoric, captures the variable X."
-  (declare (ignore clauses body)))
+OPTIONS is (&key documentation instance), the default instance is a gensym.
 
-(defmacro define-rv (name arguments &rest body)
-  "Define a function with given NAME and ARGUMENTS that returns a closure."
+METHODS are (function-name lambda-list &body body), with (INSTANCE NAME) prepended to
+the lambda-list, ie the instance is accessible using INSTANCE.  Also, within BODY,
+slots are accessible by their names."
   (check-type name symbol)
-  (with-unique-names (feature features undefined-feature argument)
-    `(defun ,name ,arguments
-       (macrolet 
-           ((features ((&rest clauses) &body features-body)
-              `(labels ((,',features (,',feature x)
-                          (declare (ignorable x))
-                          (flet ((,',undefined-feature (status)
-                                   (error 'undefined-feature :rv ',',name
-                                          :feature ,',feature :status status)))
-                            (case ,',feature
-                              ,@(mapcar 
-                                   (lambda (clause)
-                                     (bind (((feature . definition) clause))
-                                       `(,feature
-                                         ,@(if (and (= 1 (length definition))
-                                                    (typep (car definition)
-                                                           'undefined-feature-status))
-                                               `((,',undefined-feature ',(car definition)))
-                                               definition))))
-                                   clauses)
-                           (otherwise
-                              (,',undefined-feature 'missing))))))
-                 (macrolet ((flambda (&body flambda-body)
-                              `(lambda (&optional ,',',feature ,',',argument)
-                                 (if ,',',feature
-                                     (,',',features ,',',feature ,',',argument)
-                                     (progn
-                                       ,@flambda-body)))))
-                   ,@features-body))))
-         ,@body))))
+  (bind ((slots (mapcar #'ensure-list slots))
+         ((&key documentation (instance (gensym* name))) options))
+    (labels ((local-slots (body)
+               ;; !! read-only slots could be expanded using LET for extra speed
+               `(symbol-macrolet
+                    ,(loop for slot in slots collect
+                      (bind ((slot-name (car slot))
+                             (accessor `(,(make-symbol* name '#:- slot-name)
+                                          ,instance)))
+                        `(,slot-name ,accessor)))
+                  ,@body)))
+      ;; collect extra information from slot definitions
+      (loop for slot in slots do
+        (bind (((slot-name &key reader &allow-other-keys) slot))
+          (awhen reader
+            (push (list slot-name nil reader) methods))))
+      ;; define form
+      `(progn
+         (defstruct ,name
+           ,documentation
+           ,@(loop for slot in slots collect
+             (bind (((slot-name &key type read-only &allow-other-keys) slot))
+               `(,slot-name nil
+                            ,@(awhen type `(:type ,it))
+                            ,@(awhen read-only `(:read-only ,it))))))
+         (defun ,name ,constructor-lambda-list
+           (macrolet ((make (&rest arguments)
+                        `(,',(make-symbol* '#:make- name) ,@arguments)))
+             ,constructor-form))
+         ,@(loop for (method-name lambda-list . body) in methods collect
+                 `(defmethod ,method-name ((,instance ,name) ,@lambda-list)
+                    ,(local-slots body)))))))
 
-(declaim (inline draw))
+;;; standard methods (MEAN and VARIANCE already defined in CL-NUM-UTILS)
 
-(defun draw (rv)
-  "Convenience function for drawing random variates."
-  (funcall rv))
+(defgeneric draw (random-variable &key &allow-other-keys)
+  (:documentation "Draw random variates."))
 
-(defmacro define-query-function (name &key generic? arguments (feature name))
-  `(,(if generic? 'defmethod 'defun) ,feature
-     (,(if generic? '(rv function) 'rv) ,@(ensure-list arguments))
-     (funcall rv ',feature ,@(typecase arguments
-                               (null nil)
-                               (list `((list ,@arguments)))
-                               (otherwise (list arguments))))))
+(defgeneric generator (random-variable)
+  (:documentation "Return a closure that returns random draws.")
+  (:method (random-variable)
+    (lambda ()
+      (draw random-variable))))
 
-(define-query-function mean :generic? t)
-(define-query-function variance :generic? t)
-(define-query-function cdf :arguments x)
-(define-query-function quantile :arguments x)
+(defgeneric cdf (random-variable x)
+  (:documentation "Cumulative distribution function of RANDOM-VARIABLE at X."))
 
-(defun log-pdf (rv x &optional (normalized? t))
-  (funcall rv 'log-pdf (cons x normalized?)))
+(defgeneric quantile (random-variable q)
+  (:documentation "Quantile of RANDOM-VARIABLE at Q."))
 
-(defun pdf (rv x &optional (normalized? t))
-  (exp (log-pdf rv x normalized?)))
+(defgeneric log-pdf (random-variable x &optional ignore-constant?)
+  (:documentation "Log of probability distribution function of RANDOM-VARIABLE at X.
+  NIL corresponds to log(-infinity).  When IGNORE-CONSTANT?, the result may be
+  shifted by an arbitrary real constant that does not change between calls of the
+  same RANDOM-VARIABLE.  This may save computation, and is useful for MCMC methods,
+  etc."))
 
-(defmacro log-pdf* (expression &optional constant)
-  "Used within FEATURES, this macro expands to a LOG-PDF clause, automatically
-taking care of argument destructuring and normalization."
-  (with-unique-names (normalized? expression*)
-    `(log-pdf
-      ,(if constant
-           `(let ((x (car x))
-                  (,normalized? (cdr x)))
-              (let ((,expression* ,expression))
-                (if ,normalized?
-                    (when ,expression*  ; may be NIL=-Infinity
-                      (+ ,expression* ,constant))
-                    ,expression*)))
-           `(let ((x (car x)))
-              ,expression)))))
+(defun pdf (rv x &optional ignore-constant?)
+  "Probability distribution function of RANDOM-VARIABLE at X.  See LOG-PDF for the
+semantics of IGNORE-CONSTANT?."
+  (~exp (log-pdf rv x ignore-constant?)))
 
-(defmacro normalized (expression &optional constant)
-  "Used within FEATURES, this macro expands to a LOG-PDF clause, automatically
-taking care of argument destructuring and normalization."
-  (with-unique-names (normalized? expression*)
-    (if constant
-        `(let ((x (car x))
-               (,normalized? (cdr x)))
-           (let ((,expression* ,expression))
-             (if ,normalized?
-                 (when ,expression*    ; may be NIL=-Infinity
-                   (+ ,expression* ,constant))
-                 ,expression*)))
-        `(let ((x (car x)))
-           ,expression))))
+(defmacro maybe-ignore-constant (ignore-constant? value constant)
+  "Handle a constant that is calculated only when IGNORE-CONSTANT? is NIL and VALUE
+is not negative infinity (represented by NIL)."
+  (once-only (value)
+    `(when ,value
+       (if ,ignore-constant?
+           ,value
+           (+ ,value ,constant)))))

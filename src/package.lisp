@@ -2,12 +2,7 @@
 
 (defpackage #:cl-random
     (:nicknames :rv)
-  (:use :common-lisp
-        :alexandria
-        :iterate
-        :bind
-        :anaphora
-        :cl-num-utils)
+  (:use common-lisp alexandria iterate bind anaphora cl-num-utils lla)
   (:shadowing-import-from cl-num-utils xor mean variance) ; also in alexandria
   (:export
 
@@ -27,7 +22,7 @@
 
    ;; random
 
-   undefined-feature draw mean variance cdf log-pdf pdf quantile
+   draw generator cdf log-pdf pdf quantile
 
    ;; univariate
 

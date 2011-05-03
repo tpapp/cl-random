@@ -6,24 +6,30 @@
 ;;; ****************************************************************
 
 (define-rv uniform (left right)
-  ;; "Uniform(left,right) distribution."
+  (:documentation "Uniform(left,right) distribution.")
+  ((left :type double-float)
+   (right :type double-float)
+   (width :type double-float))
   (with-doubles (left right)
     (assert (< left right))
     (let ((width (- right left)))
-      (features ((mean (/ (+ left right) 2))
-                 (variance (/ (expt width 2) 12d0))
-                 (log-pdf (normalized
-                           (with-doubles (x)
-                             (if (<= left x right)
-                                 (- (log width))
-                                 nil))))
-                 (cdf (with-doubles (x)
-                        (cond
-                          ((< x left) 0d0)
-                          ((< right x) 1d0)
-                          (t (/ (- x left) width))))))
-       (flambda
-         (+ left (random width)))))))
+      (make :left left :right right :width width)))
+  (mean () (/ (+ left right) 2))
+  (variance () (/ (expt width 2) 12d0))
+  (log-pdf (x &optional ignore-constant?)
+           (declare (ignore ignore-constant?))
+           (with-doubles (x)
+             (if (<= left x right)
+                 (- (log width))
+                 nil)))
+  (cdf (x)
+       (with-doubles (x)
+         (cond
+           ((< x left) 0d0)
+           ((< right x) 1d0)
+           (t (/ (- x left) width)))))
+  (draw (&key)
+        (+ left (random width))))
 
 ;;; ****************************************************************
 ;;; Exponential distribution.
@@ -41,20 +47,25 @@ which has density exp(-x)."
 (declaim (inline draw-standard-exponential))
 
 (define-rv exponential (beta)
-  "Exponential(beta) distribution, with density beta*exp(-beta*x)."
+  (:documentation "Exponential(beta) distribution, with density beta*exp(-beta*x).")
+  ((beta :type double-float :reader beta))
   (with-doubles (beta)
     (assert (plusp beta))
-    (features ((mean (/ beta))
-               (variance (expt beta -2))
-               (log-pdf (normalized
-                         (with-doubles (x)
-                           (- (log beta) (* beta x)))))
-               (cdf (with-doubles (x)
-                      (- 1 (exp (- (* beta x))))))
-               (quantile (with-doubles (x)
-                           (/ (log (- 1 x)) (- beta)))))
-      (flambda 
-        (/ (draw-standard-exponential) beta)))))
+    (make :beta beta))
+  (mean () (/ beta))
+  (variance () (expt beta -2))
+  (log-pdf (x &optional ignore-constant?)
+           (declare (ignore ignore-constant?))
+           (with-doubles (x)
+             (- (log beta) (* beta x))))
+  (cdf (x)
+       (with-doubles (x)
+         (- 1 (exp (- (* beta x))))))
+  (quantile (x)
+            (with-doubles (x)
+              (/ (log (- 1 x)) (- beta))))
+  (draw (&key) 
+    (/ (draw-standard-exponential) beta)))
 
 ;;; ****************************************************************
 ;;; Normal distribution (univariate).
@@ -121,17 +132,23 @@ which has density exp(-x)."
   (+ (* x sigma) mu))
 
 (define-rv normal (mean sd)
+  (:documentation "Normal(mean,sd) distribution.")
+  ((mean :type double-float :reader mean)
+   (sd :type double-float))
   (with-doubles (mean sd)
-    (features ((mean mean)
-               (variance (expt sd 2))
-               (log-pdf (normalized
-                         (with-doubles (x)
-                           (/ (expt (- x mean) 2) (expt sd 2) -2d0))
-                         (- +normal-log-pdf-constant+ (log sd))))
-               (cdf (with-doubles (x)
-                      (cdf-standard-normal (to-standard-normal x mean sd)))))
-      (flambda
-        (from-standard-normal (draw-standard-normal) mean sd)))))
+    (assert (plusp sd))
+    (make :mean mean :sd sd))
+  (variance () (expt sd 2))
+  (log-pdf (x &optional ignore-constant?)
+           (maybe-ignore-constant ignore-constant?
+                                  (with-doubles (x)
+                                    (/ (expt (- x mean) 2) (expt sd 2) -2d0))
+                                  (- +normal-log-pdf-constant+ (log sd))))
+  (cdf (x)
+       (with-doubles (x)
+         (cdf-standard-normal (to-standard-normal x mean sd))))
+  (draw (&key)
+    (from-standard-normal (draw-standard-normal) mean sd)))
 
 ;;; !! It is claimed in Marsaglia & Tsang (2000) that the ziggurat
 ;;; method is about 5-6 times faster than the above, mainly because of
@@ -333,21 +350,27 @@ which has density exp(-x)."
 ;;; ****************************************************************
 
 (define-rv log-normal (log-mean log-sd)
-  "Log-normal distribution with location log-mean and scale log-sd."
+  (:documentation "Log-normal distribution with location log-mean and scale log-sd.")
+  ((log-mean :type double-float)
+   (log-sd :type double-float))
   (with-doubles (log-mean log-sd)
     (assert (plusp log-sd))
-    (features ((mean (exp (+ log-mean (/ (expt log-sd 2) 2))))
-               (variance (let ((sigma^2 (expt log-sd 2)))
-                           (* (1- (exp sigma^2))
-                              (exp (+ (* 2 log-mean) sigma^2)))))
-               (log-pdf (normalized
-                         (with-doubles (x)
-                           (let ((log-x (log x)))
-                             (- (/ (expt (- log-x log-mean) 2) (expt log-sd 2) -2)
-                                log-x)))
-                         (- +normal-log-pdf-constant+ (log log-sd)))))
-     (flambda
-       (exp (from-standard-normal (draw-standard-normal) log-mean log-sd))))))
+    (make :log-mean log-mean :log-sd log-sd))
+  
+  (mean () (exp (+ log-mean (/ (expt log-sd 2) 2))))
+  (variance () (let ((sigma^2 (expt log-sd 2)))
+              (* (1- (exp sigma^2))
+                 (exp (+ (* 2 log-mean) sigma^2)))))
+  (log-pdf (x &optional ignore-constant?)
+           (maybe-ignore-constant ignore-constant? 
+                                  (with-doubles (x)
+                                    (let ((log-x (log x)))
+                                      (- (/ (expt (- log-x log-mean) 2)
+                                            (expt log-sd 2) -2)
+                                         log-x)))
+                                  (- +normal-log-pdf-constant+ (log log-sd))))
+  (draw (&key)
+    (exp (from-standard-normal (draw-standard-normal) log-mean log-sd))))
 
 
 ;;;; ****************************************************************
@@ -393,61 +416,70 @@ and c using the utility function above. "
            (go top)))))
 
 (define-rv gamma (alpha beta)
-  "Gamma(alpha,beta) distribution, with density proportional to x^(alpha-1)
+  (:documentation "Gamma(alpha,beta) distribution, with density proportional to x^(alpha-1)
   exp(-x*beta).  Alpha and beta are known as shape and scale parameters,
-  respectively."
+  respectively.")
+  ((alpha :type double-float)
+   (beta :type double-float))
   (with-doubles (alpha beta)
     (assert (plusp alpha))
     (assert (plusp beta))
-    (features ((mean (/ alpha beta))
-               (variance (* alpha (expt beta -2)))
-               (log-pdf (normalized
-                         (with-doubles (x)
-                           (- (+ (* alpha (log beta)) (* (1- alpha) (log x)))
-                              (* beta x)))
-                         (- (log-gamma-function alpha)))))
-      (if (< alpha 1d0)
-          (bind ((1+alpha (1+ alpha))
-                 (1/alpha (/ alpha))
-                 ((:values d c) (standard-gamma1-d-c 1+alpha)))
-            ;; use well known-transformation, see p 371 of Marsaglia and Tsang (2000)
-            (flambda
+    (make :alpha alpha :beta beta))
+  (mean () (/ alpha beta))
+  (variance () (* alpha (expt beta -2)))
+  (log-pdf (x &optional ignore-constant?)
+           (maybe-ignore-constant
+            ignore-constant?
+            (with-doubles (x)
+              (- (+ (* alpha (log beta)) (* (1- alpha) (log x)))
+                 (* beta x)))
+            (- (log-gamma-function alpha))))
+  (draw (&key)
+        ;; !! could optimize this by saving slots
+        (if (< alpha 1d0)
+            (bind ((1+alpha (1+ alpha))
+                   (1/alpha (/ alpha))
+                   ((:values d c) (standard-gamma1-d-c 1+alpha)))
+              ;; use well known-transformation, see p 371 of Marsaglia and Tsang (2000)
               (/ (* (expt (random 1d0) 1/alpha) (draw-standard-gamma1 1+alpha d c))
-                 beta)))
-          (bind (((:values d c) (standard-gamma1-d-c alpha)))
-            (flambda
-              (/ (draw-standard-gamma1 alpha d c) beta)))))))
+                 beta))
+            (bind (((:values d c) (standard-gamma1-d-c alpha)))
+              (/ (draw-standard-gamma1 alpha d c) beta)))))
 
 ;;;; ****************************************************************
 ;;;; Inverse gamma distribution.
 ;;;; ****************************************************************
 
 (define-rv inverse-gamma (alpha beta)
-  "Inverse-Gamma(alpha,beta) distribution, with density p(x) proportional to
-  x^(-alpha+1) exp(-beta/x)"
+  (:documentation "Inverse-Gamma(alpha,beta) distribution, with density p(x)
+ proportional to x^(-alpha+1) exp(-beta/x)")
+  ((alpha :type double-float)
+   (beta :type double-float))
   (with-doubles (alpha beta)
     (assert (plusp alpha))
     (assert (plusp beta))
-    (features ((mean (if (< 1 alpha)
-                         (/ beta (1- alpha))
-                         (error "Mean is defined only for ALPHA > 1")))
-               (variance (if (< 2 alpha)
-                             (/ (expt beta 2) (expt (1- alpha) 2) (- alpha 2))
-                             (error "Variance is defined only for ALPHA > 2")))
-               (log-pdf (normalized
-                         (- (* (- (1+ alpha)) (log x)) (/ beta x))
-                         (- (* alpha (log beta)) (log-gamma-function alpha)))))
-      (if (< alpha 1d0)
-          (bind ((1+alpha (1+ alpha))
-                 (1/alpha (/ alpha))
-                 ((:values d c) (standard-gamma1-d-c 1+alpha)))
-            ;; use well known-transformation, see p 371 of Marsaglia and Tsang (2000)
-            (flambda
+    (make :alpha alpha :beta beta))
+  (mean () (if (< 1 alpha)
+            (/ beta (1- alpha))
+            (error "Mean is defined only for ALPHA > 1")))
+  (variance () (if (< 2 alpha)
+                (/ (expt beta 2) (expt (1- alpha) 2) (- alpha 2))
+                (error "Variance is defined only for ALPHA > 2")))
+  (log-pdf (x &optional ignore-constant?)
+           (maybe-ignore-constant
+            ignore-constant?
+            (- (* (- (1+ alpha)) (log x)) (/ beta x))
+            (- (* alpha (log beta)) (log-gamma-function alpha))))
+  (draw (&key)
+        (if (< alpha 1d0)
+            (bind ((1+alpha (1+ alpha))
+                   (1/alpha (/ alpha))
+                   ((:values d c) (standard-gamma1-d-c 1+alpha)))
+              ;; use well known-transformation, see p 371 of Marsaglia and Tsang (2000)
               (/ beta
-                 (* (expt (random 1d0) 1/alpha) (draw-standard-gamma1 1+alpha d c)))))
-          (bind (((:values d c) (standard-gamma1-d-c alpha)))
-            (flambda
-              (/ beta (draw-standard-gamma1 alpha d c))))))))
+                 (* (expt (random 1d0) 1/alpha) (draw-standard-gamma1 1+alpha d c))))
+            (bind (((:values d c) (standard-gamma1-d-c alpha)))
+              (/ beta (draw-standard-gamma1 alpha d c))))))
 
 ;;;; ****************************************************************
 ;;;; Chi-square and inverse-chi-square distribution (both scaled).
@@ -470,20 +502,21 @@ INVERSE-GAMMA."
 ;;;; ****************************************************************
 
 (define-rv beta (alpha beta)
-  "Beta(alpha,beta) distribution, with density proportional to
-x^(alpha-1)*(1-x)^(beta-1)."
+  (:documentation "Beta(alpha,beta) distribution, with density proportional to
+x^(alpha-1)*(1-x)^(beta-1).")
+  ((alpha :type double-float)
+   (beta :type double-float))
   (with-doubles (alpha beta)
     (assert (plusp alpha))
     (assert (plusp beta))
-    (features ((mean (/ alpha (+ alpha beta)))
-               (variance (let ((sum (+ alpha beta)))
-                           (/ (* alpha beta) (* (expt sum 2) (1+ sum))))))
-      (let ((alpha-gen (gamma alpha 1))
-            (beta-gen (gamma beta 1)))
-        (flambda 
-          (let ((alpha (funcall alpha-gen))
-                (beta (funcall beta-gen)))
-            (/ alpha (+ alpha beta))))))))
+    (make :alpha beta :beta beta))
+  (mean () (/ alpha (+ alpha beta)))
+  (variance () (let ((sum (+ alpha beta)))
+                 (/ (* alpha beta) (* (expt sum 2) (1+ sum)))))
+  (draw (&key)
+        (let ((alpha (draw (gamma alpha 1)))
+              (beta (draw (gamma beta 1))))
+          (/ alpha (+ alpha beta)))))
 
 ;;;; ****************************************************************
 ;;;; Discrete distribution.
@@ -496,6 +529,12 @@ x^(alpha-1)*(1-x)^(beta-1)."
 ;;; -- comparisons for the latter are quite slow.
 
 (define-rv discrete (probabilities)
+  (:documentation "Discrete probabilities." :instance instance)
+  ((probabilities :type double-float-vector :reader probabilities)
+   (prob :type double-float-vector)
+   (alias :type (simple-array fixnum (*)))
+   (n-double :type double-float))
+  ;; algorithm from Vose (1991)
   (let* ((probabilities (as-double-float-probabilities probabilities))
          (p (copy-seq probabilities))   ; this is modified
          (n (length probabilities))
@@ -523,22 +562,31 @@ x^(alpha-1)*(1-x)^(beta-1)."
     ;; the rest use 1
     (loop :for s :in small :do (setf (aref prob s) 1d0))
     (loop :for l :in large :do (setf (aref prob l) 1d0))
-    ;; definition of body
-    (lazy-let* ((mean (iter 
-                        (for p :in-vector probabilities :with-index i)
-                        (summing (* p i))))
-                (variance (iter
-                            (for p :in-vector probabilities :with-index i)
-                            (summing (* p (expt (- i mean) 2)))))
-                (cdf (cumulative-sum probabilities 
-                                     :result-type 'double-float-vector)))
-      (features ((probabilities probabilities)
-                 (mean mean)
-                 (variance variance)
-                 (cdf (aref cdf x)))
-        (flambda
-          (multiple-value-bind (j p) (floor (random n-double))
-            (if (<= p (aref prob j))
-                j
-                (aref alias j))))))))
+    ;; save what's needed
+    (make :probabilities probabilities :prob prob :alias alias :n-double n-double))
+  (mean ()
+        (iter 
+          (for p :in-vector probabilities :with-index i)
+          (summing (* p i))))
+  (variance ()
+            (iter
+              (with mean := (mean instance))
+              (for p :in-vector probabilities :with-index i)
+              (summing (* p (expt (- i mean) 2)))))
+  (log-pdf (i &optional ignore-constant?)
+           (declare (ignore ignore-constant?))
+           (log (aref probabilities i)))
+  (cdf (i)
+       ;; NIL gives the whole CDF
+       (if i
+           (iter
+             (for p :in-vector probabilities :to i)
+             (summing p))
+           (cumulative-sum probabilities 
+                           :result-type 'double-float-vector)))
+  (draw (&key)
+        (multiple-value-bind (j p) (floor (random n-double))
+          (if (<= p (aref prob j))
+              j
+              (aref alias j)))))
 
