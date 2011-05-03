@@ -134,8 +134,10 @@ used) until condition is satisfied, then return value."
 (deftype double-float-vector (&optional (n '*))
   `(simple-array double-float (,n)))
 
-(defun as-double-float-vector (vector)
-  (map 'double-float-vector #'as-double-float vector))
+(defun as-double-float-vector (vector &key copy?)
+  (if (or copy? (not (typep vector 'double-float-vector)))
+      (map 'double-float-vector #'as-double-float vector)
+      vector))
 
 (defun as-double-float-probabilities (vector)
   "Normalize vector as probabilities, assert that all are positive, return them as a
