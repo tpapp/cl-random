@@ -9,7 +9,9 @@ NAME is a symbol
 CONSTRUCTOR-LAMBDA-LIST will be used to wrap the CONSTRUCTOR-FORM, which can use the
 locally define macro (MAKE :slot-name value1 ...) to initialize slots.
 
-SLOTS is a list of (slot-name &key type read-only reader) slot specifications.
+SLOTS is a list of (slot-name &key type read-only reader) slot specifications.  When
+READER is T, SLOT-NAME is used instead, otherwise a method is defined using the given
+symbol.
 
 OPTIONS is (&key documentation instance), the default instance is a gensym.
 
@@ -32,7 +34,8 @@ slots are accessible by their names."
       (loop for slot in slots do
         (bind (((slot-name &key reader &allow-other-keys) slot))
           (awhen reader
-            (push (list slot-name nil reader) methods))))
+            (let ((reader (if (eq reader t) slot-name reader)))
+              (push (list reader nil slot-name) methods)))))
       ;; define form
       `(progn
          (defstruct ,name
