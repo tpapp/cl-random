@@ -5,7 +5,7 @@
 ;;; Uniform distribution.
 ;;; ****************************************************************
 
-(define-rv uniform (left right)
+(define-rv r-uniform (left right)
   (:documentation "Uniform(left,right) distribution.")
   ((left :type double-float)
    (right :type double-float)
@@ -46,9 +46,9 @@ which has density exp(-x)."
 
 (declaim (inline draw-standard-exponential))
 
-(define-rv exponential (beta)
+(define-rv r-exponential (beta)
   (:documentation "Exponential(beta) distribution, with density beta*exp(-beta*x).")
-  ((beta :type double-float :reader beta))
+  ((beta :type double-float :reader t))
   (with-doubles (beta)
     (assert (plusp beta))
     (make :beta beta))
@@ -131,10 +131,10 @@ which has density exp(-x)."
   "Scale x from standard normal." 
   (+ (* x sigma) mu))
 
-(define-rv normal (mean sd)
+(define-rv r-normal (mean sd)
   (:documentation "Normal(mean,sd) distribution.")
-  ((mean :type double-float :reader mean)
-   (sd :type double-float))
+  ((mean :type double-float :reader t)
+   (sd :type double-float :reader t))
   (with-doubles (mean sd)
     (assert (plusp sd))
     (make :mean mean :sd sd))
@@ -349,7 +349,7 @@ which has density exp(-x)."
 ;;; Lognormal distribution
 ;;; ****************************************************************
 
-(define-rv log-normal (log-mean log-sd)
+(define-rv r-log-normal (log-mean log-sd)
   (:documentation "Log-normal distribution with location log-mean and scale log-sd.")
   ((log-mean :type double-float)
    (log-sd :type double-float))
@@ -372,6 +372,36 @@ which has density exp(-x)."
   (draw (&key)
     (exp (from-standard-normal (draw-standard-normal) log-mean log-sd))))
 
+;;; ****************************************************************
+;;; Student's T distribution
+;;; ****************************************************************
+
+(defun draw-standard-t (nu)
+  "Draw a standard T random variate, with NU degrees of freedom."
+  ;; !! algorithm from Bailey (1994), test Marsaglia (1984) to see if it is faster
+  (declare (double-float nu)
+           (optimize (speed 3)))
+  (try ((v1 (1- (random 2d0)))
+        (v2 (1- (random 2d0)))
+        (r-square (+ (expt v1 2) (expt v2 2))))
+       (<= r-square 1)
+       (* v1 (sqrt (the (double-float 0d0)
+                     (/ (* nu (1- (expt r-square (/ -2d0 nu)))) r-square))))))
+
+(define-rv r-t (mean scale nu)
+  (:documentation "T(mean,scale,nu) random variate.")
+  ((mean :type double-float :reader t)
+   (scale :type double-float :reader t)
+   (nu :type double-float :reader t))
+  (with-doubles (mean scale nu)
+    (assert (plusp nu))
+    (assert (plusp scale))
+    (make :mean mean :scale scale :nu nu))
+  (variance ()
+            (assert (< 2d0 nu))
+            (* (expt scale 2) (/ nu (- nu 2d0))))
+  (draw (&key)
+        (from-standard-normal (draw-standard-t nu) mean scale)))
 
 ;;;; ****************************************************************
 ;;;; Gamma distribution.
@@ -415,12 +445,12 @@ and c using the utility function above. "
            (return-from draw-standard-gamma1 (* d v))
            (go top)))))
 
-(define-rv gamma (alpha beta)
+(define-rv r-gamma (alpha beta)
   (:documentation "Gamma(alpha,beta) distribution, with density proportional to x^(alpha-1)
   exp(-x*beta).  Alpha and beta are known as shape and scale parameters,
   respectively.")
-  ((alpha :type double-float)
-   (beta :type double-float))
+  ((alpha :type double-float :reader t)
+   (beta :type double-float :reader t))
   (with-doubles (alpha beta)
     (assert (plusp alpha))
     (assert (plusp beta))
@@ -433,7 +463,7 @@ and c using the utility function above. "
             (with-doubles (x)
               (- (+ (* alpha (log beta)) (* (1- alpha) (log x)))
                  (* beta x)))
-            (- (log-gamma-function alpha))))
+            (- (log-gamma alpha))))
   (draw (&key)
         ;; !! could optimize this by saving slots
         (if (< alpha 1d0)
@@ -450,11 +480,11 @@ and c using the utility function above. "
 ;;;; Inverse gamma distribution.
 ;;;; ****************************************************************
 
-(define-rv inverse-gamma (alpha beta)
+(define-rv r-inverse-gamma (alpha beta)
   (:documentation "Inverse-Gamma(alpha,beta) distribution, with density p(x)
  proportional to x^(-alpha+1) exp(-beta/x)")
-  ((alpha :type double-float)
-   (beta :type double-float))
+  ((alpha :type double-float :reader t)
+   (beta :type double-float :reader t))
   (with-doubles (alpha beta)
     (assert (plusp alpha))
     (assert (plusp beta))
@@ -469,7 +499,7 @@ and c using the utility function above. "
            (maybe-ignore-constant
             ignore-constant?
             (- (* (- (1+ alpha)) (log x)) (/ beta x))
-            (- (* alpha (log beta)) (log-gamma-function alpha))))
+            (- (* alpha (log beta)) (log-gamma alpha))))
   (draw (&key)
         (if (< alpha 1d0)
             (bind ((1+alpha (1+ alpha))
@@ -487,25 +517,25 @@ and c using the utility function above. "
 ;;;; We just reparametrize and rely on GAMMA and INVERSE-GAMMA.
 ;;;; ****************************************************************
 
-(defun chi-square (nu)
-  "Chi-square distribution.  Reparametrized to GAMMA."
-  (gamma (/ nu 2) 0.5))
+(defun r-chi-square (nu)
+  "Chi-square distribution with NU degrees of freedom."
+  (r-gamma (/ nu 2) 0.5d0))
 
-(defun inverse-chi-square (nu scale)
+(defun r-inverse-chi-square (nu &optional (scale 1d0))
   "Generalized inverse chi-square distribution.  Reparametrized to
 INVERSE-GAMMA."
   (let ((nu/2 (/ nu 2)))
-    (inverse-gamma nu/2 (* nu/2 (expt scale 2)))))
+    (r-inverse-gamma nu/2 (* nu/2 (expt scale 2)))))
 
 ;;;; ****************************************************************
 ;;;; Beta distribution.
 ;;;; ****************************************************************
 
-(define-rv beta (alpha beta)
+(define-rv r-beta (alpha beta)
   (:documentation "Beta(alpha,beta) distribution, with density proportional to
 x^(alpha-1)*(1-x)^(beta-1).")
-  ((alpha :type double-float)
-   (beta :type double-float))
+  ((alpha :type double-float :reader t)
+   (beta :type double-float :reader t))
   (with-doubles (alpha beta)
     (assert (plusp alpha))
     (assert (plusp beta))
@@ -514,8 +544,8 @@ x^(alpha-1)*(1-x)^(beta-1).")
   (variance () (let ((sum (+ alpha beta)))
                  (/ (* alpha beta) (* (expt sum 2) (1+ sum)))))
   (draw (&key)
-        (let ((alpha (draw (gamma alpha 1)))
-              (beta (draw (gamma beta 1))))
+        (let ((alpha (draw (r-gamma alpha 1)))
+              (beta (draw (r-gamma beta 1))))
           (/ alpha (+ alpha beta)))))
 
 ;;;; ****************************************************************
@@ -528,9 +558,9 @@ x^(alpha-1)*(1-x)^(beta-1).")
 ;;; especially in cases when the normalization resulted in rationals
 ;;; -- comparisons for the latter are quite slow.
 
-(define-rv discrete (probabilities)
+(define-rv r-discrete (probabilities)
   (:documentation "Discrete probabilities." :instance instance)
-  ((probabilities :type double-float-vector :reader probabilities)
+  ((probabilities :type double-float-vector :reader t)
    (prob :type double-float-vector)
    (alias :type (simple-array fixnum (*)))
    (n-double :type double-float))

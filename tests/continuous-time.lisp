@@ -7,7 +7,8 @@
   (let* ((n 100000)
          (keys #(:a :b :c))
          (rates #(1 2 3))
-         (rv (uniformized-markov-jump rates :transition-rate 10 :keys keys :no-change :no-change))
+         (rv (r-uniformized-markov-jump rates :transition-rate 10 :keys keys
+                                        :no-change :no-change))
          (possible-keys (concatenate 'vector (vector :no-change) keys))
          (durations (make-array n :element-type 'double-float))
          (jumps (make-array n))

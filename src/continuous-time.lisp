@@ -2,7 +2,7 @@
 
 (in-package #:cl-random)
 
-(define-rv uniformized-markov-jump (rates &key transition-rate keys no-change)
+(define-rv r-uniformized-markov-jump (rates &key transition-rate keys no-change)
   (:documentation "Define a random variable for uniformized markov jumps, which
 returns two values: the time spent in the state, and the index of the next state (or
 the corresponding element in KEYS, which is a vector of the same length).
@@ -31,8 +31,8 @@ two underlying random variables.")
                 total-rate
                 rates))))
     (assert (every #'plusp rates) () "Rates need to be positive.")
-    (make :duration (exponential transition-rate)
-          :jump (discrete probabilities)
+    (make :duration (r-exponential transition-rate)
+          :jump (r-discrete probabilities)
           :no-change no-change
           :keys keys
           :n n))

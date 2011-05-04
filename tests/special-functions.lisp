@@ -17,7 +17,7 @@
 
 (defun gamma-relative-precision (i)
   (let ((g (gamma-int i)))
-    (reldiff g (gamma-function i))))
+    (reldiff g (gamma i))))
 
 (addtest (special-functions-tests)
   gamma-integer
@@ -31,16 +31,16 @@
 (addtest (special-functions-tests)
   gamma-fraction
   ;; values calculated by Maxima
-  (ensure (< (reldiff (gamma-function 0.5) 1.772453850905516d0) 1d-13))
-  (ensure (< (reldiff (gamma-function 1.01) 0.99432585119151d0) 1d-8))
-  (ensure (< (reldiff (gamma-function 0.999999) 1.000000577216654) 1d-7)))
+  (ensure (< (reldiff (gamma 0.5) 1.772453850905516d0) 1d-13))
+  (ensure (< (reldiff (gamma 1.01) 0.99432585119151d0) 1d-8))
+  (ensure (< (reldiff (gamma 0.999999) 1.000000577216654) 1d-7)))
 
 (addtest (special-functions-tests)
   gamma-negative
   ;; values calculated by Maxima
-  (ensure (< (reldiff (gamma-function -7.1) 0.0016478244570263d0) 1d-5))
-  (ensure (< (reldiff (log-gamma-function -5.5) -4.517832174007742) 1d-7))
+  (ensure (< (reldiff (gamma -7.1) 0.0016478244570263d0) 1d-5))
+  (ensure (< (reldiff (log-gamma -5.5) -4.517832174007742) 1d-7))
   ;; not defined, should signal error
-  (ensure-error (gamma-function -7))
-  (ensure-error (gamma-function 0))
-  (ensure-error (log-gamma-function 0)))
+  (ensure-error (gamma -7))
+  (ensure-error (gamma 0))
+  (ensure-error (log-gamma 0)))

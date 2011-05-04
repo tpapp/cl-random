@@ -8,17 +8,17 @@
 
 (addtest (cl-random-tests)
   uniform-draws
-  (ensure (same-sample-mean-variance (uniform 0 1)))
-  (ensure (same-sample-mean-variance (uniform -9 1)))
-  (ensure (same-sample-mean-variance (uniform 0 107)))
-  (ensure (same-sample-mean-variance (uniform 19 57))))
+  (ensure (same-sample-mean-variance (r-uniform 0 1)))
+  (ensure (same-sample-mean-variance (r-uniform -9 1)))
+  (ensure (same-sample-mean-variance (r-uniform 0 107)))
+  (ensure (same-sample-mean-variance (r-uniform 19 57))))
 
 ;; exponential distribution
 
 (addtest (cl-random-tests)
   exponential-draws
-  (ensure (same-sample-mean-variance (exponential 1)))
-  (ensure (same-sample-mean-variance (exponential 19) 
+  (ensure (same-sample-mean-variance (r-exponential 1)))
+  (ensure (same-sample-mean-variance (r-exponential 19) 
                               :var-band 0.3d0)))
 
 ;; normal distribution
@@ -28,14 +28,14 @@
   ;; note: currently comparing to values from R, would be more useful
   ;; to use "exact" (ie calculated with arbitrary precision) values
   ;; from eg Maxima
-  (let ((rv (normal 0 1)))
+  (let ((rv (r-normal 0 1)))
     (ensure-same (cdf rv -1d0) 0.158655253931457)
     (ensure-same (cdf rv 5d0) 0.999999713348428)
     (ensure-same (cdf rv 0.7d0) 0.758036347776927)))
 
 (addtest (cl-random-tests)
   normal-pdf
-  (let ((rv (normal 5 19))
+  (let ((rv (r-normal 5 19))
         (*lift-equality-test* #'rel=))
     (ensure-same (pdf rv 2d0) 0.02073685169643458d0)
     (ensure-same (pdf rv 16d0) 0.01775714089407024d0)
@@ -43,9 +43,9 @@
 
 (addtest (cl-random-tests)
   normal-draws
-  (ensure (same-sample-mean-variance (normal 0 1)))
-  (ensure (same-sample-mean-variance (normal 10 1)))
-  (ensure (same-sample-mean-variance (normal 0 12))))
+  (ensure (same-sample-mean-variance (r-normal 0 1)))
+  (ensure (same-sample-mean-variance (r-normal 10 1)))
+  (ensure (same-sample-mean-variance (r-normal 0 12))))
 
 ;; truncated normal distribution
 
@@ -80,12 +80,11 @@
 ;;   ;; NOT TRUNCATED
 ;;   (ensure (same-sample-mean-variance (make-instance 'truncated-normal :mu 5d0 :sigma 9d0))))
 
-
 ;; log-normal distribution
 
 (addtest (cl-random-tests)
   log-normal-pdf
-  (let ((rv (log-normal 5 19))
+  (let ((rv (r-log-normal 5 19))
         (*lift-equality-test* #'rel=))
     (ensure-same (pdf rv 2d0) 0.0102321986262048220)
     (ensure-same (pdf rv 16d0)  0.0013033232558763653d0)
@@ -93,32 +92,43 @@
 
 (addtest (cl-random-tests)
   log-normal-draws
-  (ensure (same-sample-mean-variance (log-normal 0 1)))
-  (ensure (same-sample-mean-variance (log-normal 10 1)))
-  (ensure (same-sample-mean-variance (log-normal 0 0.5))))
+  (ensure (same-sample-mean-variance (r-log-normal 0 1)))
+  (ensure (same-sample-mean-variance (r-log-normal 10 1)))
+  (ensure (same-sample-mean-variance (r-log-normal 0 0.5))))
+
+;;; Student's T distribution
+
+(addtest (cl-random-tests)
+  t-draws
+  (ensure (same-sample-mean-variance (r-t 0 1 4.1)))
+  (ensure (same-sample-mean-variance (r-t 10 1 5)))
+  (ensure (same-sample-mean-variance (r-t 0 112 9)))
+  (ensure-error (r-t 0 1 0))
+  (ensure-error (r-t 0 1 -1))
+  (ensure-error (r-t 0 -1 3)))
 
 ;; gamma distribution
 
 (addtest (cl-random-tests)
   gamma-draws
-  (ensure-error (gamma 9 0)) 
-  (ensure-error (gamma -7 1))
-  (ensure (same-sample-mean-variance (gamma 1 1)))
-  (ensure (same-sample-mean-variance (gamma 12 1)))
-  (ensure (same-sample-mean-variance (gamma 8 1)))
-  (ensure (same-sample-mean-variance (gamma 0.5 pi))))
+  (ensure-error (r-gamma 9 0)) 
+  (ensure-error (r-gamma -7 1))
+  (ensure (same-sample-mean-variance (r-gamma 1 1)))
+  (ensure (same-sample-mean-variance (r-gamma 12 1)))
+  (ensure (same-sample-mean-variance (r-gamma 8 1)))
+  (ensure (same-sample-mean-variance (r-gamma 0.5 pi))))
 
 (addtest (cl-random-tests)
   inverse-gamma-draws
-  (ensure (same-sample-mean-variance (inverse-gamma 12 1)))
-  (ensure (same-sample-mean-variance (inverse-gamma 4 8)))
-  (ensure-error (mean (inverse-gamma 0.5 1)))
-  (ensure-error (variance (inverse-gamma 1.5 1))))
+  (ensure (same-sample-mean-variance (r-inverse-gamma 12 1)))
+  (ensure (same-sample-mean-variance (r-inverse-gamma 4 8)))
+  (ensure-error (mean (r-inverse-gamma 0.5 1)))
+  (ensure-error (variance (r-inverse-gamma 1.5 1))))
 
 (addtest (cl-random-tests)
   chi-square-moments
   (let* ((nu 9d0)
-         (rv (chi-square nu)))
+         (rv (r-chi-square nu)))
     (ensure-same (mean rv) nu)
     (ensure-same (variance rv) (* 2 nu))))
 
@@ -126,7 +136,7 @@
   inverse-chi-square-moments
   (let* ((nu 9)
          (scale pi)
-         (rv (inverse-chi-square nu scale)))
+         (rv (r-inverse-chi-square nu scale)))
     (ensure-same (mean rv) (* (/ nu (- nu 2)) (expt scale 2)))
     (ensure-same (variance rv) (/ (* 2 (expt nu 2) (expt scale 4))
                                   (* (expt (- nu 2) 2) (- nu 4))))))
@@ -135,10 +145,10 @@
 
 (addtest (cl-random-tests)
   beta-draws
-  (ensure (same-sample-mean-variance (beta 1 1)))
-  (ensure (same-sample-mean-variance (beta 12 1)))
-  (ensure (same-sample-mean-variance (beta 1 8)))
-  (ensure (same-sample-mean-variance (beta 0.5 pi))))
+  (ensure (same-sample-mean-variance (r-beta 1 1)))
+  (ensure (same-sample-mean-variance (r-beta 12 1)))
+  (ensure (same-sample-mean-variance (r-beta 1 8)))
+  (ensure (same-sample-mean-variance (r-beta 0.5 pi))))
 
 
 ;; general discrete distribution
@@ -170,8 +180,8 @@
 
 (addtest (cl-random-tests)
   discrete-moments
-  (let ((rv0 (discrete #(1/4 1/4 1/2)))
-        (rv1 (discrete #(1/3 1/6 1/3))) ; rescaled
+  (let ((rv0 (r-discrete #(1/4 1/4 1/2)))
+        (rv1 (r-discrete #(1/3 1/6 1/3))) ; rescaled
         (*lift-equality-test* #'equalp))
     ;; first distribution
     (ensure-same (probabilities rv0) #(0.25d0 0.25 0.5))
@@ -186,5 +196,5 @@
 
 (addtest (cl-random-tests)
   discrete-draws
-  (ensure (< (discrete-deviation (discrete #(1/6 1/2 1/3))) 0.01))
-  (ensure (< (discrete-deviation (discrete #(1/6 1/2 1/3 9 17 21))) 0.05)))
+  (ensure (< (discrete-deviation (r-discrete #(1/6 1/2 1/3))) 0.01))
+  (ensure (< (discrete-deviation (r-discrete #(1/6 1/2 1/3 9 17 21))) 0.05)))
