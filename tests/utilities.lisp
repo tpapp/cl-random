@@ -41,15 +41,18 @@ var-band."
 	      (mean rv) mean (variance rv) variance))
     ok-p))
 
-(defun same-mv-sample-mean-variance (rv &key (n 100000) (z-band 4d0) (var-band 0.1))
+(defun same-sample-mean-variance (rv &key (n 100000) (z-band 4d0) (var-band 0.1))
   "Generate a sample of length N from RV, then use COMPARE-SAMPLE-MEAN-VARIANCE.  For
-multivariate distributions."
-  (let* ((sample (rs:replicate n (generator rv) :flatten? t))
-         (m (array-dimension sample 1)))
-    (iter
-      (for column :below m)
-      (always (compare-sample-mean-variance (sub rv column) (sub sample t column)
-                                            :z-band z-band :var-band var-band)))))
+univariate and multivariate distributions."
+  (let* ((sample (rs:replicate n (generator rv) :flatten? t)))
+    (ecase (array-rank sample)
+      (1 (compare-sample-mean-variance rv sample
+                                       :z-band z-band :var-band var-band))
+      (2 (iter
+           (for column :below (array-dimension sample 1))
+           (always (compare-sample-mean-variance
+                    (sub rv column) (sub sample t column)
+                    :z-band z-band :var-band var-band)))))))
 
 (defun reldiff (x y)
   "Relative difference. (X should be the \"true\" value if the concept

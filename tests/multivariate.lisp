@@ -29,7 +29,7 @@
                                    (mm t (clo :double
                                               1 2 :/
                                               3 4)))))
-    (same-mv-sample-mean-variance rv :n 100000)))
+    (same-sample-mean-variance rv :n 100000)))
 
 ;; (time
 ;;  (bind ((mean (clo :double 3 4))
@@ -67,7 +67,7 @@
                                          1 2 :/
                                          3 4))
                               4d0)))
-    (same-mv-sample-mean-variance rv :n 100000)))
+    (same-sample-mean-variance rv :n 100000)))
 
 
 ;; (time
