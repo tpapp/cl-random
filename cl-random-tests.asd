@@ -23,7 +23,8 @@
     ((:file "log-infinity")
      (:file "special-functions")
      (:file "univariate")
-     (:file "continuous-time"))))
+     (:file "continuous-time")
+     (:file "multivariate"))))
   :depends-on
   (cl-utilities iterate metabang-bind anaphora lift cl-num-utils random-sample
-                cl-random ))
+                cl-random lla))

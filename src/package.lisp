@@ -18,7 +18,7 @@
 
    ;; special-functions
 
-   log-gamma-function gamma-function
+   log-gamma gamma
 
    ;; random
 
@@ -26,21 +26,24 @@
 
    ;; univariate
 
-   uniform left right
-   exponential beta
-   normal mean sd
-   log-normal log-mean log-sd
-   gamma alpha beta inverse-gamma chi-square nu inverse-chi-square scale
-   discrete probabilities
+   r-uniform left right
+   r-exponential beta
+   r-normal mean sd
+   r-log-normal log-mean log-sd
+   r-t scale
+   r-gamma alpha beta r-inverse-gamma r-chi-square nu r-inverse-chi-square scale
+   r-beta
+   r-discrete probabilities
 
    ;; continuous-time
    
-   uniformized-markov-jump
+   r-uniformized-markov-jump
 
    ;; multivariate
 
-   ;; mv-normal variance-right-sqrt log-pdf-constant mv-t scaling-factor nu wishart
-   ;; scale inverse-wishart
+   r-multivariate-normal variance-left-sqrt
+   r-multivariate-t nu
+   ;; r-wishart scale r-inverse-wishart
 
    ;; statistics
    

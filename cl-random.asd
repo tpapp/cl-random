@@ -26,7 +26,7 @@
      (:file "univariate")
      (:file "continuous-time")
      ;; (:file "statistics")
-     ;; (:file "multivariate")
+     (:file "multivariate")
      ;; (:file "design-matrix")
      ;; (:file "regressions")
      ;; (:file "optimization")
