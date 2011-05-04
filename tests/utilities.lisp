@@ -20,8 +20,7 @@
   "Relatively equal, by *allowed-difference*."
   (approx= (relative-difference a b) 0))
 
-(defun same-sample-mean-variance (rv &key (n 1000000) (z-band 4d0)
-                                   (var-band 0.1))
+(defun compare-sample-mean-variance (rv sample &key (z-band 4d0) (var-band 0.1))
   "Quick and dirty test for the sample having the same mean and
 variance as the theoretical distribution.  z-band is for comparing a
 z-score, var-band is for rel= comparisons.  NOTE: this test doesn't
@@ -30,7 +29,8 @@ be quite wide, we are here to catch outrageous implementation
 mistakes, and don't want to be stopped by false positives all the
 time.  Some distributions have fat tails, they need a bigger
 var-band."
-  (bind (((:values mean variance) (sample-mean-variance n rv))
+  (bind ((n (length sample))
+         ((:values mean variance) (mean-and-variance sample))
 	 (z (* (- mean (mean rv)) (sqrt (/ n (variance rv)))))
 	 (ok-p (and (< (abs z) z-band)
 		    (let ((*allowed-difference* var-band))
@@ -41,9 +41,15 @@ var-band."
 	      (mean rv) mean (variance rv) variance))
     ok-p))
 
-(defun sample-mean-variance (n rv)
-  (let ((sample (rs:replicate n (generator rv))))
-    (values (mean sample) (variance sample))))
+(defun same-mv-sample-mean-variance (rv &key (n 100000) (z-band 4d0) (var-band 0.1))
+  "Generate a sample of length N from RV, then use COMPARE-SAMPLE-MEAN-VARIANCE.  For
+multivariate distributions."
+  (let* ((sample (rs:replicate n (generator rv) :flatten? t))
+         (m (array-dimension sample 1)))
+    (iter
+      (for column :below m)
+      (always (compare-sample-mean-variance (sub rv column) (sub sample t column)
+                                            :z-band z-band :var-band var-band)))))
 
 (defun reldiff (x y)
   "Relative difference. (X should be the \"true\" value if the concept
