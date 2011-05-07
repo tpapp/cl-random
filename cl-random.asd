@@ -28,7 +28,7 @@
      ;; (:file "statistics")
      (:file "multivariate")
      ;; (:file "design-matrix")
-     ;; (:file "regressions")
+     (:file "regressions")
      ;; (:file "optimization")
 )))
   :depends-on 

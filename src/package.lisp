@@ -52,6 +52,8 @@
 
    ;; regressions
 
+   linear-regression posterior r^2 s^2
+
    ;; dummy-observations linear-regression-kv xx-inverse-right-sqrt
    ;; linear-regression s^2 r^2
 
