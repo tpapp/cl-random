@@ -21,7 +21,7 @@ of variance."
   (let ((variance-left-sqrt 
          (etypecase variance
            (hermitian-matrix (values (left-square-root (cholesky variance))))
-           (square-root (left-square-root variance)))))
+           (matrix-square-root (left-square-root variance)))))
     (check-mean-variance-compatibility mean variance-left-sqrt)
     (make :mean mean :variance-left-sqrt variance-left-sqrt :n (length mean)))
   (variance () (mm variance-left-sqrt t))
@@ -54,10 +54,10 @@ of variance."
   (:documentation "Multivariate T distribution with given MEAN, scale SIGMA and NU
   degrees of freedom.")
   ((multivariate-normal :type r-multivariate-normal :documentation
-              "distribution for obtaining normal draws")
+              "distribution for obtaining normal draws" :reader t)
    (scaling-factor :type r-inverse-gamma :documentation
-                   "distribution that scales the variance of draws.")
-   (nu :type double-float :documentation "degrees of freedom"))
+                   "distribution that scales the variance of draws." :reader t)
+   (nu :type double-float :documentation "degrees of freedom" :reader t))
   (bind (((:values nu scaling-factor)
           (aif scaling-factor
                (progn
