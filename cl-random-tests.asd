@@ -24,7 +24,8 @@
      (:file "special-functions")
      (:file "univariate")
      (:file "continuous-time")
-     (:file "multivariate"))))
+     (:file "multivariate")
+     (:file "regressions"))))
   :depends-on
   (cl-utilities iterate metabang-bind anaphora lift cl-num-utils random-sample
                 cl-random lla))
