@@ -27,8 +27,8 @@
    ;; univariate
 
    r-uniform left right
-   r-exponential beta
-   r-normal mean sd
+   r-exponential beta draw-standard-exponential
+   r-normal mean sd draw-standard-normal
    r-log-normal log-mean log-sd
    r-t scale
    r-gamma alpha beta r-inverse-gamma r-chi-square nu r-inverse-chi-square scale
