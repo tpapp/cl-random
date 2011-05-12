@@ -6,67 +6,6 @@
   ()
   (:equality-test #'==))
 
-;;; utility functions
-
-(defun random-y-x (n k &optional 
-                   (x-rv (r-normal 0 9))
-                   (e-rv (r-normal 0 2))
-                   (beta (make-array* k :double
-                                      (generator (r-normal 0 1)))))
-  "Generate random Y and X for testing regressions."
-  (bind ((x (make-array* (list n k) :double (generator x-rv)))
-         (y (e+ (mm x beta) (make-array* n :double (generator e-rv)))))
-    (values y x)))
-
-;;; linear regression with known variance
-
-;; (addtest (regressions-tests)
-;;   dummy-observations-kv
-;;   (bind ((mean (clo :double 2 3))
-;;          (variance-right-sqrt (clo :double 
-;;                                    5 7 :/
-;;                                    11 13))
-;;          (variance (mm t variance-right-sqrt))
-;;          (prior (r-multivariate-normal mean 
-;;                                :variance-right-sqrt variance-right-sqrt))
-;;          ((:values y x) (dummy-observations prior))
-;;          (lr (linear-regression-kv y x)))
-;;     (ensure-same (mean lr) mean)))
-
-;; (addtest (regressions-tests)
-;;   dummy-2phase-kv
-;;   ;; estimate in one and two steps, then compare
-;;   (bind ((k 10)
-;;          (n 100)
-;;          ((:values y x) (random-y-x (* 2 n) k))
-;;          (w (lla-vector (* 2 n) :double (generator* 'gamma))) ; weights
-;;          ;; single step
-;;          (p2 (linear-regression-kv y x :variance-right-sqrt (as-diagonal w)))
-;;          ;; two steps, first half
-;;          (h1 (cons 0 n))
-;;          (p1 (linear-regression-kv (sub y h1) (sub x h1 t)
-;;                                    :variance-right-sqrt 
-;;                                    (as-diagonal (sub w h1))))
-;;          ;; second half, using first half as prior
-;;          (h2 (cons n 0))
-;;          (p2-1 (linear-regression-kv (sub y h2) (sub x h2 t)
-;;                                      :prior p1
-;;                                      :variance-right-sqrt 
-;;                                      (as-diagonal (sub w h2)))))
-;;     (ensure-same (mean p2) (mean p2-1))
-;;     (ensure-same (variance p2) (variance p2-1))))
-
-;;; linear regression
-
-;; (bind (((:values y x) (random-y-x 10 2))
-;;        (lr (linear-regression y x))
-;;        ((:values y-dummy x-dummy) (dummy-observations lr))
-;;        (lr2 (linear-regression y-dummy x-dummy)))
-;;   (d:v y-dummy x-dummy)
-;;   (d:v (mean lr) :/ (mean lr2))
-;;   (d:v (s^2 lr) :/ (s^2 lr2))
-;;   )
-
 (addtest (regressions-tests)
   dummy-regenerate
   (bind ((k 2)
