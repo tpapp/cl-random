@@ -68,6 +68,17 @@
 ;;   )
 
 (addtest (regressions-tests)
+  dummy-regenerate
+  (bind ((k 2)
+         (n 10)
+         ((:values y x) (random-y-x n k))
+         (r1 (linear-regression y x))
+         (d1 (linear-regression-dummies r1))
+         (r2 (linear-regression (car d1) (cdr d1))))
+    (ensure-same (mean r1) (mean r2))
+    (ensure-same (variance r1) (variance r2))))
+
+(addtest (regressions-tests)
   dummy-2phase
   (bind ((k 2)
          (n 10)
@@ -75,10 +86,10 @@
          ;; single step
          (p2 (linear-regression y x))
          ;; two steps, first half
-         (h1 (cons 0 n))
+         (h1 (si 0 n))
          (p1 (linear-regression (sub y h1) (sub x h1 t)))
          ;; second half, using first half as prior
-         (h2 (cons n 0))
+         (h2 (si n 0))
          (p2-1 (linear-regression (sub y h2) (sub x h2 t) :prior p1)))
     (ensure-same (mean p2) (mean p2-1))
     (ensure-same (variance p2) (variance p2-1))
@@ -86,7 +97,7 @@
     (ensure-same (nu p2) (nu p2-1))))
 
 (addtest (regressions-tests)
-  linear-regression-exact
+  linear-regression-small
   (bind ((x (clo 1 1 :/
                  1 2
                  1 3
@@ -96,13 +107,12 @@
                  1 7))
          (y (clo 2 2 3 4 5 6 6))
          (lr (linear-regression y x))
-         ((:accessors-r/o mean variance r^2 s^2) lr)
-         (ss (sum-of-squares (e- y (mm x mean)))))
+         ((:accessors-r/o mean variance r^2 s^2 nu) lr)
+         (ss (sse (e- y (mm x mean)) 0)))
     (ensure-same mean (solve (mm t x) (mm (transpose x) y)))
     (ensure-same s^2 (/ ss (reduce #'- (array-dimensions x))))
-    (ensure-same variance (e* s^2
-                              (invert (mm t x))))
-    (ensure-same r^2 (- 1 (/ ss (sum-of-squared-errors y))))))
+    (ensure-same variance (e* s^2 (invert (mm t x)) (/ nu (- nu 2d0))))
+    (ensure-same r^2 (- 1 (/ ss (sse y))))))
 
 ;; (addtest (regressions-tests)
 ;;   linear-regression-random

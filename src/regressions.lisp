@@ -2,25 +2,64 @@
 
 (in-package #:cl-random)
 
-(defgeneric linear-regression% (y x prior variance)
-  (:documentation "See LINEAR-REGRESSION."))
+;;; dummy observations for regressions
 
-(defun linear-regression (y x &key prior variance)
-  "Linear regression of Y on X, using given PRIOR (NIL corresponds to
-  the reference prior) and VARIANCE (if the variance matrix is assumed to be
-  known.  The result can be used as a prior for "
-  (let ((x (typecase x
-             (matrix x)
-             (vector (as-column x))
-             (t (as-array x)))))
-    (linear-regression% y x prior variance)))
+(defun add-regression-dummies (y x prior dummy-generator)
+  "Add prior to Y and X in the form of dummy observations, return (values Y
+X).  Priors are exptected in the format (y . x), otherwise DUMMY-GENERATOR is
+called with the prior to generate dummy observations."
+  (flet ((add (dummies)
+           (values (concat y (car dummies))
+                   (stack t :vertically
+                          x (cdr dummies)))))
+    (typecase prior
+      (null (values y x))
+      (cons (add prior))
+      (t (add (funcall dummy-generator prior))))))
 
-;;; Bayesian linear regression, unknown variance
+;;; linear regression
 
 (defclass linear-regression ()
   ((posterior :accessor posterior :initarg :posterior)
    (r^2 :accessor r^2 :initarg :r^2)
    (s^2 :accessor s^2 :initarg :s^2)))
+
+(defun linear-regression-dummies (prior)
+  "Return dummy observations as (Y . X) for the given prior, for use in a
+linear regression."
+  (check-type prior linear-regression)
+  (bind (((:accessors-r/o posterior s^2) prior)
+         ((:accessors-r/o nu multivariate-normal) posterior)
+         (nu (as-integer nu))
+         (s (sqrt s^2))
+         ((:slots-r/o mean variance-left-sqrt) multivariate-normal)
+         (k (length mean))
+         (r-t (e/ variance-left-sqrt s))
+         (y (concat (solve r-t mean) (make-array* nu 'double-float s)))
+         (x (stack 'double-float :vertical
+                   (invert r-t)
+                   (make-array* (list nu k) 'double-float 0d0))))
+    (cons y x)))
+
+(defun linear-regression (y x &key prior)
+  "Linear regression of Y on X with (improper) reference prior (ie standard
+Bayesian OLS).  Prior is used (dummy observations or whatever is accepted by
+LINEAR-REGRESSION-DUMMIES."
+  (bind ((x (typecase x
+              (matrix x)
+              (vector (as-column x))
+              (t (as-array x))))
+         ((:values y x) (add-regression-dummies y x prior
+                                                #'linear-regression-dummies)))
+    (bind (((:values b ss nu qr) (least-squares y x :method :qr))
+           (s^2 (/ ss nu))
+           (sigma (e* (invert-xx qr) s^2)))
+      (make-instance 'linear-regression
+                     :posterior (r-multivariate-t b sigma nu)
+                     :r^2 (- 1d0 (/ ss (sse y)))
+                     :s^2 s^2))))
+
+;;; various accessors
 
 (defmethod nu ((lr linear-regression))
   (nu (posterior lr)))
@@ -38,164 +77,4 @@
 (defmethod draw ((lr linear-regression) &key)
   (bind (((:values beta scaling-factor) (draw (posterior lr))))
     (values beta (* scaling-factor (s^2 lr)))))
-
-(defmethod linear-regression% (y x (prior null) (variance null))
-  ;; reference prior, unknown variance
-  (bind (((:values b ss nu qr) (least-squares y x :method :qr))
-         (s^2 (/ ss nu))
-         (sigma (e* (invert-xx qr) (* s^2 (/ (- nu 2d0) nu)))))
-    (make-instance 'linear-regression
-                   :posterior (r-multivariate-t b sigma nu)
-                   :r^2 (- 1d0 (/ ss (sum-of-squared-errors y)))
-                   :s^2 s^2)))
-
-(defmethod linear-regression% (y x (prior linear-regression) (variance null))
-  ;; previous linear regression used as prior to generate dummy observations
-  (bind (((:accessors-r/o posterior s^2) prior)
-         ((:accessors-r/o nu multivariate-normal) posterior)
-         (nu (as-integer nu))
-         (s (sqrt s^2))
-         ((:slots-r/o mean variance-left-sqrt) multivariate-normal)
-         (k (length mean))
-         (r-t (e/ variance-left-sqrt s))
-         (y (concat y (solve r-t mean) (make-array* nu 'double-float s)))
-         (x (stack 'double-float :vertically
-                   x
-                   (invert r-t)
-                   (make-array* (list nu k) 'double-float 0d0))))
-    (linear-regression% y x nil nil)))
-
-;; (defmethod linear-regression (y x (prior null) (variance number))
-;;   )
-
-;; ;;; Bayesian linear regression, known variance
-
-;; (defclass linear-regression-known-variance ()
-;;   ((posterior :accessor posterior :initarg :posterior)
-;;    ))
-
-;; (defmethod linear-regression (y x (variance-prior null)))
-
-;; ;;; Dummies from priors
-;; ;;; 
-;; ;;; Convert conjugate priors to dummy observations.
-
-;; (defgeneric dummy-observations (prior &key &allow-other-keys)
-;;   (:documentation "Return dummy observations (VALUES Y X) corresponding to a
-;;   regression, or a random variable representing draws from a regression's
-;;   posterior."))
-
-;; (defun add-prior-dummies (y x prior &optional prior-type)
-;;   "When PRIOR is non-nil, add dummies to Y and X, otherwise make no changes.
-;; Return (VALUES Y X).  When PRIOR-TYPE is given, check that PRIOR is of that
-;; type."
-;;   (when (and prior prior-type)
-;;     (assert (typep prior prior-type)))
-;;   (if prior
-;;       (bind (((:values y-dummy x-dummy) (dummy-observations prior)))
-;;         (values (concat y y-dummy)
-;;                 (stack :matrix :vertically x x-dummy)))
-;;       (values y x)))
-
-;; ;;; LINEAR-REGRESSION-KV
-;; ;;; 
-;; ;;; Linear regression with a known variance matrix.  Not used directly in
-;; ;;; practice, but useful for Gibbs sampling.
-
-;; (defgeneric linear-regression-kv (y x &key variance-right-sqrt prior)
-;;   (:documentation "Linear regression of Y on X with known variance matrix,
-;; returned as an MV-NORMAL distribution (or NORMAL, if X is a vector).
-;; VARIANCE-RIGHT-SQRT is the rigth square root of the variance matrix (or the
-;; standard deviation if X is a vector), assumed to be the identity if not given.
-;; Numbers are interpreted as the common variance.  PRIOR is used to generate dummy
-;; observations with the eponymous function."))
-
-;; (defmethod linear-regression-kv ((y vector) (x vector) &key
-;;                                  variance-right-sqrt prior)
-;;   (sub (linear-regression-kv y (as-column x) 
-;;                              :variance-right-sqrt variance-right-sqrt
-;;                              :prior prior)
-;;        0))
-
-;; (defmethod linear-regression-kv ((y vector) (x dense-matrix-like) &key
-;;                                  variance-right-sqrt prior)
-;;   (check-type y vector)
-;;   (check-type x dense-matrix-like)
-;;   ;; apply variance matrix if given
-;;   (typecase variance-right-sqrt
-;;     (null)                              ; do nothing
-;;     (number (setf x (e/ x variance-right-sqrt)
-;;                   y (e/ y variance-right-sqrt)))
-;;     (t ;; ?? maybe we could stack and solve once, for efficiency
-;;        (setf x (solve variance-right-sqrt x)
-;;              y (solve variance-right-sqrt y))))
-;;   ;; attach prior to transformed data; dummy observations don't need to be
-;;   ;; rescaled as they come directly from the prior
-;;   (bind (((:values y x) (add-prior-dummies y x prior '(or normal mv-normal)))
-;;          ((:values beta nil nil other-values) (least-squares y x :method :qr)))
-;;     (make-instance 'mv-normal :mean beta :variance-right-sqrt
-;;                    (qr-xx-inverse-sqrt (getf other-values :qr)))))
-
-;; (defmethod dummy-observations ((rv normal) &key)
-;;   (bind (((:slots-r/o mu sigma) rv))
-;;     (values (clo :double (/ mu sigma))
-;;             (clo :double (/ sigma)))))
-
-;; (defmethod dummy-observations ((rv mv-normal) &key)
-;;   (bind (((:slots-r/o mean variance-right-sqrt) rv)
-;;          (r-t (transpose variance-right-sqrt)))
-;;     (values (solve r-t mean)
-;;             (invert r-t))))
-
-;;;  LINEAR-REGRESSION
-;;;
-;;;  This is a helper function to run obtain the posterior
-;;;  distribution of linear regressions.
-
-;; (defun xx-inverse-right-sqrt (x &optional (tolerance 0))
-;;   "Calculate the right square root of (X'X)^-1, using SVD.  Tolerance is used
-;; when inverting the singular values."
-;;   (bind (((:values s nil vt) (svd x :right :all)))
-;;     (mm (invert s :tolerance tolerance) vt)))
-
-;; (defclass linear-regression (mv-t)
-;;   ((s^2 :accessor s^2 :initarg :s^2 :documentation "sum of squared errors")
-;;    (r^2 :accessor r^2 :initarg :r^2 :documentation "R^2"))
-;;   (:documentation "Class representing linear regressions.  Basically a
-;;   multivariate T distribution, but the generator returns the randomly drawn
-;;   sigma^2 as the second value (scaled correctly by s^2)."))
-
-;; (defmethod mean ((rv linear-regression))
-;;   (bind (((:slots-r/o scaling-factor s^2) rv))
-;;     (values (call-next-method rv)
-;;             (* s^2 (mean scaling-factor)))))
-
-;; (defmethod variance ((rv linear-regression))
-;;     (bind (((:slots-r/o scaling-factor s^2) rv))
-;;     (values (call-next-method rv)
-;;             (* (expt s^2 2) (variance scaling-factor)))))
-
-;; (define-cached-slot (rv linear-regression generator)
-;;   (bind (((:slots-read-only scaling-factor mv-normal s^2) rv)
-;;          (scaling-factor-generator (generator scaling-factor))
-;;          (mv-normal-generator (generator mv-normal)))
-;;     (lambda ()
-;;       (let ((scaling-factor (funcall scaling-factor-generator)))
-;;         (values 
-;;           (funcall mv-normal-generator (sqrt scaling-factor))
-;;           (* scaling-factor s^2))))))
-
-;; (defmethod dummy-observations ((rv linear-regression) &key)
-;;   (bind (((:accessors-r/o mv-normal s^2 nu) rv)
-;;          (nu (as-integer nu))
-;;          (s (sqrt s^2))
-;;          ((:slots-r/o mean variance-right-sqrt) mv-normal)
-;;          (k (length mean))
-;;          (r-t (transpose (e/ variance-right-sqrt s))))
-;;     (values (concat (solve r-t mean) (lla-array nu :double s))
-;;             (stack :matrix :vertically (invert r-t) 
-;;                    (make-matrix nu k :double
-;;                                 :initial-element 0d0)))))
-
-
 
