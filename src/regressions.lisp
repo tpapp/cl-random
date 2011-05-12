@@ -18,8 +18,7 @@ X).  Priors are exptected in the format (y . x), otherwise DUMMY-GENERATOR is
 called with the prior to generate dummy observations."
   (flet ((add (dummies)
            (values (concat y (car dummies))
-                   (stack t :vertically
-                          x (cdr dummies)))))
+                   (stack t :vertical x (cdr dummies)))))
     (typecase prior
       (null (values y x))
       (cons (add prior))
