@@ -67,3 +67,13 @@ is meaningful).  The returnes value is always nonnegative."
 (defun ereldiff (a b)
   "Relative difference between two objects, elementwise."
   (emap #'reldiff a b))
+
+(defun random-y-x (n k &optional 
+                   (x-rv (r-normal 0 9))
+                   (e-rv (r-normal 0 2))
+                   (beta (make-array* k :double
+                                      (generator (r-normal 0 1)))))
+  "Generate random Y and X for testing regressions."
+  (bind ((x (make-array* (list n k) :double (generator x-rv)))
+         (y (e+ (mm x beta) (make-array* n :double (generator e-rv)))))
+    (values y x)))
