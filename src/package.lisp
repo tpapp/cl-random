@@ -1,7 +1,7 @@
 (in-package #:cl-random-asd)
 
 (defpackage #:cl-random
-    (:nicknames :rv)
+  (:nicknames :rv)
   (:use common-lisp alexandria iterate bind anaphora cl-num-utils lla)
   (:shadowing-import-from cl-num-utils xor mean variance) ; also in alexandria
   (:export
@@ -53,7 +53,7 @@
    ;; regressions
 
    add-regression-dummies linear-regression-dummies linear-regression
-   posterior r^2 s^2
+   posterior r^2 s^2 as-regression-covariates transform-y-x
 
    ;; dummy-observations linear-regression-kv xx-inverse-right-sqrt
    ;; linear-regression s^2 r^2

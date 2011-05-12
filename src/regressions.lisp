@@ -4,6 +4,14 @@
 
 ;;; dummy observations for regressions
 
+(defun as-regression-covariates (x)
+  "If necessary, convert X to a matrix that can be used as regression
+covariates (ie X)."
+  (typecase x
+    (matrix x)
+    (vector (as-column x))
+    (t (as-array x))))
+
 (defun add-regression-dummies (y x prior dummy-generator)
   "Add prior to Y and X in the form of dummy observations, return (values Y
 X).  Priors are exptected in the format (y . x), otherwise DUMMY-GENERATOR is
@@ -45,10 +53,7 @@ linear regression."
   "Linear regression of Y on X with (improper) reference prior (ie standard
 Bayesian OLS).  Prior is used (dummy observations or whatever is accepted by
 LINEAR-REGRESSION-DUMMIES."
-  (bind ((x (typecase x
-              (matrix x)
-              (vector (as-column x))
-              (t (as-array x))))
+  (bind ((x (as-regression-covariates x))
          ((:values y x) (add-regression-dummies y x prior
                                                 #'linear-regression-dummies)))
     (bind (((:values b ss nu qr) (least-squares y x :method :qr))
@@ -78,3 +83,18 @@ LINEAR-REGRESSION-DUMMIES."
   (bind (((:values beta scaling-factor) (draw (posterior lr))))
     (values beta (* scaling-factor (s^2 lr)))))
 
+;;; known variance matrix
+
+(defun transform-y-x (y x variance)
+  "Return (values Y X), premultiplied with the right square root of
+VARIANCE (which can be a hermitian matrix or anything that has a
+RIGHT-SQUARE-ROOT accessor). This is useful if you are estimating a regression
+with a known variance matrix (possibly up to a constant)."
+  (cond
+    ((not (numberp variance))
+     (bind (((:accessors right-square-root) variance))
+       (values (solve right-square-root y)
+               (solve right-square-root x))))
+    ((= variance 1) (values y x))
+    (t (let ((sd (sqrt variance)))
+         (values (e/ y sd) (e/ x sd))))))
