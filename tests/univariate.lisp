@@ -36,7 +36,7 @@
 (addtest (cl-random-tests)
   normal-pdf
   (let ((rv (r-normal 5 19))
-        (*lift-equality-test* #'rel=))
+        (*lift-equality-test* #'==))
     (ensure-same (pdf rv 2d0) 0.02073685169643458d0)
     (ensure-same (pdf rv 16d0) 0.01775714089407024d0)
     (ensure-same (pdf rv 102d0) 0.0000000459719932600508d0)))
@@ -85,7 +85,7 @@
 (addtest (cl-random-tests)
   log-normal-pdf
   (let ((rv (r-log-normal 5 19))
-        (*lift-equality-test* #'rel=))
+        (*lift-equality-test* #'==))
     (ensure-same (pdf rv 2d0) 0.0102321986262048220)
     (ensure-same (pdf rv 16d0)  0.0013033232558763653d0)
     (ensure-same (pdf rv 102d0)  0.0002058124737511057d0)))

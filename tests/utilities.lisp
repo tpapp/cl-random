@@ -2,24 +2,6 @@
 
 (in-package #:cl-random-tests)
 
-(defparameter *allowed-difference* 1d-5
-  ;; default is for catching major mistakes, use smaller value for fine points
-  "Maximum allowed difference used by approx=.")
-
-(defun approx= (a b)
-  "Approximately equal, by *allowed-difference*."
-  (< (abs (- a b)) *allowed-difference*))
-
-(defun relative-difference (a b)
-  "Difference between a and b, compared to the smaller one in absolute value."
-  (if (and (zerop a) (zerop b))
-      0
-      (/ (- a b) (max (abs a) (abs b)))))
-
-(defun rel= (a b)
-  "Relatively equal, by *allowed-difference*."
-  (approx= (relative-difference a b) 0))
-
 (defun compare-sample-mean-variance (rv sample &key (z-band 4d0) (var-band 0.1))
   "Quick and dirty test for the sample having the same mean and
 variance as the theoretical distribution.  z-band is for comparing a
@@ -33,8 +15,7 @@ var-band."
          ((:values mean variance) (mean-and-variance sample))
 	 (z (* (- mean (mean rv)) (sqrt (/ n (variance rv)))))
 	 (ok-p (and (< (abs z) z-band)
-		    (let ((*allowed-difference* var-band))
-		      (rel= variance (variance rv))))))
+                    (== variance (variance rv) var-band))))
     (unless ok-p
       (format t "~&moment mismatch for distribution ~a~%" rv)
       (format t "theoretical/empirical mean: ~a / ~a, variance: ~a / ~a~%"
@@ -54,19 +35,16 @@ univariate and multivariate distributions."
                     (sub rv column) (sub sample t column)
                     :z-band z-band :var-band var-band)))))))
 
-(defun reldiff (x y)
-  "Relative difference. (X should be the \"true\" value if the concept
-is meaningful).  The returnes value is always nonnegative."
-  (let ((diff (- x y)))
-    (if (zerop x)
-        (if (zerop y)
-            0
-            most-positive-double-float)
-        (abs (/ diff x)))))
+(defun number-relative-difference (a b)
+  "Relative difference of A and B."
+  (/ (abs (- a b))
+     (max 1 (abs a) (abs b))))
 
-(defun ereldiff (a b)
-  "Relative difference between two objects, elementwise."
-  (emap #'reldiff a b))
+(defgeneric relative-difference (a b)
+  (:method ((a number) (b number))
+    (number-relative-difference a b))
+  (:method (a b)
+    (emax (emap t #'number-relative-difference (as-array a) (as-array b)))))
 
 (defun random-y-x (n k &optional 
                    (x-rv (r-normal 0 9))
