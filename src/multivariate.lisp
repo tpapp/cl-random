@@ -7,8 +7,8 @@ variance."
                (= (length mean) (nrow variance) (ncol variance)))))
 
 (defun normal-quadratic-form (x mean variance-left-sqrt)
-  "Calculate (x-mean)^T variance^-1 (x-mean), given X, MEAN, and the left square root
-of variance."
+  "Calculate (x-mean)^T variance^-1 (x-mean), given X, MEAN, and the left
+square root of variance."
   (dot (solve variance-left-sqrt (e- x mean)) t))
 
 (define-rv r-multivariate-normal (mean variance)
@@ -16,12 +16,9 @@ of variance."
    :instance instance)
   ((n :type fixnum :documentation "Number of dimensions.")
    (mean :type vector :reader t)
-   (variance-left-sqrt :documentation "Left square root of the variance matrix."
-                       :reader t))
-  (let ((variance-left-sqrt 
-         (etypecase variance
-           (hermitian-matrix (values (left-square-root (cholesky variance))))
-           (matrix-square-root (left-square-root variance)))))
+   (variance-left-sqrt :reader t :documentation 
+                       "Left square root of the variance matrix."))
+  (let ((variance-left-sqrt (left-square-root variance)))
     (check-mean-variance-compatibility mean variance-left-sqrt)
     (make :mean mean :variance-left-sqrt variance-left-sqrt :n (length mean)))
   (variance () (mm variance-left-sqrt t))
@@ -50,13 +47,15 @@ of variance."
 ;;;  When drawing numbers, the scaling factor (with distribution
 ;;;  inverse-chi-square, nu degrees of freedom) is returned as the second value.
 
-(define-rv r-multivariate-t (mean sigma nu &key multivariate-normal scaling-factor)
-  (:documentation "Multivariate T distribution with given MEAN, scale SIGMA and NU
-  degrees of freedom.")
+(define-rv r-multivariate-t (mean sigma nu 
+                                  &key multivariate-normal scaling-factor)
+  (:documentation "Multivariate T distribution with given MEAN, scale SIGMA
+  and NU degrees of freedom.")
   ((multivariate-normal :type r-multivariate-normal :documentation
               "distribution for obtaining normal draws" :reader t)
    (scaling-factor :type r-inverse-gamma :documentation
-                   "distribution that scales the variance of draws." :reader t)
+                   "distribution that scales the variance of draws."
+                   :reader t)
    (nu :type double-float :documentation "degrees of freedom" :reader t))
   (bind (((:values nu scaling-factor)
           (aif scaling-factor
@@ -107,93 +106,57 @@ of variance."
                                 :multivariate-normal normal
                                 :scaling-factor scaling-factor))))))
 
- ;; ;;;  WISHART
-;; ;;;
-;; ;;;  The k-dimensional Wishart distribution with NU degrees of freedom
-;; ;;;  and scale parameter SCALE is the multivariate generalization of
-;; ;;;  the gamma (or chi-square) distribution.
+;;;  WISHART
+;;;
+;;;  The k-dimensional Wishart distribution with NU degrees of freedom
+;;;  and scale parameter SCALE is the multivariate generalization of
+;;;  the gamma (or chi-square) distribution.
 
-;; (defclass wishart (multivariate)
-;;   ((nu :initarg :nu :reader nu :type fixnum :documentation "degrees of freedom")
-;;    (scale :initarg :scale :reader scale
-;;           :type hermitian-matrix
-;;           :documentation "scale matrix")
-;;    (scale-left-root :accessor scale-left-root)))
+(defun draw-standard-wishart-left-sqrt (nu k)
+  "Draw a lower triangular matrix L such that (mm L t) has Wishart(I,nu)
+distribution (dimension k x k)."
+  (bind ((nu (coerce nu 'double-float))
+         (l (make-array (list k k) :element-type 'double-float)))
+    (dotimes (i k)
+      (setf (aref l i i) (sqrt (draw (r-chi-square (- nu i)))))
+      (iter
+        (for row-major-index :from (array-row-major-index l (1+ i) i)
+             :below (array-row-major-index l k i))
+        (setf (row-major-aref l row-major-index) (draw-standard-normal))))
+    (make-instance 'lower-triangular-matrix :elements l)))
 
-;; (defmethod initialize-instance :after ((rv wishart) &key &allow-other-keys)
-;;   (with-slots (scale scale-left-root) rv 
-;;     (check-type scale hermitian-matrix)
-;;     (setf scale-left-root (component (cholesky scale :L) :L)))
-;;   rv)
+(define-rv r-wishart (nu scale)
+  (:documentation "Wishart distribution with NU degrees of freedom and given
+  SCALE matrix (which, as usual, can be a decomposition which yields a left
+  square root.")
+  ((nu :type fixnum :reader t :documentation "degrees of freedom")
+   (scale-left-sqrt :reader t
+                    :documentation "left square root of the scale matrix")
+   (k :type fixnum :documentation "dimension"))
+  (let ((scale-left-sqrt (left-square-root scale)))
+    (check-type nu (and fixnum (satisfies plusp)))
+    (make :nu nu :scale-left-sqrt scale-left-sqrt :k (nrow scale-left-sqrt)))
+  (mean () (e* nu (mm scale-left-sqrt t)))
+  (draw (&key) 
+        (mm (mm scale-left-sqrt (draw-standard-wishart-left-sqrt nu k)) t)))
 
-;; (defmethod dimensions ((rv wishart))
-;;   (bind ((n (nrow (scale rv))))
-;;     (list n n)))
+;;;  INVERSE-WISHART
+;;;
+;;;  If A ~ Inverse-Wishart[nu,inverse-scale], then 
+;;;  (invert A) ~ Wishart(nu,inverse-scale).
 
-;; (defmethod rv-type ((rv wishart))
-;;   'hermitian-matrix)
-
-;; (defmethod mean ((rv wishart))
-;;   (e* (nu rv) (scale rv)))
-
-;; (defun draw-standard-wishart-left-root (nu k)
-;;   "Draw a matrix L such that (mm L t) has Wishart(I,nu)
-;; distribution (dimension k x k)."
-;;   (check-type nu integer)
-;;   (bind ((nu (coerce nu 'double-float))
-;;          ((:lla-matrix l) (make-matrix k k :double :kind :lower-triangular)))
-;;     (dotimes (i k)
-;;       (setf (l (l-index i i)) (sqrt (draw* 'chi-square :nu (- nu i))))
-;;       (iter
-;;         (for l-index :from (l-index (1+ i) i) :below (l-index k i))
-;;         (setf (l l-index) (draw-standard-normal))))
-;;     l))
-
-;; (define-cached-slot (rv wishart generator)
-;;   (bind (((:slots-read-only nu scale-left-root) rv)
-;;          (k (nrow (scale rv))))
-;;     (lambda ()
-;;       (mm (mm scale-left-root (draw-standard-wishart-left-root nu k)) t))))
-
-
-;; ;;;  INVERSE-WISHART
-;; ;;;
-;; ;;;  If A ~ Inverse-Wishart[nu,inverse-scale], then 
-;; ;;;  (invert A) ~ Wishart(nu,inverse-scale).
-
-;; (defclass inverse-wishart (multivariate)
-;;   ((nu :initarg :nu :reader nu :type fixnum :documentation "degrees of freedom")
-;;    (inverse-scale :initarg :inverse-scale :reader inverse-scale
-;;                   :type hermitian-matrix
-;;                   :documentation "Inverse scale matrix, to which the
-;;                   mean is proportional.")
-;;    (inverse-scale-right-root
-;;     :accessor inverse-scale-right-root
-;;     :documentation "C, where (mm C t) is scale.")  )
-;;   (:documentation "Inverse Wishart distribution.  The PDF p(X) is
-;; proportional to |X|^-(dimension+nu+1)/2 exp(-trace(inverse-scale X^-1))"))
-
-;; (defmethod initialize-instance :after ((rv inverse-wishart)
-;;                                        &key &allow-other-keys)
-;;   (with-slots (inverse-scale inverse-scale-right-root) rv 
-;;     (check-type inverse-scale hermitian-matrix)
-;;     (setf inverse-scale-right-root (component (cholesky inverse-scale :U) :U)))
-;;   rv)
-
-;; (defmethod dimensions ((rv inverse-wishart))
-;;   (let ((n (nrow (scale rv))))
-;;     (list n n)))
-
-;; (defmethod rv-type ((rv inverse-wishart))
-;;   'hermitian-matrix)
-
-;; (defmethod mean ((rv inverse-wishart))
-;;   (with-slots (nu inverse-scale) rv 
-;;     (e/ inverse-scale (- nu (nrow inverse-scale) 1))))
-
-;; (define-cached-slot (rv inverse-wishart generator)
-;;   (bind (((:slots-read-only nu inverse-scale-right-root) rv)
-;;          (k (nrow (inverse-scale rv))))
-;;     (lambda ()
-;;       (mm t (solve (draw-standard-wishart-left-root nu k)
-;;                    inverse-scale-right-root)))))
+(define-rv r-inverse-wishart (nu inverse-scale)
+  (:documentation "Inverse Wishart distribution.  The PDF p(X) is proportional
+to |X|^-(dimension+nu+1)/2 exp(-trace(inverse-scale X^-1))")
+  ((nu :type fixnum :reader t :documentation "degrees of freedom")
+   (inverse-scale-right-sqrt :reader t :documentation
+                             "right square root of the inverse scale matrix")
+   (k :type fixnum :reader t :documentation "number of dimensions"))
+  (let ((inverse-scale-right-sqrt (right-square-root inverse-scale)))
+    (check-type nu (and fixnum (satisfies plusp)))
+    (make :nu nu :inverse-scale-right-sqrt inverse-scale-right-sqrt
+          :k (nrow inverse-scale-right-sqrt)))
+  (mean () (e/ (mm t inverse-scale-right-sqrt) (- nu k 1)))
+  (draw (&key)
+        (mm t (solve (draw-standard-wishart-left-sqrt nu k)
+                     inverse-scale-right-sqrt))))
