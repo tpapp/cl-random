@@ -3,7 +3,7 @@
 (in-package #:cl-random-tests)
 
 (deftestsuite cl-random-tests () ()
-  (:equality-test #'approx=))
+  (:equality-test #'==))
 
 ;; EXTERNAL
 
