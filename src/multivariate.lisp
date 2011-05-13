@@ -120,8 +120,8 @@ distribution (dimension k x k)."
     (dotimes (i k)
       (setf (aref l i i) (sqrt (draw (r-chi-square (- nu i)))))
       (iter
-        (for row-major-index :from (array-row-major-index l (1+ i) i)
-             :below (array-row-major-index l k i))
+        (for row-major-index :from (array-row-major-index l i 0)
+             :below (array-row-major-index l i i))
         (setf (row-major-aref l row-major-index) (draw-standard-normal))))
     (make-instance 'lower-triangular-matrix :elements l)))
 
