@@ -96,7 +96,7 @@
                                    1 2 :/
                                    3 4)
                               t)))
-         (sample (rs:replicate 50000 (generator rv)))
+         (sample (rs:replicate 50000 (compose #'as-array (generator rv))))
          (sample-mean (mean sample)))
     (ensure (< (relative-difference sample-mean (mean rv)) 0.01))))
 
@@ -106,11 +106,9 @@
                                            1 2 :/
                                            3 4)
                                       t)))
-         (sample (rs:replicate 50000 (generator rv)))
+         (sample (rs:replicate 50000 (compose #'as-array (generator rv))))
          (sample-mean (mean sample)))
     (ensure (< (relative-difference sample-mean (mean rv)) 0.01))))
-
-
 
 ;; (bind ((nu 400)
 ;;        (S (mm t (clo :dense 1 2 :/ 3 4)))

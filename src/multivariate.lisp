@@ -128,7 +128,7 @@ distribution (dimension k x k)."
 (define-rv r-wishart (nu scale)
   (:documentation "Wishart distribution with NU degrees of freedom and given
   SCALE matrix (which, as usual, can be a decomposition which yields a left
-  square root.")
+  square root.  Draws are returned as decompositions.")
   ((nu :type fixnum :reader t :documentation "degrees of freedom")
    (scale-left-sqrt :reader t
                     :documentation "left square root of the scale matrix")
@@ -138,7 +138,8 @@ distribution (dimension k x k)."
     (make :nu nu :scale-left-sqrt scale-left-sqrt :k (nrow scale-left-sqrt)))
   (mean () (e* nu (mm scale-left-sqrt t)))
   (draw (&key) 
-        (mm (mm scale-left-sqrt (draw-standard-wishart-left-sqrt nu k)) t)))
+        (matrix-square-root 
+         (mm scale-left-sqrt (draw-standard-wishart-left-sqrt nu k)))))
 
 ;;;  INVERSE-WISHART
 ;;;
@@ -147,7 +148,8 @@ distribution (dimension k x k)."
 
 (define-rv r-inverse-wishart (nu inverse-scale)
   (:documentation "Inverse Wishart distribution.  The PDF p(X) is proportional
-to |X|^-(dimension+nu+1)/2 exp(-trace(inverse-scale X^-1))")
+to |X|^-(dimension+nu+1)/2 exp(-trace(inverse-scale X^-1)).  Draws are
+returned as decompositions.")
   ((nu :type fixnum :reader t :documentation "degrees of freedom")
    (inverse-scale-right-sqrt :reader t :documentation
                              "right square root of the inverse scale matrix")
@@ -158,5 +160,6 @@ to |X|^-(dimension+nu+1)/2 exp(-trace(inverse-scale X^-1))")
           :k (nrow inverse-scale-right-sqrt)))
   (mean () (e/ (mm t inverse-scale-right-sqrt) (- nu k 1)))
   (draw (&key)
-        (mm t (solve (draw-standard-wishart-left-sqrt nu k)
-                     inverse-scale-right-sqrt))))
+        (matrix-square-root
+         (transpose (solve (draw-standard-wishart-left-sqrt nu k)
+                           inverse-scale-right-sqrt)))))
