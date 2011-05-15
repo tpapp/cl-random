@@ -44,6 +44,8 @@
    r-wishart scale-left-sqrt r-inverse-wishart inverse-scale-right-sqrt
 
    ;; statistics
+
+   matrix-mean matrix-sse matrix-variance matrix-mean-and-variance
    
    ;; add-constant-column column-sums column-means demean-columns column-variances
    ;; column-mean-variances rescale-by-sd variance->correlation
