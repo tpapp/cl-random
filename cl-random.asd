@@ -20,7 +20,7 @@
      (:file "random")
      (:file "univariate")
      (:file "continuous-time")
-     ;; (:file "statistics")
+     (:file "statistics")
      (:file "multivariate")
      ;; (:file "design-matrix")
      (:file "regressions")
@@ -56,7 +56,8 @@
      (:file "univariate")
      (:file "continuous-time")
      (:file "multivariate")
-     (:file "regressions"))))
+     (:file "regressions")
+     (:file "statistics"))))
   :depends-on
   (cl-utilities iterate metabang-bind anaphora lift cl-num-utils random-sample
                 cl-random lla))
