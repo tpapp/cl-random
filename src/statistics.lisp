@@ -12,23 +12,31 @@
                  (row-major-aref matrix row-major-index)))
       (map 'vector #'funcall means))))
 
+(defun demean-matrix (matrix)
+  (e- matrix (recycle (matrix-mean matrix) :horizontal)))
+
+;; (defun matrix-sse (matrix)
+;;   "Return sum of squared errors from the matrix row mean (as a Hermitian
+;; matrix) and the mean as the second value."
+;;   (bind (((nrow ncol) (array-dimensions matrix))
+;;          (mean (make-array ncol :initial-element 0d0))
+;;          (sse (make-array (list ncol ncol) :initial-element 0d0)))
+;;     (dotimes (row-index nrow)
+;;       (dotimes (col-index ncol)
+;;         (let ((difference (- (aref matrix row-index col-index)
+;;                              (aref mean col-index))))
+;;           (incf (aref mean col-index) (/ difference (1+ row-index)))
+;;           (dotimes (inner-index (1+ col-index))
+;;             (incf (aref sse col-index inner-index)
+;;                   (* (- (aref matrix row-index inner-index)
+;;                         (aref mean inner-index))
+;;                      difference))))))
+;;     (values (make-instance 'hermitian-matrix :elements sse) mean)))
+
 (defun matrix-sse (matrix)
-  "Return sum of squared errors from the matrix row mean (as a Hermitian
-matrix) and the mean as the second value."
-  (bind (((nrow ncol) (array-dimensions matrix))
-         (mean (make-array ncol :initial-element 0d0))
-         (sse (make-array (list ncol ncol) :initial-element 0d0)))
-    (dotimes (row-index nrow)
-      (dotimes (col-index ncol)
-        (let ((difference (- (aref matrix row-index col-index)
-                             (aref mean col-index))))
-          (incf (aref mean col-index) (/ difference (1+ row-index)))
-          (dotimes (inner-index (1+ col-index))
-            (incf (aref sse col-index inner-index)
-                  (* (- (aref matrix row-index inner-index)
-                        (aref mean inner-index))
-                     difference))))))
-    (values (make-instance 'hermitian-matrix :elements sse) mean)))
+  ;; let D=(demean matrix), D=QR SSE=D^TD=R^TQ^TQR = R^TR
+  (matrix-square-root
+   (transpose* (slot-value (qr (demean-matrix matrix)) 'r))))
 
 (defun matrix-variance (matrix)
   "Return the variance-covariance matrix."

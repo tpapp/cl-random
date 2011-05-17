@@ -30,11 +30,11 @@
          (mean (matrix-mean m2))
          (demeaned (e- m2 (recycle mean :h)))
          (sse (mm t demeaned)))
-    (ensure-same (matrix-sse m)
+    (ensure-same (reconstruct (matrix-sse m))
                  (clo :hermitian :double
                       2 % :/
                       4 8))
-    (ensure-same (matrix-sse m2)
+    (ensure-same (reconstruct (matrix-sse m2))
                  sse)))
 
 (addtest (statistics-tests)
