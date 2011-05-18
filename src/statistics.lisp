@@ -12,8 +12,8 @@
                  (row-major-aref matrix row-major-index)))
       (map 'vector #'funcall means))))
 
-(defun demean-matrix (matrix)
-  (e- matrix (recycle (matrix-mean matrix) :horizontal)))
+(defun demean-matrix (matrix &optional (mean (matrix-mean matrix)))
+  (e- matrix (recycle mean :horizontal)))
 
 ;; (defun matrix-sse (matrix)
 ;;   "Return sum of squared errors from the matrix row mean (as a Hermitian
@@ -34,9 +34,13 @@
 ;;     (values (make-instance 'hermitian-matrix :elements sse) mean)))
 
 (defun matrix-sse (matrix)
+  "Return sum of squared errors (possibly as a factorization), and the mean as
+a second value."
   ;; let D=(demean matrix), D=QR SSE=D^TD=R^TQ^TQR = R^TR
-  (matrix-square-root
-   (transpose* (slot-value (qr (demean-matrix matrix)) 'r))))
+  (let ((mean (matrix-mean matrix)))
+    (values (matrix-square-root
+             (transpose* (slot-value (qr (demean-matrix matrix mean)) 'r)))
+            mean)))
 
 (defun matrix-variance (matrix)
   "Return the variance-covariance matrix."
