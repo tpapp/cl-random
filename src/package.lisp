@@ -1,5 +1,5 @@
 (defpackage cl-random
-  (:nicknames :rv)
+  (:nicknames rv)
   (:use common-lisp alexandria iterate bind anaphora cl-num-utils lla)
   (:shadowing-import-from cl-num-utils xor mean variance) ; also in alexandria
   (:export
@@ -29,7 +29,8 @@
    r-normal mean sd draw-standard-normal
    r-log-normal log-mean log-sd
    r-t scale
-   r-gamma alpha beta r-inverse-gamma r-chi-square nu r-inverse-chi-square scale
+   r-gamma alpha beta r-inverse-gamma r-chi-square nu r-inverse-chi-square
+   scale
    r-beta
    r-discrete probabilities
 
@@ -45,7 +46,8 @@
 
    ;; statistics
 
-   matrix-mean demean-matrix matrix-sse matrix-variance matrix-mean-and-variance
+   matrix-mean demean-matrix matrix-sse matrix-variance
+   matrix-mean-and-variance
    
    ;; add-constant-column column-sums column-means demean-columns column-variances
    ;; column-mean-variances rescale-by-sd variance->correlation
