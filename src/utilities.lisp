@@ -140,8 +140,8 @@ used) until condition is satisfied, then return value."
       vector))
 
 (defun as-double-float-probabilities (vector)
-  "Normalize vector as probabilities, assert that all are positive, return them as a
-VECTOR-DOUBLE-FLOAT.  Vector is always copied."
+  "Normalize vector as probabilities, assert that all are positive, return
+them as a VECTOR-DOUBLE-FLOAT.  Vector is always copied."
   ;; !! still gives notes, make this faster if necessary
   (declare (optimize speed))
   (let* ((vector (as-double-float-vector vector))
