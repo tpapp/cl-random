@@ -8,9 +8,9 @@
 
 (addtest (regressions-tests)
   dummy-regenerate
-  (bind ((k 2)
+  (let+ ((k 2)
          (n 10)
-         ((:values y x) (random-y-x n k))
+         ((&values y x) (random-y-x n k))
          (r1 (linear-regression y x))
          (d1 (linear-regression-dummies r1))
          (r2 (linear-regression (car d1) (cdr d1))))
@@ -19,9 +19,9 @@
 
 (addtest (regressions-tests)
   dummy-2phase
-  (bind ((k 2)
+  (let+ ((k 2)
          (n 10)
-         ((:values y x) (random-y-x (* 2 n) k))
+         ((&values y x) (random-y-x (* 2 n) k))
          ;; single step
          (p2 (linear-regression y x))
          ;; two steps, first half
@@ -37,7 +37,7 @@
 
 (addtest (regressions-tests)
   linear-regression-small
-  (bind ((x (clo 1 1 :/
+  (let+ ((x (clo 1 1 :/
                  1 2
                  1 3
                  1 4
@@ -45,8 +45,8 @@
                  1 6
                  1 7))
          (y (clo 2 2 3 4 5 6 6))
-         (lr (linear-regression y x))
-         ((:accessors-r/o mean variance r^2 s^2 nu) lr)
+         ((&values lr r^2) (linear-regression y x))
+         ((&accessors-r/o mean variance s^2 nu) lr)
          (ss (sse (e- y (mm x mean)) 0)))
     (ensure-same mean (solve (mm t x) (mm (transpose x) y)))
     (ensure-same s^2 (/ ss (reduce #'- (array-dimensions x))))

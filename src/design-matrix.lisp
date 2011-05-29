@@ -14,7 +14,7 @@
 
 (defun interaction-matrix (&rest matrices)
   "Return the interaction matrix.  Last indexes change the fastest."
-  (bind ((matrices (mapcar (lambda (matrix)
+  (let+ ((matrices (mapcar (lambda (matrix)
                              (typecase matrix
                                (dense-matrix-like
                                   (set-restricted matrix)
@@ -56,7 +56,7 @@
   INDEXES is a vector of FIXNUMS, containing the index of the level
   corresponding to the elements of VECTOR.  If PREDICATE is given, the levels
   are sorted."
-  (bind ((keys (coerce (delete-duplicates (map 'list key vector) :test test)
+  (let+ ((keys (coerce (delete-duplicates (map 'list key vector) :test test)
                        'vector)))
     (when predicate
       (setf keys (sort keys predicate)))
@@ -132,11 +132,11 @@ Example:
   1 1 5 6 36 30>,
   ((A #(1 4)))
 "
-  (bind (((:flet column (name))
-          (sub matrix t (ix ix name)))
+  (let+ (((&flet column (name)
+            (sub matrix t (ix ix name))))
          (factors (mapcar (lambda (factor)
-                            (bind (((name &rest options) (ensure-list factor))
-                                   ((:values indexes levels)
+                            (let+ (((name &rest options) (ensure-list factor))
+                                   ((&values indexes levels)
                                     (apply #'process-factor
                                            (column name) options)))
                               (list name (sub levels '(1 . 0))
@@ -147,7 +147,7 @@ Example:
              (traverse-list (specifications &optional (top-level? t))
                (iter
                  (for spec :in specifications)
-                 (bind (((:values ix matrix) (traverse spec top-level?)))
+                 (let+ (((&values ix matrix) (traverse spec top-level?)))
                    (collecting ix :into ixs)
                    (collecting matrix :into matrices))
                  (finally
@@ -162,7 +162,7 @@ Example:
                                              matrix))
                                    (values spec (as-column (column spec)))))
                  ((eq (car spec) :poly)
-                  (bind (((name power) (cdr spec)))
+                  (let+ (((name power) (cdr spec)))
                     (assert (not (find-factor name)) ()
                             "Can't use factors of polynomials.")
                     (values (list (make-symbol* name '#:-poly) power)
@@ -170,11 +170,11 @@ Example:
                  ((eq (car spec) '*)
                   (assert top-level? ()
                           "Interactions are only allowed at the top level.")
-                  (bind (((:values names matrices) (traverse-list (cdr spec) nil)))
+                  (let+ (((&values names matrices) (traverse-list (cdr spec) nil)))
                     (values (interaction-name names)
                             (apply #'interaction-matrix matrices))))
                  (t (error "Invalid spec ~A" spec)))))
-      (bind (((:values ixs matrices) (traverse-list specifications)))
+      (let+ (((&values ixs matrices) (traverse-list specifications)))
         (when constant
           (setf ixs (cons constant ixs)
                 matrices (cons (lla-array (nrow (first matrices)) :integer 1)

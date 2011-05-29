@@ -6,33 +6,33 @@
 
 NAME is a symbol
 
-CONSTRUCTOR-LAMBDA-LIST will be used to wrap the CONSTRUCTOR-FORM, which can use the
-locally define macro (MAKE :slot-name value1 ...) to initialize slots.
+CONSTRUCTOR-LAMBDA-LIST will be used to wrap the CONSTRUCTOR-FORM, which can
+use the locally define macro (MAKE :slot-name value1 ...) to initialize slots.
 
-SLOTS is a list of (slot-name &key type read-only reader) slot specifications.  When
-READER is T, SLOT-NAME is used instead, otherwise a method is defined using the given
-symbol.
+SLOTS is a list of (slot-name &key type read-only reader) slot specifications.
+When READER is T, SLOT-NAME is used instead, otherwise a method is defined
+using the given symbol.
 
 OPTIONS is (&key documentation instance), the default instance is a gensym.
 
-METHODS are (function-name lambda-list &body body), with (INSTANCE NAME) prepended to
-the lambda-list, ie the instance is accessible using INSTANCE.  Also, within BODY,
-slots are accessible by their names."
+METHODS are (function-name lambda-list &body body), with (INSTANCE NAME)
+prepended to the lambda-list, ie the instance is accessible using INSTANCE.
+Also, within BODY, slots are accessible by their names."
   (check-type name symbol)
-  (bind ((slots (mapcar #'ensure-list slots))
+  (let+ ((slots (mapcar #'ensure-list slots))
          ((&key documentation (instance (gensym* name))) options))
     (labels ((local-slots (body)
                ;; !! read-only slots could be expanded using LET for extra speed
                `(symbol-macrolet
                     ,(loop for slot in slots collect
-                      (bind ((slot-name (car slot))
+                      (let+ ((slot-name (car slot))
                              (accessor `(,(make-symbol* name '#:- slot-name)
                                           ,instance)))
                         `(,slot-name ,accessor)))
                   ,@body)))
       ;; collect extra information from slot definitions
       (loop for slot in slots do
-        (bind (((slot-name &key reader &allow-other-keys) slot))
+        (let+ (((slot-name &key reader &allow-other-keys) slot))
           (awhen reader
             (let ((reader (if (eq reader t) slot-name reader)))
               (push (list reader nil slot-name) methods)))))
@@ -41,7 +41,7 @@ slots are accessible by their names."
          (defstruct ,name
            ,documentation
            ,@(loop for slot in slots collect
-             (bind (((slot-name &key type read-only &allow-other-keys) slot))
+             (let+ (((slot-name &key type read-only &allow-other-keys) slot))
                `(,slot-name nil
                             ,@(awhen type `(:type ,it))
                             ,@(awhen read-only `(:read-only ,it))))))
@@ -56,13 +56,26 @@ slots are accessible by their names."
 ;;; standard methods (MEAN and VARIANCE already defined in CL-NUM-UTILS)
 
 (defgeneric draw (random-variable &key &allow-other-keys)
-  (:documentation "Draw random variates."))
+  (:documentation "Draw random variates.  Can also be used on generators.")
+  (:method ((function function) &key)
+    (funcall function)))
 
 (defgeneric generator (random-variable)
   (:documentation "Return a closure that returns random draws.")
   (:method (random-variable)
     (lambda ()
       (draw random-variable))))
+
+(defstruct+ (replicating
+             (:constructor replicating (random-variable n)))
+    "Wrapper structure for drawing from a random variable."
+  (random-variable)
+  (n 0 :type fixnum))
+
+(defmethod sweep (accumulator (replicating replicating))
+  (let+ (((&replicating-r/o random-variable n) replicating))
+    (with-accumulator (accumulator add)
+      (loop repeat n :do (add (draw random-variable))))))
 
 (defgeneric cdf (random-variable x)
   (:documentation "Cumulative distribution function of RANDOM-VARIABLE at X."))

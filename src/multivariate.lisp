@@ -35,7 +35,7 @@ square root of variance."
             (setf (aref x i) (draw-standard-normal)))
           (e+ mean (mm variance-left-sqrt x scale))))
   (sub (&rest index-specifications)
-       (bind (((index-specification) index-specifications)
+       (let+ (((index-specification) index-specifications)
               (mean (sub mean index-specification))
               (variance (sub (variance instance) index-specification)))
          (if (vectorp mean)
@@ -48,45 +48,50 @@ square root of variance."
 ;;;  inverse-chi-square, nu degrees of freedom) is returned as the second value.
 
 (define-rv r-multivariate-t (mean sigma nu 
-                                  &key multivariate-normal scaling-factor)
-  (:documentation "Multivariate T distribution with given MEAN, scale SIGMA
-  and NU degrees of freedom.")
+                                  &key multivariate-normal scaling-factor 
+                                  (s^2 1d0 s^2?))
+  (:documentation "Multivariate T distribution with given MEAN, scale
+  SIGMA*S^2 and NU degrees of freedom.")
   ((multivariate-normal :type r-multivariate-normal :documentation
-              "distribution for obtaining normal draws" :reader t)
+                        "distribution for obtaining normal draws" :reader t)
    (scaling-factor :type r-inverse-gamma :documentation
                    "distribution that scales the variance of draws."
-                   :reader t)
-   (nu :type double-float :documentation "degrees of freedom" :reader t))
-  (bind (((:values nu scaling-factor)
-          (aif scaling-factor
-               (progn
-                 (check-type it r-inverse-gamma)
-                 (assert (not nu) ()
-                         "Can't initialize with both NU and SCALING-FACTOR.")
-                 (values (* 2 (alpha it)) it))
-             (with-doubles (nu)
-               (values nu (r-inverse-chi-square nu))))))
-    (make :multivariate-normal 
-          (aif multivariate-normal
-               (prog1 it
-                 (check-type it r-multivariate-normal)
-                 (assert (not (or mean sigma)) () "Can't initialize with both
+                   :reader t))
+  (make :multivariate-normal 
+        (aif multivariate-normal
+             (prog1 it
+               (check-type it r-multivariate-normal)
+               (assert (not (or mean sigma)) () "Can't initialize with both
                        MEAN & SIGMA and MULTIVARIATE-NORMAL."))
-               (r-multivariate-normal mean sigma))
-          :scaling-factor scaling-factor :nu nu))
+             (r-multivariate-normal mean sigma))
+        :scaling-factor
+        (aif scaling-factor
+             (progn
+               (check-type it r-inverse-gamma)
+               (assert (not nu) ()
+                       "Can't initialize both NU and SCALING-FACTOR.")
+               (assert (not s^2?) ()
+                       "Can't initialize both S^2 and SCALING-FACTOR.")
+               it)
+             (r-inverse-chi-square nu s^2)))
   (mean () 
-        (assert (< 1 nu))
+        (assert (< 1 (nu scaling-factor)))
         (mean multivariate-normal))
   (variance ()
-            (assert (< 2 nu))
-            (e* (variance multivariate-normal)
-                (/ nu (- nu 2d0))))
+            (let+ (((&accessors-r/o nu s^2) scaling-factor))
+              (e* (variance multivariate-normal)
+                  (* (t-scale-to-variance-coefficient nu)
+                     s^2))))
   (log-pdf (x &optional ignore-constant?)
-           (bind (((:accessors-r/o mean variance-left-sqrt) multivariate-normal)
+           (let+ (((&accessors-r/o mean variance-left-sqrt)
+                   multivariate-normal)
+                  ((&accessors-r/o nu s^2) scaling-factor)
+                  (variance-left-sqrt (e* (sqrt s^2) variance-left-sqrt))
                   (d (length mean)))
              (maybe-ignore-constant
               ignore-constant?
-              (* (log (1+ (/ (normal-quadratic-form x mean variance-left-sqrt) nu)))
+              (* (log (1+ (/ (normal-quadratic-form x mean variance-left-sqrt)
+                             nu)))
                  (/ (+ nu d) -2d0))
               (- (log-gamma (/ (+ nu d) 2d0))
                  (log-gamma (/ nu 2d0))
@@ -97,14 +102,20 @@ square root of variance."
           (values (draw multivariate-normal :scale (sqrt scaling-factor))
                   scaling-factor)))
   (sub (&rest index-specifications)
-       (bind (((index-specification) index-specifications)
-              (normal (sub multivariate-normal index-specification)))
+       (let+ (((index-specification) index-specifications)
+              (normal (sub multivariate-normal index-specification))
+              ((&accessors-r/o nu s^2) scaling-factor))
          (etypecase normal
-           (r-normal (r-t (mean normal) (sd normal) nu))
+           (r-normal 
+            (r-t (mean normal) (* (sqrt s^2) (sd normal)) nu))
            (r-multivariate-normal 
-              (r-multivariate-t nil nil nil
-                                :multivariate-normal normal
-                                :scaling-factor scaling-factor))))))
+            (r-multivariate-t nil nil nil
+                              :multivariate-normal normal
+                              :scaling-factor scaling-factor)))))
+  (nu ()
+      (nu scaling-factor))
+  (s^2 ()
+       (s^2 scaling-factor)))
 
 ;;;  WISHART
 ;;;
@@ -115,7 +126,7 @@ square root of variance."
 (defun draw-standard-wishart-left-sqrt (nu k)
   "Draw a lower triangular matrix L such that (mm L t) has Wishart(I,nu)
 distribution (dimension k x k)."
-  (bind ((nu (coerce nu 'double-float))
+  (let+ ((nu (coerce nu 'double-float))
          (l (make-array (list k k) :element-type 'double-float)))
     (dotimes (i k)
       (setf (aref l i i) (sqrt (draw (r-chi-square (- nu i)))))

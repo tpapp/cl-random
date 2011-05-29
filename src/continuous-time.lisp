@@ -15,11 +15,11 @@ two underlying random variables.")
    no-change
    (n :type fixnum :documentation "Number of states.")
    (keys :type (or null vector)))
-  (bind ((rates (as-double-float-vector rates))
+  (let+ ((rates (as-double-float-vector rates))
          (keys (when keys (coerce keys 'vector)))
          (n (length rates))
          (total-rate (sum rates))
-         ((:values transition-rate probabilities) 
+         ((&values transition-rate probabilities) 
           (if transition-rate
               (let ((no-change-rate (- transition-rate total-rate)))
                 (assert (<= 0 no-change-rate) ()

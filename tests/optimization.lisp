@@ -9,18 +9,18 @@
 (addtest (optimization-tests)
   num-diff-tests
   (use-locally ((cl-random richardson-derivative3 num-gradient num-hessian))
-    (bind (((:flet g (x)) (expt x 2))
+    (let+ (((&flet g (x) (expt x 2)))
            (h 1d-3)
            (x 3d0)
            (*lla=-difference* 1d-10)
-           ((:flet gg (x))              ; a linear function
-            (bind ((#(x1 x2) x))
-              (+ (* 3d0 x1) (* 5d0 x2))))
-           ((:flet hessian-test (x))
-            (bind ((#(x1 x2) x))
-              (+ (* 2d0 (expt x1 2))
-                 (* 3d0 x1 x2)
-                 (* 4d0 (expt x2 2))))))
+           ((&flet gg (x)              ; a linear function
+              (let+ ((#(x1 x2) x))
+                (+ (* 3d0 x1) (* 5d0 x2)))))
+           ((&flet hessian-test (x)
+              (let+ ((#(x1 x2) x))
+                (+ (* 2d0 (expt x1 2))
+                   (* 3d0 x1 x2)
+                   (* 4d0 (expt x2 2)))))))
       ;; richardson extrapolation
       (ensure-same (richardson-derivative3 h (g x) (g (+ x (/ h 2))) (g (+ x h)))
                    (* 2 x))
@@ -145,9 +145,9 @@
 forms.  The function will return the vector corresponding to START and MIN when
 called with :START and :MIN, respectively.  Vectors are given as list of
 numbers, which are converted to double float vectors.  The elements of the
-argument are bound to X1, X2, ...  AUX gives pairs, which are used in BIND
+argument are bound to X1, X2, ...  AUX gives pairs, which are used in LET+
 before forms are evaluated, squared and summed."
-  (bind (((docstring &rest forms)
+  (let+ (((docstring &rest forms)
           (if (stringp (first forms)) forms (cons nil forms)))
          (n (length start)))
     (assert (= n (length min)) () "Incompatible dimensions.")
@@ -157,7 +157,7 @@ before forms are evaluated, squared and summed."
          (:start (clo :double ,@start))
          (:min (clo :double ,@min))
          (otherwise 
-            (bind ((#(,@(iter
+            (let+ ((#(,@(iter
                           (for i from 0 below n)
                           (collecting (intern (format nil "X~A" (1+ i))))))
                     x)
@@ -226,7 +226,7 @@ subsequences of the argument.  Also handles :MIN and :START.  For use on
 functions similar to those constructed by DEFINE-LS-FUNCTION.  Return the
 difference between the expected and calculated minimum location, and all the
 values as a list."
-  (bind ((original-min (funcall original :min))
+  (let+ ((original-min (funcall original :min))
          (n (length original-min))
          (min (rep original-min m))
          (start (rep (funcall original :start) m)))

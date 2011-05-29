@@ -118,7 +118,7 @@ returned.  Uses Richardson extrapolation w/ forward differencing."
 (defmethod initialize-instance :after ((bfgs-parameters bfgs-parameters) &key
                                        &allow-other-keys)
   ;; various checks
-  (bind (((:slots-r/o linesearch-max-iter numdiff-epsilon relative rho sigma
+  (let+ (((&slots-r/o linesearch-max-iter numdiff-epsilon relative rho sigma
                       alpha-max tau1 tau2 tau3 step-reduction
                       max-bisections max-expansions) bfgs-parameters))
     (check-type linesearch-max-iter positive-fixnum)
@@ -389,7 +389,7 @@ iff all are =.  Z is returned as the second value."
 (defun linesearch-armijo (f df-uni x direction fx df0 alpha z bfgs-parameters)
   "Armijo line search.  Last x evaluated is available in z."
   (declare (ignore df-uni))
-  (bind (((:slots-r/o linesearch-max-iter relative rho step-reduction)
+  (let+ (((&slots-r/o linesearch-max-iter relative rho step-reduction)
           bfgs-parameters))
     (loop-max-iter (linesearch-max-iter)
       (let* ((different? (x+direction x direction alpha z relative))
@@ -404,9 +404,9 @@ iff all are =.  Z is returned as the second value."
   "Uses the weak Wolfe conditions f(alpha) <= rho alpha f'(0) and f'(alpha) >=
 sigma f'(0).  Algorithm from Lewis and Overton (2010).  Return ALPHA, F-ALPHA
 and ACCEPTED?"
-  (bind ((left 0d0)
+  (let+ ((left 0d0)
          (right nil)
-         ((:slots-r/o linesearch-max-iter rho sigma relative
+         ((&slots-r/o linesearch-max-iter rho sigma relative
                       max-expansions max-bisections) bfgs-parameters)
          (slope (* rho df0))
          (curvature (* sigma df0))
@@ -414,9 +414,9 @@ and ACCEPTED?"
          (expansions 0))
     (iter
       (repeat linesearch-max-iter)
-      (bind ((different? (x+direction x direction alpha z relative))
+      (let+ ((different? (x+direction x direction alpha z relative))
              (f-alpha (funcall f z))
-             ((:flet done (status))
+             ((&flet done (status))
               (return-from linesearch-ww (values alpha f-alpha status))))
         (cond
           ;; no progress
@@ -485,7 +485,7 @@ too small), in this case, no argument is changed.."
                       (bfgs-parameters *default-bfgs-parameters*)
                       finish-silently?
                       tracer)
-  (bind (((:slots-r/o numdiff-epsilon relative) bfgs-parameters)
+  (let+ (((&slots-r/o numdiff-epsilon relative) bfgs-parameters)
          (linesearch (ecase linesearch
                        (:armijo #'linesearch-armijo)
                        (:ww #'linesearch-ww)))
@@ -535,7 +535,7 @@ too small), in this case, no argument is changed.."
       (let ((df0 (negative-quadratic-form dfx (elements H) s)))
         (if (minusp df0)
             ;; descent direction, try line search
-            (bind (((:flet df-uni (alpha f-alpha))
+            (let+ (((&flet df-uni (alpha f-alpha))
                     ;; using y, no one else is
                     (let* ((epsilon (/ numdiff-epsilon (norm2 s)))
                            (changed? (x+direction x s (+ alpha (/ epsilon 2))
@@ -546,7 +546,7 @@ too small), in this case, no argument is changed.."
                             (richardson-derivative3 epsilon f-alpha fh/2
                                                     (funcall f y)))
                           0d0)))
-                   ((:values alpha f-alpha status)
+                   ((&values alpha f-alpha status)
                     (funcall linesearch #'f #'df-uni x s fx df0 1d0 z 
                              bfgs-parameters)))
               (when (<= (/ (abs (- fx f-alpha)) (+ (abs fx) epsilon)) epsilon)

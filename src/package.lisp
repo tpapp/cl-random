@@ -1,6 +1,6 @@
 (defpackage cl-random
   (:nicknames rv)
-  (:use common-lisp alexandria iterate bind anaphora cl-num-utils lla)
+  (:use common-lisp alexandria iterate let-plus anaphora cl-num-utils lla)
   (:shadowing-import-from cl-num-utils xor mean variance) ; also in alexandria
   (:export
 
@@ -20,7 +20,7 @@
 
    ;; random
 
-   draw generator cdf log-pdf pdf quantile
+   draw generator replicating cdf log-pdf pdf quantile
 
    ;; univariate
 
@@ -28,9 +28,11 @@
    r-exponential beta draw-standard-exponential
    r-normal mean sd draw-standard-normal
    r-log-normal log-mean log-sd
-   r-t scale
-   r-gamma alpha beta r-inverse-gamma r-chi-square nu r-inverse-chi-square
-   scale
+   r-t scale t-scale-to-variance-coefficient
+   r-gamma alpha beta r-inverse-gamma 
+   r-chi-square r-chi-square-nu 
+   r-inverse-chi-square r-inverse-chi-square-nu r-inverse-chi-square-scale
+   r-inverse-chi-square-s^2
    r-beta
    r-discrete probabilities
 

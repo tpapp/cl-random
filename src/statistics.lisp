@@ -5,12 +5,12 @@
 (defgeneric matrix-mean (matrix)
   (:documentation "Mean of a matrix, columnwise.")
   (:method ((matrix array))
-    (bind ((dimensions (array-dimensions matrix))
-           (means (filled-array (second dimensions) #'scalar-mean-accumulator)))
+    (let+ ((dimensions (array-dimensions matrix))
+           (means (filled-array (second dimensions) #'mean-accumulator)))
       (row-major-loop (dimensions row-major-index row-index col-index)
-        (funcall (aref means col-index)
-                 (row-major-aref matrix row-major-index)))
-      (map 'vector #'funcall means))))
+        (add (aref means col-index)
+             (row-major-aref matrix row-major-index)))
+      (map 'vector #'mean means))))
 
 (defun demean-matrix (matrix &optional (mean (matrix-mean matrix)))
   (e- matrix (recycle mean :horizontal)))
@@ -48,7 +48,7 @@ a second value."
 
 (defun matrix-mean-and-variance (matrix)
   "Return the variance-covariance matrix."
-  (bind (((:values sse mean) (matrix-sse matrix)))
+  (let+ (((&values sse mean) (matrix-sse matrix)))
     (values mean (e/ sse (1- (nrow matrix))))))
 
 ;; (defgeneric add-constant-column (object &optional constant)

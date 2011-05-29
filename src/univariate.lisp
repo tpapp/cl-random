@@ -376,6 +376,14 @@ which has density exp(-x)."
 ;;; Student's T distribution
 ;;; ****************************************************************
 
+(declaim (inline t-scale-to-variance-coefficient))
+(defun t-scale-to-variance-coefficient (nu)
+  "Return the coefficient that multiplies the Sigma matrix or the squared
+scale to get the variance of a (multivariate) Student-T distribution.  Also
+checks that nu > 2, ie the variance is defined."
+  (assert (< 2d0 nu))
+  (/ nu (- nu 2d0)))
+
 (defun draw-standard-t (nu)
   "Draw a standard T random variate, with NU degrees of freedom."
   ;; !! algorithm from Bailey (1994), test Marsaglia (1984) to see if it is faster
@@ -398,8 +406,8 @@ which has density exp(-x)."
     (assert (plusp scale))
     (make :mean mean :scale scale :nu nu))
   (variance ()
-            (assert (< 2d0 nu))
-            (* (expt scale 2) (/ nu (- nu 2d0))))
+            (* (expt scale 2)
+               (t-scale-to-variance-coefficient nu)))
   (draw (&key)
         (from-standard-normal (draw-standard-t nu) mean scale)))
 
@@ -431,7 +439,7 @@ and c using the utility function above. "
   (check-type alpha (double-float 1d0))
   (tagbody 
    top
-     (bind (((:values x v) (prog () ; loop was not optimized for some reason
+     (let+ (((&values x v) (prog () ; loop was not optimized for some reason
                             top
                               (let* ((x (draw-standard-normal))
                                      (v (expt (1+ (* c x)) 3)))
@@ -467,13 +475,15 @@ and c using the utility function above. "
   (draw (&key)
         ;; !! could optimize this by saving slots
         (if (< alpha 1d0)
-            (bind ((1+alpha (1+ alpha))
+            (let+ ((1+alpha (1+ alpha))
                    (1/alpha (/ alpha))
-                   ((:values d c) (standard-gamma1-d-c 1+alpha)))
-              ;; use well known-transformation, see p 371 of Marsaglia and Tsang (2000)
-              (/ (* (expt (random 1d0) 1/alpha) (draw-standard-gamma1 1+alpha d c))
+                   ((&values d c) (standard-gamma1-d-c 1+alpha)))
+              ;; use well known-transformation, see p 371 of Marsaglia and
+              ;; Tsang (2000)
+              (/ (* (expt (random 1d0) 1/alpha)
+                    (draw-standard-gamma1 1+alpha d c))
                  beta))
-            (bind (((:values d c) (standard-gamma1-d-c alpha)))
+            (let+ (((&values d c) (standard-gamma1-d-c alpha)))
               (/ (draw-standard-gamma1 alpha d c) beta)))))
 
 ;;;; ****************************************************************
@@ -502,13 +512,13 @@ and c using the utility function above. "
             (- (* alpha (log beta)) (log-gamma alpha))))
   (draw (&key)
         (if (< alpha 1d0)
-            (bind ((1+alpha (1+ alpha))
+            (let+ ((1+alpha (1+ alpha))
                    (1/alpha (/ alpha))
-                   ((:values d c) (standard-gamma1-d-c 1+alpha)))
+                   ((&values d c) (standard-gamma1-d-c 1+alpha)))
               ;; use well known-transformation, see p 371 of Marsaglia and Tsang (2000)
               (/ beta
                  (* (expt (random 1d0) 1/alpha) (draw-standard-gamma1 1+alpha d c))))
-            (bind (((:values d c) (standard-gamma1-d-c alpha)))
+            (let+ (((&values d c) (standard-gamma1-d-c alpha)))
               (/ beta (draw-standard-gamma1 alpha d c))))))
 
 ;;;; ****************************************************************
@@ -517,15 +527,31 @@ and c using the utility function above. "
 ;;;; We just reparametrize and rely on GAMMA and INVERSE-GAMMA.
 ;;;; ****************************************************************
 
+(defgeneric nu (distribution)
+  (:documentation "Return the degrees of freedom when applicable."))
+
+(defgeneric s^2 (distribution)
+  (:documentation "Return the scale when applicable."))
+
 (defun r-chi-square (nu)
   "Chi-square distribution with NU degrees of freedom."
   (r-gamma (/ nu 2) 0.5d0))
 
-(defun r-inverse-chi-square (nu &optional (scale 1d0))
+(defmethod nu ((r-gamma r-gamma))
+  (* 2 (r-gamma-alpha r-gamma)))
+
+(defun r-inverse-chi-square (nu &optional (s^2 1d0))
   "Generalized inverse chi-square distribution.  Reparametrized to
 INVERSE-GAMMA."
   (let ((nu/2 (/ nu 2)))
-    (r-inverse-gamma nu/2 (* nu/2 (expt scale 2)))))
+    (r-inverse-gamma nu/2 (* nu/2 s^2))))
+
+(defmethod nu ((r-inverse-gamma r-inverse-gamma))
+  (* 2 (r-inverse-gamma-alpha r-inverse-gamma)))
+
+(defmethod s^2 ((r-inverse-gamma r-inverse-gamma))
+  (let+ (((&structure r-inverse-gamma- alpha beta) r-inverse-gamma))
+    (/ beta alpha)))
 
 ;;;; ****************************************************************
 ;;;; Beta distribution.

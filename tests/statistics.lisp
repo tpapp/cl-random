@@ -39,14 +39,14 @@
 
 (addtest (statistics-tests)
   matrix-mean-variance
-  (bind (((:values mean variance)
+  (let+ (((&values mean variance)
           (matrix-mean-and-variance (clo :double
                                          1 4 :/
                                          3 8))))
     (ensure-same mean (clo :double 2 6))
-    (ensure-same variance (clo :double :hermitian
-                               2 % :/
-                               4 8))))
+    (ensure-same (reconstruct variance) (clo :double :hermitian
+                                             2 % :/
+                                             4 8))))
 
 ;; (addtest (statistics-tests)
 ;;   rescale-by-sd

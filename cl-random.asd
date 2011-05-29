@@ -27,7 +27,7 @@
      ;; (:file "optimization")
 )))
   :depends-on 
-  (alexandria cl-num-utils iterate metabang-bind anaphora lla))
+  (alexandria cl-num-utils iterate let-plus anaphora lla))
 
 (defsystem cl-random-tests
   :description "Unit tests for CL-RANDOM."

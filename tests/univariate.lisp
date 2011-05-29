@@ -135,10 +135,10 @@
 (addtest (cl-random-tests)
   inverse-chi-square-moments
   (let* ((nu 9)
-         (scale pi)
-         (rv (r-inverse-chi-square nu scale)))
-    (ensure-same (mean rv) (* (/ nu (- nu 2)) (expt scale 2)))
-    (ensure-same (variance rv) (/ (* 2 (expt nu 2) (expt scale 4))
+         (s^2 pi)
+         (rv (r-inverse-chi-square nu s^2)))
+    (ensure-same (mean rv) (* (/ nu (- nu 2)) s^2))
+    (ensure-same (variance rv) (/ (* 2 (expt nu 2) (expt s^2 2))
                                   (* (expt (- nu 2) 2) (- nu 4))))))
 
 ;; beta distribution

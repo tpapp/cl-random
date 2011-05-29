@@ -68,12 +68,12 @@
 ;;;; Macro for rejection methods.
 
 (defmacro try ((&rest bindings) condition value)
-  "Evaluate bindings (expanding into bind, so all features can be
-used) until condition is satisfied, then return value."
+  "Evaluate bindings (expanding into LET+, so all features can be used) until
+condition is satisfied, then return value."
   (with-unique-names (top)
     `(prog ()
         ,top
-        (bind ,bindings
+        (let+ ,bindings
           (if ,condition
               (return ,value)
               (go ,top))))))
@@ -160,7 +160,7 @@ them as a VECTOR-DOUBLE-FLOAT.  Vector is always copied."
 If the binding is a symbol, or VALUE is missing, VAR will be used instead.  All
 variables are declared DOUBLE-FLOAT in the body."
   (let ((bindings (mapcar (lambda (binding)
-                            (bind (((variable &optional (value variable))
+                            (let+ (((variable &optional (value variable))
                                     (if (atom binding)
                                         (list binding binding)
                                         binding)))
