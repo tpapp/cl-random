@@ -1,4 +1,6 @@
-(in-package :cl-random)
+;;; -*- Mode:Lisp; Syntax:ANSI-Common-Lisp; -*-
+
+(in-package #:cl-random)
 
 (defun check-mean-variance-compatibility (mean variance)
   "Assert that the mean is a vector, and its dimensions are compatible with
@@ -45,7 +47,8 @@ square root of variance."
 ;;;  MULTIVARIATE T distribution
 ;;;
 ;;;  When drawing numbers, the scaling factor (with distribution
-;;;  inverse-chi-square, nu degrees of freedom) is returned as the second value.
+;;;  inverse-chi-square, nu degrees of freedom) is returned as the second
+;;;  value.
 
 (define-rv r-multivariate-t (mean sigma nu 
                                   &key multivariate-normal scaling-factor 
