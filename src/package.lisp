@@ -43,7 +43,7 @@
    ;; multivariate
 
    r-multivariate-normal variance-left-sqrt
-   r-multivariate-t nu
+   r-multivariate-t scaling-factor multivariate-normal nu 
    r-wishart scale-left-sqrt r-inverse-wishart inverse-scale-right-sqrt
 
    ;; statistics
