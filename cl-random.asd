@@ -60,4 +60,4 @@
      (:file "statistics"))))
   :depends-on
   (cl-utilities iterate metabang-bind anaphora lift cl-num-utils random-sample
-                cl-random lla))
+                cl-random lla cl-num-utils-tests))

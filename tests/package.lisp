@@ -2,4 +2,5 @@
   (:use cl alexandria iterate let-plus anaphora lift cl-random
         cl-num-utils lla)
   (:shadowing-import-from cl-random mean variance)
-  (:export random-y-x run-cl-random-tests))
+  (:export random-y-x run-cl-random-tests)
+  (:import-from cl-num-utils-tests vector* array*))
