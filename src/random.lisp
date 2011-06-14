@@ -84,20 +84,20 @@ Also, within BODY, slots are accessible by their names."
   (:documentation "Quantile of RANDOM-VARIABLE at Q."))
 
 (defgeneric log-pdf (random-variable x &optional ignore-constant?)
-  (:documentation "Log of probability distribution function of RANDOM-VARIABLE at X.
-  NIL corresponds to log(-infinity).  When IGNORE-CONSTANT?, the result may be
-  shifted by an arbitrary real constant that does not change between calls of the
-  same RANDOM-VARIABLE.  This may save computation, and is useful for MCMC methods,
-  etc."))
+  (:documentation "Log of probability distribution function of RANDOM-VARIABLE
+  at X.  NIL corresponds to log(-infinity).  When IGNORE-CONSTANT?, the result
+  may be shifted by an arbitrary real constant that does not change between
+  calls of the same RANDOM-VARIABLE.  This may save computation, and is useful
+  for MCMC methods, etc."))
 
 (defun pdf (rv x &optional ignore-constant?)
-  "Probability distribution function of RANDOM-VARIABLE at X.  See LOG-PDF for the
-semantics of IGNORE-CONSTANT?."
+  "Probability distribution function of RANDOM-VARIABLE at X.  See LOG-PDF for
+the semantics of IGNORE-CONSTANT?."
   (~exp (log-pdf rv x ignore-constant?)))
 
 (defmacro maybe-ignore-constant (ignore-constant? value constant)
-  "Handle a constant that is calculated only when IGNORE-CONSTANT? is NIL and VALUE
-is not negative infinity (represented by NIL)."
+  "Handle a constant that is calculated only when IGNORE-CONSTANT? is NIL and
+VALUE is not negative infinity (represented by NIL)."
   (once-only (value)
     `(when ,value
        (if ,ignore-constant?
