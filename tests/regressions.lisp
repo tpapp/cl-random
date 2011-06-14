@@ -25,10 +25,10 @@
          ;; single step
          (p2 (linear-regression y x))
          ;; two steps, first half
-         (h1 (si 0 n))
+         (h1 (cons 0 n))
          (p1 (linear-regression (sub y h1) (sub x h1 t)))
          ;; second half, using first half as prior
-         (h2 (si n 0))
+         (h2 (cons n nil))
          (p2-1 (linear-regression (sub y h2) (sub x h2 t) :prior p1)))
     (ensure-same (mean p2) (mean p2-1))
     (ensure-same (variance p2) (variance p2-1))
