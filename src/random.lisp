@@ -66,14 +66,14 @@ Also, within BODY, slots are accessible by their names."
     (lambda ()
       (draw random-variable))))
 
-(defstruct+ (replicating
+(defstruct (replicating
              (:constructor replicating (random-variable n)))
-    "Wrapper structure for drawing from a random variable."
+  "Wrapper structure for drawing from a random variable."
   (random-variable)
   (n 0 :type fixnum))
 
 (defmethod sweep (accumulator (replicating replicating))
-  (let+ (((&replicating-r/o random-variable n) replicating))
+  (let+ (((&structure-r/o replicating- random-variable n) replicating))
     (with-accumulator (accumulator add)
       (loop repeat n :do (add (draw random-variable))))))
 
