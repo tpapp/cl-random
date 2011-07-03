@@ -72,10 +72,10 @@ Also, within BODY, slots are accessible by their names."
   (random-variable)
   (n 0 :type fixnum))
 
-(defmethod sweep (accumulator (replicating replicating))
+(defmethod sweep (accumulator (replicating replicating) &key (key #'identity))
   (let+ (((&structure-r/o replicating- random-variable n) replicating))
     (with-accumulator (accumulator add)
-      (loop repeat n :do (add (draw random-variable))))))
+      (loop repeat n :do (add (funcall key (draw random-variable)))))))
 
 (defgeneric cdf (random-variable x)
   (:documentation "Cumulative distribution function of RANDOM-VARIABLE at X."))
