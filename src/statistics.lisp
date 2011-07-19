@@ -39,7 +39,7 @@ a second value."
   ;; let D=(demean matrix), D=QR SSE=D^TD=R^TQ^TQR = R^TR
   (let ((mean (matrix-mean matrix)))
     (values (matrix-square-root
-             (transpose* (slot-value (qr (demean-matrix matrix mean)) 'r)))
+             (transpose* (qr-r (qr (demean-matrix matrix mean)))))
             mean)))
 
 (defun matrix-variance (matrix)

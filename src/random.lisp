@@ -1,7 +1,7 @@
 (in-package :cl-random)
 
-(defmacro define-rv (name constructor-lambda-list options slots constructor-form
-                     &rest methods)
+(defmacro define-rv (name constructor-lambda-list options slots
+                     constructor-form &rest methods)
   "Define a random variable, abstracting from the representation.  Syntax:
 
 NAME is a symbol
@@ -20,7 +20,7 @@ prepended to the lambda-list, ie the instance is accessible using INSTANCE.
 Also, within BODY, slots are accessible by their names."
   (check-type name symbol)
   (let+ ((slots (mapcar #'ensure-list slots))
-         ((&key documentation (instance (gensym* name))) options))
+         ((&key documentation (instance (gensym+ name))) options))
     (labels ((local-slots (body)
                ;; !! read-only slots could be expanded using LET for extra speed
                `(symbol-macrolet
@@ -78,7 +78,8 @@ Also, within BODY, slots are accessible by their names."
       (loop repeat n :do (add (funcall key (draw random-variable)))))))
 
 (defgeneric cdf (random-variable x)
-  (:documentation "Cumulative distribution function of RANDOM-VARIABLE at X."))
+  (:documentation "Cumulative distribution function of RANDOM-VARIABLE at
+  X."))
 
 (defgeneric quantile (random-variable q)
   (:documentation "Quantile of RANDOM-VARIABLE at Q."))

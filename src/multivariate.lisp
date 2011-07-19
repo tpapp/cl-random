@@ -137,7 +137,7 @@ distribution (dimension k x k)."
         (for row-major-index :from (array-row-major-index l i 0)
              :below (array-row-major-index l i i))
         (setf (row-major-aref l row-major-index) (draw-standard-normal))))
-    (make-instance 'lower-triangular-matrix :elements l)))
+    (make-lower-triangular-matrix l)))
 
 (define-rv r-wishart (nu scale)
   (:documentation "Wishart distribution with NU degrees of freedom and given
