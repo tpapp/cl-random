@@ -30,11 +30,11 @@
          (mean (matrix-mean m2))
          (demeaned (e- m2 (recycle mean :h)))
          (sse (mm t demeaned)))
-    (ensure-same (reconstruct (matrix-sse m))
+    (ensure-same (as-array (matrix-sse m) :hermitian? t)
                  (clo :hermitian :double
                       2 % :/
                       4 8))
-    (ensure-same (reconstruct (matrix-sse m2))
+    (ensure-same (as-array (matrix-sse m2) :hermitian? t)
                  sse)))
 
 (addtest (statistics-tests)
@@ -44,9 +44,10 @@
                                          1 4 :/
                                          3 8))))
     (ensure-same mean (clo :double 2 6))
-    (ensure-same (reconstruct variance) (clo :double :hermitian
-                                             2 % :/
-                                             4 8))))
+    (ensure-same (as-array variance :hermitian? t)
+                 (clo :double :hermitian
+                      2 % :/
+                      4 8))))
 
 ;; (addtest (statistics-tests)
 ;;   rescale-by-sd

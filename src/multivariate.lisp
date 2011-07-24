@@ -152,8 +152,7 @@ distribution (dimension k x k)."
     (make :nu nu :scale-left-sqrt scale-left-sqrt :k (nrow scale-left-sqrt)))
   (mean () (e* nu (mm scale-left-sqrt t)))
   (draw (&key) 
-        (matrix-square-root 
-         (mm scale-left-sqrt (draw-standard-wishart-left-sqrt nu k)))))
+        (mm (mm scale-left-sqrt (draw-standard-wishart-left-sqrt nu k)) t)))
 
 ;;;  INVERSE-WISHART
 ;;;
@@ -174,6 +173,6 @@ returned as decompositions.")
           :k (nrow inverse-scale-right-sqrt)))
   (mean () (e/ (mm t inverse-scale-right-sqrt) (- nu k 1)))
   (draw (&key)
-        (matrix-square-root
-         (transpose (solve (draw-standard-wishart-left-sqrt nu k)
-                           inverse-scale-right-sqrt)))))
+        (mm (transpose (solve (draw-standard-wishart-left-sqrt nu k)
+                              inverse-scale-right-sqrt))
+            t)))

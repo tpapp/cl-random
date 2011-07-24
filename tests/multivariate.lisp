@@ -108,7 +108,15 @@
                                       t)))
          (sample (rs:replicate 50000 (compose #'as-array (generator rv))))
          (sample-mean (mean sample)))
-    (ensure (< (relative-difference sample-mean (mean rv)) 0.01))))
+    (ensure (< (relative-difference sample-mean (mean rv)) 0.01))
+    (values sample-mean (mean rv))))
+
+(mean (vector (draw  (r-inverse-wishart 7 (mm (clo :double
+                                            1 2 :/
+                                            3 4)
+                                       t)))))
+
+
 
 ;; (bind ((nu 400)
 ;;        (S (mm t (clo :dense 1 2 :/ 3 4)))
