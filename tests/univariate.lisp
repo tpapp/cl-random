@@ -2,6 +2,12 @@
 
 (in-package #:cl-random-tests)
 
+(defmacro ensure-q-cdf-consistency (rv q)
+  "Calculate X from Q, then Q from X, and compare."
+  (once-only (rv q)
+    `(ensure-same (cdf ,rv (quantile ,rv ,q)) ,q
+                  :test #'==)))
+
 ;;;;
 ;;;;  Univariate distributions
 ;;;;
@@ -119,6 +125,14 @@
   (ensure (same-sample-mean-variance (r-gamma 0.5 pi))))
 
 (addtest (cl-random-tests)
+  gamma-cdf
+  (let ((*lift-equality-test* #'==))
+    (ensure-same (cdf (r-gamma 1 1) 1d0) 0.6321206d0)
+    (ensure-same (cdf (r-gamma 1.5 2) 3) 0.9926168)
+    (ensure-q-cdf-consistency (r-gamma 2 3) .2)
+    (ensure-q-cdf-consistency (r-gamma 1 9) .7)))
+
+(addtest (cl-random-tests)
   inverse-gamma-draws
   (ensure (same-sample-mean-variance (r-inverse-gamma 12 1)))
   (ensure (same-sample-mean-variance (r-inverse-gamma 4 8)))
@@ -131,6 +145,11 @@
          (rv (r-chi-square nu)))
     (ensure-same (mean rv) nu)
     (ensure-same (variance rv) (* 2 nu))))
+
+(addtest (cl-random-tests)
+  chi-square-cdf
+  (lla::with-lapack-traps-masked
+    (cdf (r-chi-square 2) 0.5)))
 
 (addtest (cl-random-tests)
   inverse-chi-square-moments

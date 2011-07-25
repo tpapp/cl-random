@@ -28,6 +28,10 @@
            ((< x left) 0d0)
            ((< right x) 1d0)
            (t (/ (- x left) width)))))
+  (quantile (p)
+            (with-doubles (p)
+              (check-probability p)
+              (+ left (* p (- right left)))))
   (draw (&key)
         (+ left (random width))))
 
@@ -47,7 +51,8 @@ which has density exp(-x)."
 (declaim (inline draw-standard-exponential))
 
 (define-rv r-exponential (beta)
-  (:documentation "Exponential(beta) distribution, with density beta*exp(-beta*x).")
+  (:documentation "Exponential(beta) distribution, with density
+  beta*exp(-beta*x) on x >= 0.")
   ((beta :type double-float :reader t))
   (with-doubles (beta)
     (assert (plusp beta))
@@ -61,9 +66,10 @@ which has density exp(-x)."
   (cdf (x)
        (with-doubles (x)
          (- 1 (exp (- (* beta x))))))
-  (quantile (x)
-            (with-doubles (x)
-              (/ (log (- 1 x)) (- beta))))
+  (quantile (p)
+            (with-doubles (p)
+              (check-probability p :right)
+              (/ (log (- 1 p)) (- beta))))
   (draw (&key) 
     (/ (draw-standard-exponential) beta)))
 
@@ -75,31 +81,6 @@ which has density exp(-x)."
 ;;; distributions.
 ;;; ****************************************************************
 
-(defun cdf-standard-normal (x)
-  "CDF for N(0,1)."
-  ;; Uses method of Marsaglia (2004).  !! when i have tons of time on
-  ;; my hands, I will try a Pade expansion for this. -- Tamas
-  ;;
-  ;; !!!!  very important: under/overflows for values far, far out,
-  ;; need to deal with this, write second method in Marsaglia (2004)?
-  (declare (optimize (speed 3) (safety 0)))
-  (check-type x double-float)
-  (let ((q (expt x 2))
-        (s x)
-        (b x)
-        (s-p 0d0)
-        (i 1))
-    (declare (double-float q s b s-p)
-             (fixnum i))
-    (tagbody
-     top
-       (unless (= s-p s)
-         (setf s-p s)
-         (incf i 2)
-         (setf b (* b (/ q i)))
-         (incf s b)
-         (go top)))
-    (+ 0.5d0 (* s (exp (+ (* -0.5 q) #.(* -0.5d0 (log (* 2 pi)))))))))
 
 (declaim (ftype (function () double-float) draw-standard-normal))
 
@@ -146,7 +127,11 @@ which has density exp(-x)."
                                   (- +normal-log-pdf-constant+ (log sd))))
   (cdf (x)
        (with-doubles (x)
-         (cdf-standard-normal (to-standard-normal x mean sd))))
+         (rmath:pnorm5 x mean sd 1 0)))
+  (quantile (q)
+            (with-doubles (q)
+              (check-probability q :both)
+              (rmath:qnorm5 q mean sd 1 0)))
   (draw (&key)
     (from-standard-normal (draw-standard-normal) mean sd)))
 
@@ -454,9 +439,9 @@ and c using the utility function above. "
            (go top)))))
 
 (define-rv r-gamma (alpha beta)
-  (:documentation "Gamma(alpha,beta) distribution, with density proportional to x^(alpha-1)
-  exp(-x*beta).  Alpha and beta are known as shape and scale parameters,
-  respectively.")
+  (:documentation "Gamma(alpha,beta) distribution, with density proportional
+  to x^(alpha-1) exp(-x*beta).  Alpha and beta are known as shape and inverse
+  scale (or rate) parameters, respectively.")
   ((alpha :type double-float :reader t)
    (beta :type double-float :reader t))
   (with-doubles (alpha beta)
@@ -472,6 +457,16 @@ and c using the utility function above. "
               (- (+ (* alpha (log beta)) (* (1- alpha) (log x)))
                  (* beta x)))
             (- (log-gamma alpha))))
+  ;; note that R uses scale=1/beta
+  (cdf (x)
+       (with-doubles (x)
+         (with-fp-traps-masked
+           (rmath:pgamma x alpha (/ beta) 1 0))))
+  (quantile (q)
+            (with-doubles (q)
+              (check-probability q :right)
+              (with-fp-traps-masked
+                (rmath:qgamma q alpha (/ beta) 1 0))))
   (draw (&key)
         ;; !! could optimize this by saving slots
         (if (< alpha 1d0)
@@ -500,11 +495,11 @@ and c using the utility function above. "
     (assert (plusp beta))
     (make :alpha alpha :beta beta))
   (mean () (if (< 1 alpha)
-            (/ beta (1- alpha))
-            (error "Mean is defined only for ALPHA > 1")))
+               (/ beta (1- alpha))
+               (error "Mean is defined only for ALPHA > 1")))
   (variance () (if (< 2 alpha)
-                (/ (expt beta 2) (expt (1- alpha) 2) (- alpha 2))
-                (error "Variance is defined only for ALPHA > 2")))
+                   (/ (expt beta 2) (expt (1- alpha) 2) (- alpha 2))
+                   (error "Variance is defined only for ALPHA > 2")))
   (log-pdf (x &optional ignore-constant?)
            (maybe-ignore-constant
             ignore-constant?
@@ -515,7 +510,8 @@ and c using the utility function above. "
             (let+ ((1+alpha (1+ alpha))
                    (1/alpha (/ alpha))
                    ((&values d c) (standard-gamma1-d-c 1+alpha)))
-              ;; use well known-transformation, see p 371 of Marsaglia and Tsang (2000)
+              ;; use well known-transformation, see p 371 of Marsaglia and
+              ;; Tsang (2000)
               (/ beta
                  (* (expt (random 1d0) 1/alpha) (draw-standard-gamma1 1+alpha d c))))
             (let+ (((&values d c) (standard-gamma1-d-c alpha)))
