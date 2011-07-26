@@ -112,7 +112,7 @@ which has density exp(-x)."
   "Scale x from standard normal." 
   (+ (* x sigma) mu))
 
-(define-rv r-normal (mean sd)
+(define-rv r-normal (&optional (mean 0d0) (sd 1d0))
   (:documentation "Normal(mean,sd) distribution.")
   ((mean :type double-float :reader t)
    (sd :type double-float :reader t))
