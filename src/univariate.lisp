@@ -371,7 +371,8 @@ checks that nu > 2, ie the variance is defined."
 
 (defun draw-standard-t (nu)
   "Draw a standard T random variate, with NU degrees of freedom."
-  ;; !! algorithm from Bailey (1994), test Marsaglia (1984) to see if it is faster
+  ;; !! algorithm from Bailey (1994), test Marsaglia (1984) to see if it is
+  ;; !! faster
   (declare (double-float nu)
            (optimize (speed 3)))
   (try ((v1 (1- (random 2d0)))
