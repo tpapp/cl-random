@@ -112,13 +112,13 @@ which has density exp(-x)."
   "Scale x from standard normal." 
   (+ (* x sigma) mu))
 
-(define-rv r-normal (&optional (mean 0d0) (sd 1d0))
-  (:documentation "Normal(mean,sd) distribution.")
+(define-rv r-normal (&optional (mean 0d0) (variance 1d0))
+  (:documentation "Normal(mean,variance) distribution.")
   ((mean :type double-float :reader t)
    (sd :type double-float :reader t))
-  (with-doubles (mean sd)
-    (assert (plusp sd))
-    (make :mean mean :sd sd))
+  (with-doubles (mean variance)
+    (assert (plusp variance))
+    (make :mean mean :sd (sqrt variance)))
   (variance () (expt sd 2))
   (log-pdf (x &optional ignore-constant?)
            (maybe-ignore-constant ignore-constant?
@@ -488,7 +488,8 @@ and c using the utility function above. "
 
 (define-rv r-inverse-gamma (alpha beta)
   (:documentation "Inverse-Gamma(alpha,beta) distribution, with density p(x)
- proportional to x^(-alpha+1) exp(-beta/x)")
+ proportional to x^(-alpha+1) exp(-beta/x)"
+   :==-slots (alpha beta))
   ((alpha :type double-float :reader t)
    (beta :type double-float :reader t))
   (with-doubles (alpha beta)
@@ -514,7 +515,8 @@ and c using the utility function above. "
               ;; use well known-transformation, see p 371 of Marsaglia and
               ;; Tsang (2000)
               (/ beta
-                 (* (expt (random 1d0) 1/alpha) (draw-standard-gamma1 1+alpha d c))))
+                 (* (expt (random 1d0) 1/alpha)
+                    (draw-standard-gamma1 1+alpha d c))))
             (let+ (((&values d c) (standard-gamma1-d-c alpha)))
               (/ beta (draw-standard-gamma1 alpha d c))))))
 

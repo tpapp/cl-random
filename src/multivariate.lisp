@@ -42,7 +42,7 @@ square root of variance."
               (variance (sub (variance instance) index-specification)))
          (if (vectorp mean)
              (r-multivariate-normal mean variance)
-             (r-normal mean (sqrt variance))))))
+             (r-normal mean variance)))))
 
 ;;;  MULTIVARIATE T distribution
 ;;;
@@ -110,7 +110,7 @@ square root of variance."
               ((&accessors-r/o nu s^2) scaling-factor))
          (etypecase normal
            (r-normal 
-            (r-t (mean normal) (* (sqrt s^2) (sd normal)) nu))
+            (r-t (mean normal) (* s^2 (variance normal)) nu))
            (r-multivariate-normal 
             (r-multivariate-t nil nil nil
                               :multivariate-normal normal

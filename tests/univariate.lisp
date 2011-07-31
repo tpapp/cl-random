@@ -41,7 +41,7 @@
 
 (addtest (cl-random-tests)
   normal-pdf
-  (let ((rv (r-normal 5 19))
+  (let ((rv (r-normal 5 (expt 19 2)))
         (*lift-equality-test* #'==))
     (ensure-same (pdf rv 2d0) 0.02073685169643458d0)
     (ensure-same (pdf rv 16d0) 0.01775714089407024d0)
@@ -51,7 +51,7 @@
   normal-draws
   (ensure (same-sample-mean-variance (r-normal 0 1)))
   (ensure (same-sample-mean-variance (r-normal 10 1)))
-  (ensure (same-sample-mean-variance (r-normal 0 12))))
+  (ensure (same-sample-mean-variance (r-normal 0 144))))
 
 ;; truncated normal distribution
 
@@ -148,8 +148,7 @@
 
 (addtest (cl-random-tests)
   chi-square-cdf
-  (lla::with-lapack-traps-masked
-    (cdf (r-chi-square 2) 0.5)))
+  (ensure-same (cdf (r-chi-square 2) 0.5) 0.2211992))
 
 (addtest (cl-random-tests)
   inverse-chi-square-moments

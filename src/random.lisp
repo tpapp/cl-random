@@ -20,7 +20,7 @@ prepended to the lambda-list, ie the instance is accessible using INSTANCE.
 Also, within BODY, slots are accessible by their names."
   (check-type name symbol)
   (let+ ((slots (mapcar #'ensure-list slots))
-         ((&key documentation (instance (gensym+ name))) options))
+         ((&key documentation (instance (gensym+ name)) ==-slots) options))
     (labels ((local-slots (body)
                ;; !! read-only slots could be expanded using LET for extra speed
                `(symbol-macrolet
@@ -51,7 +51,17 @@ Also, within BODY, slots are accessible by their names."
              ,constructor-form))
          ,@(loop for (method-name lambda-list . body) in methods collect
                  `(defmethod ,method-name ((,instance ,name) ,@lambda-list)
-                    ,(local-slots body)))))))
+                    ,(local-slots body)))
+         ,@(when ==-slots
+             (with-unique-names (a b tolerance)
+               `((defmethod == ((,a ,name) (,b ,name)
+                                &optional (,tolerance *==-tolerance*))
+                   (and ,@(mapcar 
+                           (lambda (slot)
+                             (let ((accessor (symbolicate name #\- slot)))
+                               `(== (,accessor ,a) (,accessor ,b)
+                                    ,tolerance)))
+                           ==-slots))))))))))
 
 ;;; standard methods (MEAN and VARIANCE already defined in CL-NUM-UTILS)
 
