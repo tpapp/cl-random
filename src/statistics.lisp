@@ -6,11 +6,14 @@
   (:documentation "Mean of a matrix, columnwise.")
   (:method ((matrix array))
     (let+ ((dimensions (array-dimensions matrix))
+           (type (array-element-type matrix))
            (means (filled-array (second dimensions) #'mean-accumulator)))
       (row-major-loop (dimensions row-major-index row-index col-index)
         (add (aref means col-index)
              (row-major-aref matrix row-major-index)))
-      (map 'vector #'mean means))))
+      (map1 #'mean means :element-type (if (subtypep type 'float)
+                                           type
+                                           t)))))
 
 (defun demean-matrix (matrix &optional (mean (matrix-mean matrix)))
   (e- matrix (recycle mean :horizontal)))
