@@ -38,9 +38,9 @@ COMPARE-SAMPLE-MEAN-VARIANCE.  For univariate and multivariate distributions."
 (defun random-y-x (n k &optional 
                    (x-rv (r-normal 0 9))
                    (e-rv (r-normal 0 2))
-                   (beta (make-array* k :double
-                                      (generator (r-normal 0 1)))))
+                   (beta (filled-array k (generator (r-normal 0 1))
+                                       'lla-double)))
   "Generate random Y and X for testing regressions."
-  (let* ((x (make-array* (list n k) :double (generator x-rv)))
-         (y (e+ (mm x beta) (make-array* n :double (generator e-rv)))))
+  (let* ((x (filled-array (list n k) (generator x-rv) 'lla-double))
+         (y (e+ (mm x beta) (filled-array n (generator e-rv) 'lla-double))))
     (values y x)))

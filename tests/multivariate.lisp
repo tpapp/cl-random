@@ -9,31 +9,32 @@
 
 (addtest (multivariate-tests)
   multivariate-normal-pdf
-  (let* ((a (clo 1 2 :/
-                 3 4))
+  (let* ((a (dense 'lla-double
+              (1 2)
+              (3 4)))
          (v (mm t a))
-         (rv (r-multivariate-normal (clo 1 1) v))
+         (rv (r-multivariate-normal (vec 'lla-double 1 1) v))
          (*lift-equality-test* (lambda (a b)
                                  (<= (abs (- a b)) 1d-6))))
     ;; (ensure-same (cl-random::log-pdf-constant rv)
     ;;              (- (* (logdet v) -0.5)
     ;;                 (log (* 2 pi))))
-    (ensure-same (pdf rv (clo 1 2))
+    (ensure-same (pdf rv (vec 'lla-double 1 2))
                  0.02279933)
-    (ensure-same (pdf rv (clo 3 4))
+    (ensure-same (pdf rv (vec 'lla-double 3 4))
                  0.061975)))
 
 (addtest (multivariate-tests)
   multivariate-normal-draws
-  (let ((rv (r-multivariate-normal (clo :double 1 2)
-                                   (mm t (clo :double
-                                              1 2 :/
-                                              3 4)))))
+  (let ((rv (r-multivariate-normal (vec 'lla-double 1 2)
+                                   (mm t (dense 'lla-double
+                                           (1 2)
+                                           (3 4))))))
     (same-sample-mean-variance rv :n 100000)))
 
 ;; (time
-;;  (bind ((mean (clo :double 3 4))
-;;         (variance (clo :hermitian :double
+;;  (bind ((mean (clo 'lla-double 3 4))
+;;         (variance (clo :hermitian 'lla-double
 ;;                        3 0.5 :/
 ;;                        0.5 2))
 ;;         (rv (make-instance 'mv-normal :mean mean :variance variance))
@@ -47,25 +48,25 @@
 
 (addtest (multivariate-tests)
   multivariate-t-pdf
-  (let* ((sigma (mm t (clo :double
-                           1 2 :/
-                           3 4)))
-         (rv (r-multivariate-t (clo :double 0 0) sigma 8))
+  (let* ((sigma (mm t (dense 'lla-double
+                        (1 2)
+                        (3 4))))
+         (rv (r-multivariate-t (vec 'lla-double 0 0) sigma 8))
          (*lift-equality-test* (lambda (a b)
                                  (<= (abs (- a b)) 1d-6))))
-    (ensure-same (log-pdf rv (clo 0 0))
+    (ensure-same (log-pdf rv (vec 'lla-double 0 0))
                  -2.531024)
-    (ensure-same (log-pdf rv (clo 1 2))
+    (ensure-same (log-pdf rv (vec 'lla-double 1 2))
                  -3.119939)
-    (ensure-same (pdf rv (clo 3 4))
+    (ensure-same (pdf rv (vec 'lla-double 3 4))
                  0.04415984)))
 
 (addtest (multivariate-tests)
   multivariate-normal-draws
-  (let ((rv (r-multivariate-t (clo :double 1 2)
-                              (mm t (clo :double
-                                         1 2 :/
-                                         3 4))
+  (let ((rv (r-multivariate-t (vec 'lla-double 1 2)
+                              (mm t (dense 'lla-double
+                                      (1 2)
+                                      (3 4)))
                               4d0)))
     (same-sample-mean-variance rv :n 100000)))
 
@@ -92,9 +93,9 @@
 
 (addtest (multivariate-tests)
   wishart-draws
-  (let* ((rv (r-wishart 7 (mm (clo :double
-                                   1 2 :/
-                                   3 4)
+  (let* ((rv (r-wishart 7 (mm (dense 'lla-double
+                                (1 2)
+                                (3 4))
                               t)))
          (sample (rs:replicate 50000 (compose #'as-array (generator rv))))
          (sample-mean (mean sample)))
@@ -102,19 +103,19 @@
 
 (addtest (multivariate-tests)
   inverse-wishart-draws
-  (let* ((rv (r-inverse-wishart 7 (mm (clo :double
-                                           1 2 :/
-                                           3 4)
+  (let* ((rv (r-inverse-wishart 7 (mm (dense 'lla-double
+                                        (1 2)
+                                        (3 4))
                                       t)))
          (sample (rs:replicate 50000 (compose #'as-array (generator rv))))
          (sample-mean (mean sample)))
     (ensure (< (relative-difference sample-mean (mean rv)) 0.01))
     (values sample-mean (mean rv))))
 
-(mean (vector (draw  (r-inverse-wishart 7 (mm (clo :double
-                                            1 2 :/
-                                            3 4)
-                                       t)))))
+;; (mean (vector (draw  (r-inverse-wishart 7 (mm (dense 'lla-double
+;;                                                 (1 2)
+;;                                                 (3 4))
+;;                                               t)))))
 
 
 

@@ -37,14 +37,15 @@
 
 (addtest (regressions-tests)
   linear-regression-small
-  (let+ ((x (clo 1 1 :/
-                 1 2
-                 1 3
-                 1 4
-                 1 5
-                 1 6
-                 1 7))
-         (y (clo 2 2 3 4 5 6 6))
+  (let+ ((x (dense 'lla-double
+              (1 1)
+              (1 2)
+              (1 3)
+              (1 4)
+              (1 5)
+              (1 6)
+              (1 7)))
+         (y (vec 'lla-double 2 2 3 4 5 6 6))
          ((&values lr r^2) (linear-regression y x))
          ((&accessors-r/o mean variance s^2 nu) lr)
          (ss (sse (e- y (mm x mean)) 0)))

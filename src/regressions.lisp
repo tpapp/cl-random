@@ -38,10 +38,12 @@ linear regression."
          (k (length mean))
          (r-t variance-left-sqrt)
          (y (concat 'double-float (solve r-t mean)
-                    (make-array* nu 'double-float s)))
+                    (make-array nu :element-type 'lla-double
+                                   :initial-element s)))
          (x (stack 'double-float :vertical
                    (invert r-t)
-                   (make-array* (list nu k) 'double-float 0d0))))
+                   (make-array (list nu k) :element-type 'lla-double
+                               :initial-element 0d0))))
     (cons y x)))
 
 (defun linear-regression (y x &key prior)

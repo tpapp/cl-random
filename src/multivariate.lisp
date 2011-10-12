@@ -11,7 +11,7 @@ variance."
 (defun normal-quadratic-form (x mean variance-left-sqrt)
   "Calculate (x-mean)^T variance^-1 (x-mean), given X, MEAN, and the left
 square root of variance."
-  (dot (solve variance-left-sqrt (e- x mean)) t))
+  (mm (solve variance-left-sqrt (e- x mean)) t))
 
 (define-rv r-multivariate-normal (mean variance)
   (:documentation "Multivariate normal MVN(mean,variance) distribution."
@@ -32,10 +32,11 @@ square root of variance."
             (- (/ (* (log (* 2 pi)) n) -2)
                (logdet variance-left-sqrt))))
   (draw (&key (scale 1d0))
-        (let* ((x (make-array n :element-type 'double-float)))
+        (let* ((x (make-array n :element-type 'double-float))
+               (sd (sqrt scale)))
           (dotimes (i n)
-            (setf (aref x i) (draw-standard-normal)))
-          (e+ mean (mm variance-left-sqrt x (sqrt scale)))))
+            (setf (aref x i) (* sd (draw-standard-normal))))
+          (e+ mean (mm variance-left-sqrt x))))
   (sub (&rest index-specifications)
        (let+ (((index-specification) index-specifications)
               (mean (sub mean index-specification))
