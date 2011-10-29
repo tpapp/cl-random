@@ -97,7 +97,7 @@
                                 (1 2)
                                 (3 4))
                               t)))
-         (sample (rs:replicate 50000 (compose #'as-array (generator rv))))
+         (sample (filled-array 50000 (compose #'as-array (generator rv))))
          (sample-mean (mean sample)))
     (ensure (< (relative-difference sample-mean (mean rv)) 0.01))))
 
@@ -107,7 +107,7 @@
                                         (1 2)
                                         (3 4))
                                       t)))
-         (sample (rs:replicate 50000 (compose #'as-array (generator rv))))
+         (sample (filled-array 50000 (compose #'as-array (generator rv))))
          (sample-mean (mean sample)))
     (ensure (< (relative-difference sample-mean (mean rv)) 0.01))
     (values sample-mean (mean rv))))

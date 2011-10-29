@@ -59,5 +59,5 @@
      (:file "regressions")
      (:file "statistics"))))
   :depends-on
-  (cl-utilities iterate metabang-bind anaphora lift cl-num-utils random-sample
+  (cl-utilities iterate metabang-bind anaphora lift cl-num-utils
                 cl-random lla cl-num-utils-tests))
