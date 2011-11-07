@@ -1,9 +1,6 @@
 (in-package :cl-random)
 
-
-;;; ****************************************************************
 ;;; Uniform distribution.
-;;; ****************************************************************
 
 (define-rv r-uniform (left right)
   (:documentation "Uniform(left,right) distribution.")
@@ -35,12 +32,11 @@
   (draw (&key)
         (+ left (random width))))
 
-;;; ****************************************************************
+
 ;;; Exponential distribution.
 ;;;
-;;; Also provides the primitive draw-standard-exponential, which is
-;;; useful for constructing other distributions.
-;;; ****************************************************************
+;;; Also provides the primitive draw-standard-exponential, which is useful for
+;;; constructing other distributions.
 
 (defun draw-standard-exponential ()
   "Return a random variable from the Exponential(1) distribution,
@@ -73,14 +69,11 @@ which has density exp(-x)."
   (draw (&key) 
     (/ (draw-standard-exponential) beta)))
 
-;;; ****************************************************************
+
 ;;; Normal distribution (univariate).
 ;;;
-;;; Also provides some primitives (mostly for standardized normal)
-;;; that are useful for constructing/drawing from other
-;;; distributions.
-;;; ****************************************************************
-
+;;; Also provides some primitives (mostly for standardized normal) that are
+;;; useful for constructing/drawing from other distributions.
 
 (declaim (ftype (function () double-float) draw-standard-normal))
 
@@ -141,12 +134,7 @@ which has density exp(-x)."
 ;;; true, use that method instead.
 
 
-;; !! do quantile, based on the links in Marsaglia's articles, ie
-;; !! rootfinding using the CDF from a good guess
-
-;;; ****************************************************************
 ;;; Truncated normal distribution (univariate).
-;;; ****************************************************************
 
 ;; (define-rv truncated-normal (mu sigma left right)
 ;;   "Truncated normal distribution with given mu and sigma (corresponds to the
@@ -330,9 +318,8 @@ which has density exp(-x)."
 ;;         ;; this is a standard normal, no truncation
 ;;         (t (lambda* (draw-standard-normal)))))))
   
-;;; ****************************************************************
+
 ;;; Lognormal distribution
-;;; ****************************************************************
 
 (define-rv r-log-normal (log-mean log-sd)
   (:documentation "Log-normal distribution with location log-mean and scale log-sd.")
@@ -357,9 +344,8 @@ which has density exp(-x)."
   (draw (&key)
     (exp (from-standard-normal (draw-standard-normal) log-mean log-sd))))
 
-;;; ****************************************************************
+
 ;;; Student's T distribution
-;;; ****************************************************************
 
 (declaim (inline t-scale-to-variance-coefficient))
 (defun t-scale-to-variance-coefficient (nu)
@@ -397,13 +383,11 @@ checks that nu > 2, ie the variance is defined."
   (draw (&key)
         (from-standard-normal (draw-standard-t nu) mean scale)))
 
-;;;; ****************************************************************
-;;;; Gamma distribution.
-;;;;
-;;;; Also provides a generator-standard-gamma, which returns a
-;;;; generator for a given alpha.
-;;;; ****************************************************************
 
+;;; Gamma distribution.
+;;;
+;;; Also provides a generator-standard-gamma, which returns a
+;;; generator for a given alpha.
 
 (declaim (inline standard-gamma1-d-c draw-standard-gamma1
                  generator-standard-gamma))
@@ -482,9 +466,8 @@ and c using the utility function above. "
             (let+ (((&values d c) (standard-gamma1-d-c alpha)))
               (/ (draw-standard-gamma1 alpha d c) beta)))))
 
-;;;; ****************************************************************
-;;;; Inverse gamma distribution.
-;;;; ****************************************************************
+
+;;; Inverse gamma distribution.
 
 (define-rv r-inverse-gamma (alpha beta)
   (:documentation "Inverse-Gamma(alpha,beta) distribution, with density p(x)
@@ -520,11 +503,11 @@ and c using the utility function above. "
             (let+ (((&values d c) (standard-gamma1-d-c alpha)))
               (/ beta (draw-standard-gamma1 alpha d c))))))
 
-;;;; ****************************************************************
-;;;; Chi-square and inverse-chi-square distribution (both scaled).
-;;;;
-;;;; We just reparametrize and rely on GAMMA and INVERSE-GAMMA.
-;;;; ****************************************************************
+
+;;; Chi-square and inverse-chi-square distribution (both scaled).
+;;;
+;;; We just reparametrize and rely on GAMMA and INVERSE-GAMMA.
+
 
 (defgeneric nu (distribution)
   (:documentation "Return the degrees of freedom when applicable."))
@@ -552,9 +535,8 @@ INVERSE-GAMMA."
   (let+ (((&structure r-inverse-gamma- alpha beta) r-inverse-gamma))
     (/ beta alpha)))
 
-;;;; ****************************************************************
-;;;; Beta distribution.
-;;;; ****************************************************************
+
+;;; Beta distribution.
 
 (define-rv r-beta (alpha beta)
   (:documentation "Beta(alpha,beta) distribution, with density proportional to
@@ -573,15 +555,14 @@ x^(alpha-1)*(1-x)^(beta-1).")
               (beta (draw (r-gamma beta 1))))
           (/ alpha (+ alpha beta)))))
 
-;;;; ****************************************************************
-;;;; Discrete distribution.
-;;;; ****************************************************************
 
-;;; ?? The implementation may be improved speedwise with declarations
-;;; and micro-optimizations.  Not a high priority.  However,
-;;; converting arguments to double-float provided a great speedup,
-;;; especially in cases when the normalization resulted in rationals
-;;; -- comparisons for the latter are quite slow.
+;;; Discrete distribution.
+;;; 
+;;; ?? The implementation may be improved speedwise with declarations and
+;;; micro-optimizations.  Not a high priority.  However, converting arguments
+;;; to double-float provided a great speedup, especially in cases when the
+;;; normalization resulted in rationals -- comparisons for the latter are
+;;; quite slow.
 
 (define-rv r-discrete (probabilities)
   (:documentation "Discrete probabilities." :instance instance)

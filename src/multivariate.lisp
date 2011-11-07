@@ -2,6 +2,8 @@
 
 (in-package #:cl-random)
 
+;;; Helper functions
+
 (defun check-mean-variance-compatibility (mean variance)
   "Assert that the mean is a vector, and its dimensions are compatible with
 variance."
@@ -45,11 +47,11 @@ square root of variance."
              (r-multivariate-normal mean variance)
              (r-normal mean variance)))))
 
-;;;  MULTIVARIATE T distribution
+;;;  Multivariate T distribution
 ;;;
-;;;  When drawing numbers, the scaling factor (with distribution
-;;;  inverse-chi-square, nu degrees of freedom) is returned as the second
-;;;  value.
+;;; When drawing numbers, the scaling factor (with distribution
+;;; inverse-chi-square, nu degrees of freedom) is returned as the second
+;;; value.
 
 (define-rv r-multivariate-t (mean sigma nu 
                                   &key multivariate-normal scaling-factor 
@@ -121,11 +123,11 @@ square root of variance."
   (s^2 ()
        (s^2 scaling-factor)))
 
-;;;  WISHART
+;;; Wishart
 ;;;
-;;;  The k-dimensional Wishart distribution with NU degrees of freedom
-;;;  and scale parameter SCALE is the multivariate generalization of
-;;;  the gamma (or chi-square) distribution.
+;;; The k-dimensional Wishart distribution with NU degrees of freedom and
+;;; scale parameter SCALE is the multivariate generalization of the gamma (or
+;;; chi-square) distribution.
 
 (defun draw-standard-wishart-left-sqrt (nu k)
   "Draw a lower triangular matrix L such that (mm L t) has Wishart(I,nu)
@@ -155,10 +157,10 @@ distribution (dimension k x k)."
   (draw (&key) 
         (mm (mm scale-left-sqrt (draw-standard-wishart-left-sqrt nu k)) t)))
 
-;;;  INVERSE-WISHART
+;;; Inverse-Wishart
 ;;;
-;;;  If A ~ Inverse-Wishart[nu,inverse-scale], then 
-;;;  (invert A) ~ Wishart(nu,inverse-scale).
+;;; If A ~ Inverse-Wishart[nu,inverse-scale], then 
+;;; (invert A) ~ Wishart(nu,inverse-scale).
 
 (define-rv r-inverse-wishart (nu inverse-scale)
   (:documentation "Inverse Wishart distribution.  The PDF p(X) is proportional
