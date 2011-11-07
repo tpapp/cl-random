@@ -55,36 +55,49 @@
 
 ;; truncated normal distribution
 
-;; (addtest (cl-random-tests)
-;;   ;; LEFT
-;;   ;; not including zero
-;;   (ensure (same-sample-mean-variance (make-instance 'truncated-normal :left 0.5d0
-;;                                              :mu 1d0 :sigma 0.72d0)))
-;;   ;; including zero
-;;   (ensure (same-sample-mean-variance (make-instance 'truncated-normal :left -0.7d0
-;;                                              :sigma 7d0)))
-;;   ;; RIGHT
-;;   ;; not including zero
-;;   (ensure (same-sample-mean-variance (make-instance 'truncated-normal :right -0.5d0
-;;                                              :mu 1.5d0 :sigma 2d0)))
-;;   ;; including zero
-;;   (ensure (same-sample-mean-variance (make-instance 'truncated-normal :right 0.7d0
-;;                                              :mu -4.2d0 :sigma 2d0)))
-;;   ;; BOTH LEFT AND RIGHT
-;;   ;; wide
-;;   (ensure (same-sample-mean-variance (make-instance 'truncated-normal
-;;                                              :left -0.7d0 :right 4d0)))
-;;   ;; narrow
-;;   (ensure (same-sample-mean-variance (make-instance 'truncated-normal
-;;                                              :left -0.25d0 :right 0.1d0)))
-;;   ;; support above 0
-;;   (ensure (same-sample-mean-variance (make-instance 'truncated-normal
-;;                                              :left 1d0 :right 5d0)))
-;;   ;; support below 0
-;;   (ensure (same-sample-mean-variance (make-instance 'truncated-normal
-;;                                              :left -9d0 :right -5d0)))
-;;   ;; NOT TRUNCATED
-;;   (ensure (same-sample-mean-variance (make-instance 'truncated-normal :mu 5d0 :sigma 9d0))))
+(addtest (cl-random-tests)
+  (let ((rv (r-truncated-normal -0.5 nil)))
+    (ensure-same (pdf rv -0.7) 0)
+    (ensure-same (pdf rv -0.3) 0.5515669)
+    (ensure-same (cdf rv -0.7) 0)
+    (ensure-same (cdf rv -0.3) 0.1063703))
+  (let ((rv (r-truncated-normal -0.5 nil -0.4 2.5)))
+    (ensure-same (pdf rv -0.7) 0)
+    (ensure-same (pdf rv -0.3) 0.3090382)
+    (ensure-same (cdf rv -0.7) 0)
+    (ensure-same (cdf rv -0.3) 0.06184061)))
+
+(addtest (cl-random-tests)
+  ;; LEFT
+  ;; ;; not including zero
+  ;; (ensure (same-sample-mean-variance (make-instance 'truncated-normal :left 0.5d0
+  ;;                                            :mu 1d0 :sigma 0.72d0)))
+  ;; ;; including zero
+  ;; (ensure (same-sample-mean-variance (make-instance 'truncated-normal :left -0.7d0
+  ;;                                            :sigma 7d0)))
+  ;; ;; RIGHT
+  ;; ;; not including zero
+  ;; (ensure (same-sample-mean-variance (make-instance 'truncated-normal :right -0.5d0
+  ;;                                            :mu 1.5d0 :sigma 2d0)))
+  ;; ;; including zero
+  ;; (ensure (same-sample-mean-variance (make-instance 'truncated-normal :right 0.7d0
+  ;;                                            :mu -4.2d0 :sigma 2d0)))
+  ;; ;; BOTH LEFT AND RIGHT
+  ;; ;; wide
+  ;; (ensure (same-sample-mean-variance (make-instance 'truncated-normal
+  ;;                                            :left -0.7d0 :right 4d0)))
+  ;; ;; narrow
+  ;; (ensure (same-sample-mean-variance (make-instance 'truncated-normal
+  ;;                                            :left -0.25d0 :right 0.1d0)))
+  ;; ;; support above 0
+  ;; (ensure (same-sample-mean-variance (make-instance 'truncated-normal
+  ;;                                            :left 1d0 :right 5d0)))
+  ;; ;; support below 0
+  ;; (ensure (same-sample-mean-variance (make-instance 'truncated-normal
+  ;;                                            :left -9d0 :right -5d0)))
+  ;; NOT TRUNCATED
+  (ensure (same-sample-mean-variance (r-truncated-normal nil nil 5d0 9d0)))
+  )
 
 ;; log-normal distribution
 

@@ -35,6 +35,7 @@
    r-inverse-chi-square-s^2
    r-beta
    r-discrete probabilities
+   r-truncated-normal
 
    ;; continuous-time
    

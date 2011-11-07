@@ -105,6 +105,11 @@ which has density exp(-x)."
   "Scale x from standard normal." 
   (+ (* x sigma) mu))
 
+(defun cdf-normal% (x mean sd)
+  "Internal function for normal CDF."
+  (with-doubles (x)
+    (rmath:pnorm5 x mean sd 1 0)))
+
 (define-rv r-normal (&optional (mean 0d0) (variance 1d0))
   (:documentation "Normal(mean,variance) distribution.")
   ((mean :type double-float :reader t)
@@ -118,9 +123,7 @@ which has density exp(-x)."
                                   (with-doubles (x)
                                     (/ (expt (- x mean) 2) (expt sd 2) -2d0))
                                   (- +normal-log-pdf-constant+ (log sd))))
-  (cdf (x)
-       (with-doubles (x)
-         (rmath:pnorm5 x mean sd 1 0)))
+  (cdf (x) (cdf-normal% x mean sd))
   (quantile (q)
             (with-doubles (q)
               (check-probability q :both)
@@ -136,13 +139,75 @@ which has density exp(-x)."
 
 ;;; Truncated normal distribution (univariate).
 
-;; (define-rv truncated-normal (mu sigma left right)
-;;   "Truncated normal distribution with given mu and sigma (corresponds to the
-;; mean and standard deviation in the untruncated case, respectively), on the
-;; interval [left, right].  If either of them is nil, that means no truncation from
-;; that direction. If both are nil, reverts to the normal distribution."
-  
-;;   )
+(defun truncated-normal-moments% (N mu sigma left right
+                                  &optional (m0 nil m0?))
+  "N=0 gives the total mass of the truncated normal, used for normalization,
+N=1 the mean, and N=2 the variance.  where p(x) is the normal density.  When
+LEFT or RIGHT are NIL, they are taken to be - or + infinity, respectively.  M0
+may be provided for efficiency if would be calculated multiple times.  The
+formulas are from Jawitz (2004)."
+  (if (zerop N)
+      (- (if right (cdf-normal% right mu sigma) 1d0)
+         (if left (cdf-normal% left mu sigma) 0d0))
+      (let+ (((&flet part (x)
+                (if x
+                    (let ((y (exp (/ (expt (to-standard-normal x mu sigma) 2)
+                                     -2))))
+                      (values y (* (+ mu x) y)))
+                    (values 0d0 0d0))))
+             (m0 (if m0?
+                     m0
+                     (truncated-normal-moments% 0 mu sigma left right)))
+             ((&flet diff (r l)
+                (/ (* sigma (- r l))
+                   m0 (sqrt (* 2 pi)))))
+             ((&values l1 l2) (part left))
+             ((&values r1 r2) (part right))
+             (mean-mu (diff r1 l1)))
+        (ecase N
+          (1 (+ mean-mu mu))
+          (2 (+ (diff r2 l2) (expt sigma 2) (expt mean-mu 2)))))))
+
+(defun draw-left-truncated-standard-normal (left alpha)
+  "Draw a left truncated standard normal, using an Exp(alpha,left)
+distribution."
+  (try ((z (+ (/ (draw-standard-exponential) alpha) left))
+            (rho (exp (* (expt (- z alpha) 2) -0.5))))
+       (<= (random 1d0) rho) z))
+
+(define-rv left-truncated-normal (mu sigma left)
+  (:documentation "Truncated normal distribution with given mu and sigma
+\(corresponds to the mean and standard deviation in the untruncated case,
+respectively), on the interval [left, \infinity).")
+  ((mu :type double-float)
+   (sigma :type double-float)
+   (left :type double-float)
+   (m0 :type double-float))
+  (with-doubles (mu sigma left)
+    (make :mu mu :sigma sigma :left left
+          :m0 (truncated-normal-moments% 0 mu sigma left nil)))
+  (log-pdf (x &optional ignore-constant?)
+           (when (<= left x)
+             (maybe-ignore-constant ignore-constant?
+                                    (with-doubles (x)
+                                      (/ (expt (- x mu) 2)
+                                         (expt sigma 2) -2d0))
+                                    (- +normal-log-pdf-constant+ (log sigma)
+                                       (log m0)))))
+  (cdf (x) (if (<= left x)
+               (/ (1- (+ (cdf-normal% x mu sigma) m0)) m0)
+               0d0))
+  (mean () (truncated-normal-moments% 1 mu sigma left nil))   
+  (variance () (truncated-normal-moments% 2 mu sigma left nil)))
+
+(defun r-truncated-normal (left right &optional (mu 0d0) (sigma 1d0))
+  "Truncated normal distribution.  If LEFT or RIGHT is NIL, it corresponds to
+-/+ infinity."
+  (cond
+    ((and left right) (error "not implemented yet"))
+    (left (left-truncated-normal mu sigma left))
+    (right (error "not implemented yet") )
+    (t (r-normal mu (expt sigma 2)))))
 
 
 ;; (defclass truncated-normal (univariate)
@@ -194,15 +259,6 @@ which has density exp(-x)."
 ;;                 (slot-value rv 'cdf-left) cdf-left)))))
 ;;   rv)
 
-;; (defmethod pdf ((rv truncated-normal) x &optional unscaled)
-;;   (declare (ignore unscaled))
-;;   (check-type x double-float)
-;;   (bind (((:slots-read-only mu sigma mass left right) rv))
-;;     (if (or (<* x left) (>* x right))
-;;         0d0
-;;         (/ (pdf-standard-normal (to-standard-normal x mu sigma))
-;;            sigma
-;;            mass))))
 
 ;; (defmethod cdf ((rv truncated-normal) x)
 ;;   (check-type x double-float)
@@ -229,12 +285,7 @@ which has density exp(-x)."
 ;; (declaim (inline draw-left-truncated-standard-normal
 ;;                  draw-left-right-truncated-standard-normal))
 
-;; (defun draw-left-truncated-standard-normal (left alpha)
-;;   "Draw a left truncated standard normal, using an Exp(alpha,left)
-;; distribution."
-;;   (try ((z (+ (/ (draw-standard-exponential) alpha) left))
-;;             (rho (exp (* (expt (- z alpha) 2) -0.5))))
-;;        (<= (random 1d0) rho) z))
+
 
 ;; (defun draw-left-right-truncated-standard-normal (left width coefficient)
 ;;   "Accept-reject algorithm based on uniforms.  Coefficient is
