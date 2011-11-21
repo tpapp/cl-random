@@ -163,10 +163,11 @@ formulas are from Jawitz (2004)."
                    m0 (sqrt (* 2 pi)))))
              ((&values l1 l2) (part left))
              ((&values r1 r2) (part right))
-             (mean-mu (diff r1 l1)))
+             (mean-mu (diff l1 r1)))
         (ecase N
           (1 (+ mean-mu mu))
-          (2 (+ (diff r2 l2) (expt sigma 2) (expt mean-mu 2)))))))
+          (2 (+ (diff l2 r2) (- (expt sigma 2)
+                                (expt mean-mu 2) (* 2 mu mean-mu))))))))
 
 (defun draw-left-truncated-standard-normal (left alpha)
   "Draw a left truncated standard normal, using an Exp(alpha,left)
