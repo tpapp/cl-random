@@ -155,19 +155,3 @@ them as a VECTOR-DOUBLE-FLOAT.  Vector is always copied."
            (/ x sum))
          vector)))
 
-(defmacro with-doubles (bindings &body body)
-  "Coerces value to DOUBLE-FLOAT, and binds it to VAR in (VAR VALUE) bindings.
-If the binding is a symbol, or VALUE is missing, VAR will be used instead.  All
-variables are declared DOUBLE-FLOAT in the body."
-  (let ((bindings (mapcar (lambda (binding)
-                            (let+ (((variable &optional (value variable))
-                                    (if (atom binding)
-                                        (list binding binding)
-                                        binding)))
-                              (check-type variable (and symbol (not null)))
-                              `(,variable (as-double-float ,value))))
-                          bindings)))
-    `(let ,bindings
-       (declare (type double-float ,@(mapcar #'first bindings)))
-       ,@body)))
-
