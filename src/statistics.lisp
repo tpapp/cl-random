@@ -7,7 +7,7 @@
   (:method ((matrix array))
     (let+ ((dimensions (array-dimensions matrix))
            (type (array-element-type matrix))
-           (means (filled-array (second dimensions) #'mean-accumulator)))
+           (means (generate-array (second dimensions) #'mean-accumulator)))
       (row-major-loop (dimensions row-major-index row-index col-index)
         (add (aref means col-index)
              (row-major-aref matrix row-major-index)))
