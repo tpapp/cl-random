@@ -7,6 +7,6 @@
 
 ;; EXTERNAL
 
-(defun run-cl-random-tests ()
+(defun run ()
   "Run all the tests for LLA."
   (run-tests :suite 'cl-random-tests))
