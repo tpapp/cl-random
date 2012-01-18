@@ -24,7 +24,7 @@
 (addtest (cl-random-tests)
   exponential-draws
   (ensure (same-sample-mean-variance (r-exponential 1)))
-  (ensure (same-sample-mean-variance (r-exponential 19) 
+  (ensure (same-sample-mean-variance (r-exponential 19)
                               :var-band 0.3d0)))
 
 ;; normal distribution
@@ -130,7 +130,7 @@
 
 (addtest (cl-random-tests)
   gamma-draws
-  (ensure-error (r-gamma 9 0)) 
+  (ensure-error (r-gamma 9 0))
   (ensure-error (r-gamma -7 1))
   (ensure (same-sample-mean-variance (r-gamma 1 1)))
   (ensure (same-sample-mean-variance (r-gamma 12 1)))
@@ -197,7 +197,7 @@
                                    (n (reduce #'+ frequencies)))
   "Sum of the absolute values of relative deviations from expected probabilities."
   (assert (= (length frequencies) (length probabilities)))
-  (mean (map 'vector 
+  (mean (map 'vector
              (lambda (f p)
                (let ((e (* n p)))
                  (/ (abs (- f e)) e)))

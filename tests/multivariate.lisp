@@ -99,7 +99,8 @@
                               t)))
          (sample (generate-array 50000 (compose #'as-array (generator rv))))
          (sample-mean (mean sample)))
-    (ensure (< (relative-difference sample-mean (mean rv)) 0.01))))
+    (ensure (< (relative-difference sample-mean (mean rv))
+               0.01))))
 
 (addtest (multivariate-tests)
   inverse-wishart-draws

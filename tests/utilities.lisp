@@ -14,7 +14,7 @@ COMPARE-SAMPLE-MEAN-VARIANCE.  For univariate and multivariate distributions."
   (let+ (((&accessors-r/o mean variance) rv)
          (multivariate? (vectorp mean))
          (sample (sweep (if multivariate?
-                            'mean
+                            (conforming-accumulator 'mean )
                             'variance)
                         (replicating rv n))))
     (if multivariate?
@@ -24,19 +24,23 @@ COMPARE-SAMPLE-MEAN-VARIANCE.  For univariate and multivariate distributions."
         (and (< (z-score n mean variance (mean sample)) z-band)
              (== variance (variance sample) var-band)))))
 
-(defun number-relative-difference (a b)
-  "Relative difference of A and B."
-  (/ (abs (- a b))
-     (max 1 (abs a) (abs b))))
-
 (defgeneric relative-difference (a b)
+  (:documentation "Relative difference of A and B.")
   (:method ((a number) (b number))
-    (number-relative-difference a b))
-  (:method (a b)
-    (emax (emap t #'number-relative-difference (as-array a) (as-array b)))))
+    (/ (abs (- a b))
+       (max 1 (abs a) (abs b))))
+  (:method ((a array) (b array))
+    "Relative difference of A and B."
+    (assert (equalp (array-dimensions a) (array-dimensions b)))
+    (with-accumulator (r &maximize)
+      (map nil (lambda (a b)
+                 (r (relative-difference a b)))
+           (flatten-array a) (flatten-array b))))
+  (:method ((a array) b)
+    (relative-difference a (as-array b))))
 
 (defun random-y-x (n k
-                   &optional 
+                   &optional
                      (x-rv (r-normal 0 9))
                      (e-rv (r-normal 0 2))
                      (beta (generate-array k (generator (r-normal 0 1))

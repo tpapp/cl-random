@@ -28,7 +28,7 @@
                (26 5)))
          ;; calculating another way
          (mean (matrix-mean m2))
-         (demeaned (e- m2 (recycle mean :h)))
+         (demeaned (e- m2 (recycle-row mean (nrow m2))))
          (sse (mm t demeaned)))
     (ensure-same (as-matrix (matrix-sse m))
                  (hermitian 'lla-double
@@ -57,6 +57,6 @@
 ;;          ((:values rescaled sd) (rescale-by-sd m)))
 ;;     (ensure-same rescaled (clo :double
 ;;                                -1 -1 :/
-;;                                0 0 
+;;                                0 0
 ;;                                1 1))
 ;;     (ensure-same sd (clo :double 1 2))))

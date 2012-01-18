@@ -56,7 +56,7 @@ Also, within BODY, slots are accessible by their names."
              (with-unique-names (a b tolerance)
                `((defmethod == ((,a ,name) (,b ,name)
                                 &optional (,tolerance *==-tolerance*))
-                   (and ,@(mapcar 
+                   (and ,@(mapcar
                            (lambda (slot)
                              (let ((accessor (symbolicate name #\- slot)))
                                `(== (,accessor ,a) (,accessor ,b)
@@ -84,7 +84,7 @@ Also, within BODY, slots are accessible by their names."
 
 (defmethod sweep (accumulator (replicating replicating) &key (key #'identity))
   (let+ (((&structure-r/o replicating- random-variable n) replicating))
-    (with-accumulator (accumulator add)
+    (with-conforming-accumulator (accumulator add)
       (loop repeat n :do (add (funcall key (draw random-variable)))))))
 
 (defgeneric cdf (random-variable x)

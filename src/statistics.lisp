@@ -16,7 +16,7 @@
                                            t)))))
 
 (defun demean-matrix (matrix &optional (mean (matrix-mean matrix)))
-  (e- matrix (recycle mean :horizontal)))
+  (e- matrix (recycle-row mean (nrow matrix))))
 
 ;; (defun matrix-sse (matrix)
 ;;   "Return sum of squared errors from the matrix row mean (as a Hermitian
@@ -79,7 +79,7 @@ a second value."
 ;;               (as-matrix matrix)))
 ;;          ((:lla-vector sum) (make-similar-vector elements ncol)))
 ;;     (dotimes (col ncol)
-;;       (setf (sum col) 
+;;       (setf (sum col)
 ;;             (lla::sum-elements% elements (cm-index2 nrow 0 col)
 ;;                                 (cm-index2 nrow nrow col))))
 ;;     sum))
