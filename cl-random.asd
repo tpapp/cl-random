@@ -1,10 +1,10 @@
-(defsystem cl-random
+(asdf:defsystem #:cl-random
   :description "Random numbers and distributions."
   :author "Tamas K Papp"
   :license "MIT"
   :version "0.0.1"
-  :serial t 
-  :components 
+  :serial t
+  :components
   ((:module
     "package-init"
     :pathname #P"src/"
@@ -27,16 +27,17 @@
      (:file "regressions")
      ;; (:file "optimization")
 )))
-  :depends-on 
-  (alexandria cl-num-utils iterate let-plus anaphora lla cl-rmath))
+  :depends-on
+  (#:alexandria #:cl-num-utils #:iterate #:let-plus #:anaphora #:lla
+                #:cl-rmath))
 
-(defsystem cl-random-tests
+(asdf:defsystem #:cl-random-tests
   :description "Unit tests for CL-RANDOM."
   :author "Tamas K Papp <tkpapp@gmail.com"
   :license "Same as CL-RANDOM, this is part of the CL-RANDOM library."
   :serial t
   :components
-  ((:module 
+  ((:module
     "package-init"
     :pathname #P"tests/"
     :components
@@ -47,7 +48,7 @@
     :components
     ((:file "utilities")
      (:file "setup")))
-   (:module 
+   (:module
     "tests"
     :pathname #P"tests/"
     :components
@@ -59,5 +60,5 @@
      (:file "regressions")
      (:file "statistics"))))
   :depends-on
-  (cl-utilities iterate metabang-bind anaphora lift cl-num-utils
-                cl-random lla cl-num-utils-tests))
+  (#:cl-utilities #:iterate #:metabang-bind #:anaphora #:lift #:cl-num-utils
+                  #:cl-random #:lla #:cl-num-utils-tests #:transit))

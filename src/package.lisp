@@ -6,7 +6,7 @@
 
    ;; utilities
 
-   missing not-implemented undefined positive-double-float as-double-float 
+   missing not-implemented undefined positive-double-float as-double-float
    double-float-vector as-double-float-vector truncation-boundary
    as-double-float-probabilities
 
@@ -29,8 +29,8 @@
    r-normal mean sd draw-standard-normal
    r-log-normal log-mean log-sd
    r-t scale t-scale-to-variance-coefficient
-   r-gamma alpha beta r-inverse-gamma 
-   r-chi-square r-chi-square-nu 
+   r-gamma alpha beta r-inverse-gamma
+   r-chi-square r-chi-square-nu
    r-inverse-chi-square r-inverse-chi-square-nu r-inverse-chi-square-scale
    r-inverse-chi-square-s^2
    r-beta
@@ -38,20 +38,20 @@
    r-truncated-normal
 
    ;; continuous-time
-   
+
    r-uniformized-markov-jump
 
    ;; multivariate
 
    r-multivariate-normal variance-left-sqrt
-   r-multivariate-t scaling-factor multivariate-normal nu 
+   r-multivariate-t scaling-factor multivariate-normal nu
    r-wishart scale-left-sqrt r-inverse-wishart inverse-scale-right-sqrt
 
    ;; statistics
 
    matrix-mean demean-matrix matrix-sse matrix-variance
    matrix-mean-and-variance
-   
+
    ;; add-constant-column column-sums column-means demean-columns column-variances
    ;; column-mean-variances rescale-by-sd variance->correlation
 
@@ -64,7 +64,7 @@
    ;; linear-regression s^2 r^2
 
    ;; design-matrix
-   
+
    ;; design-matrix
 
    ;; optimization
