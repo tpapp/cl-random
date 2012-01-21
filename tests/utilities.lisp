@@ -11,10 +11,11 @@
                                           (var-band 0.1))
   "Generate a sample of length N from RV, then use
 COMPARE-SAMPLE-MEAN-VARIANCE.  For univariate and multivariate distributions."
+  (declare (optimize debug))
   (let+ (((&accessors-r/o mean variance) rv)
          (multivariate? (vectorp mean))
          (sample (sweep (if multivariate?
-                            (conforming-accumulator 'mean )
+                            (conforming-accumulator 'mean mean)
                             'variance)
                         (replicating rv n))))
     (if multivariate?
@@ -32,10 +33,9 @@ COMPARE-SAMPLE-MEAN-VARIANCE.  For univariate and multivariate distributions."
   (:method ((a array) (b array))
     "Relative difference of A and B."
     (assert (equalp (array-dimensions a) (array-dimensions b)))
-    (with-accumulator (r &maximize)
-      (map nil (lambda (a b)
-                 (r (relative-difference a b)))
-           (flatten-array a) (flatten-array b))))
+    (reduce #'max
+            (map 'vector #'relative-difference
+                 (flatten-array a) (flatten-array b))))
   (:method ((a array) b)
     (relative-difference a (as-array b))))
 

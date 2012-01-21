@@ -48,7 +48,7 @@
          (y (vec 'lla-double 2 2 3 4 5 6 6))
          ((&values lr r^2) (linear-regression y x))
          ((&accessors-r/o mean variance s^2 nu) lr)
-         (ss (sse (e- y (mm x mean)) 0)))
+         (ss (reduce #'+ (e- y (mm x mean)) :key (lambda (x) (expt x 2)))))
     (ensure-same mean (solve (mm t x) (mm (transpose x) y)))
     (ensure-same s^2 (/ ss (reduce #'- (array-dimensions x))))
     (ensure-same variance (e* s^2 (invert (mm t x)) (/ nu (- nu 2d0))))
