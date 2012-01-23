@@ -19,6 +19,7 @@
      (:file "log-infinity")
      (:file "special-functions")
      (:file "random")
+     (:file "discrete")
      (:file "univariate")
      (:file "continuous-time")
      (:file "statistics")
@@ -54,6 +55,7 @@
     :components
     ((:file "log-infinity")
      (:file "special-functions")
+     (:file "discrete")
      (:file "univariate")
      (:file "continuous-time")
      (:file "multivariate")
