@@ -2,7 +2,8 @@
   (:nicknames #:rv)
   (:use #:common-lisp #:alexandria #:iterate #:let-plus #:anaphora
         #:cl-num-utils #:lla)
-  (:shadowing-import-from cl-num-utils xor mean variance median) ; also in alexandria
+  (:shadowing-import-from #:cl-num-utils #:mean #:variance
+                          #:median #:displace-array) ; also in alexandria
   (:export
    ;; utilities
    #:missing
