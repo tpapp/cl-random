@@ -19,7 +19,7 @@ two underlying random variables.")
          (keys (when keys (coerce keys 'vector)))
          (n (length rates))
          (total-rate (sum rates))
-         ((&values transition-rate probabilities) 
+         ((&values transition-rate probabilities)
           (if transition-rate
               (let ((no-change-rate (- transition-rate total-rate)))
                 (assert (<= 0 no-change-rate) ()
@@ -39,7 +39,7 @@ two underlying random variables.")
   (draw (&key)
         (values (draw duration)
                 (let ((j (draw jump)))
-                  (cond 
+                  (cond
                     ((= j n) no-change)
                     (keys (aref keys j))
                     (t j))))))

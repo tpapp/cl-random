@@ -66,7 +66,7 @@ which has density exp(-x)."
             (with-doubles (p)
               (check-probability p :right)
               (/ (log (- 1 p)) (- beta))))
-  (draw (&key) 
+  (draw (&key)
     (/ (draw-standard-exponential) beta)))
 
 
@@ -90,7 +90,7 @@ which has density exp(-x)."
             (y (+ (abs v) 0.386595d0))
             (q (+ (expt x 2) (* y (- (* 0.19600d0 y) (* 0.25472d0 x))))))
        (if (and (> q 0.27597d0)
-                (or (> q 0.27846d0) 
+                (or (> q 0.27846d0)
                     (plusp (+ (expt v 2) (* 4 (expt u 2) (log u))))))
            (go top)
            (return-from draw-standard-normal (/ v u))))))
@@ -102,7 +102,7 @@ which has density exp(-x)."
   (/ (- x mu) sigma))
 
 (defun from-standard-normal (x mu sigma)
-  "Scale x from standard normal." 
+  "Scale x from standard normal."
   (+ (* x sigma) mu))
 
 (defun cdf-normal% (x mean sd)
@@ -198,7 +198,7 @@ respectively), on the interval [left, \infinity).")
   (cdf (x) (if (<= left x)
                (/ (1- (+ (cdf-normal% x mu sigma) m0)) m0)
                0d0))
-  (mean () (truncated-normal-moments% 1 mu sigma left nil))   
+  (mean () (truncated-normal-moments% 1 mu sigma left nil))
   (variance () (truncated-normal-moments% 2 mu sigma left nil)))
 
 (defun r-truncated-normal (left right &optional (mu 0d0) (sigma 1d0))
@@ -333,7 +333,7 @@ respectively), on the interval [left, \infinity).")
 ;;                                        left alpha)))
 ;;                                   (<= x right) x))
 ;;                     ;; optimal to use the uniform-based reject/accept
-;;                     (lambda* (draw-left-right-truncated-standard-normal 
+;;                     (lambda* (draw-left-right-truncated-standard-normal
 ;;                               left width (* (expt left 2) 0.5d0))))))
 ;;              ;; whole support below 0, will flip
 ;;              (t
@@ -347,7 +347,7 @@ respectively), on the interval [left, \infinity).")
 ;;                                           left alpha)))
 ;;                                      (<= x right) x))
 ;;                       ;; optimal to use the uniform-based reject/accept
-;;                       (lambda*- (draw-left-right-truncated-standard-normal 
+;;                       (lambda*- (draw-left-right-truncated-standard-normal
 ;;                                  left width (* (expt left 2) 0.5d0))))))))))
 ;;         ;; truncated on the left
 ;;         (left
@@ -355,7 +355,7 @@ respectively), on the interval [left, \infinity).")
 ;;                (if (<= left 0d0)
 ;;                    (lambda* (try ((x (draw-standard-normal)))
 ;;                                  (<= left x) x))
-;;                    (lambda* (draw-left-truncated-standard-normal 
+;;                    (lambda* (draw-left-truncated-standard-normal
 ;;                              left
 ;;                              (truncated-normal-optimal-alpha left))))))
 ;;         ;; truncated on the right, flip
@@ -364,12 +364,12 @@ respectively), on the interval [left, \infinity).")
 ;;            (if (<= left 0d0)
 ;;                (lambda*- (try ((x (draw-standard-normal)))
 ;;                               (<= left x) x))
-;;                (lambda*- (draw-left-truncated-standard-normal 
+;;                (lambda*- (draw-left-truncated-standard-normal
 ;;                           left
 ;;                           (truncated-normal-optimal-alpha left))))))
 ;;         ;; this is a standard normal, no truncation
 ;;         (t (lambda* (draw-standard-normal)))))))
-  
+
 
 ;;; Lognormal distribution
 
@@ -380,13 +380,13 @@ respectively), on the interval [left, \infinity).")
   (with-doubles (log-mean log-sd)
     (assert (plusp log-sd))
     (make :log-mean log-mean :log-sd log-sd))
-  
+
   (mean () (exp (+ log-mean (/ (expt log-sd 2) 2))))
   (variance () (let ((sigma^2 (expt log-sd 2)))
               (* (1- (exp sigma^2))
                  (exp (+ (* 2 log-mean) sigma^2)))))
   (log-pdf (x &optional ignore-constant?)
-           (maybe-ignore-constant ignore-constant? 
+           (maybe-ignore-constant ignore-constant?
                                   (with-doubles (x)
                                     (let ((log-x (log x)))
                                       (- (/ (expt (- log-x log-mean) 2)
@@ -459,7 +459,7 @@ and c using the utility function above. "
   (declare (optimize (speed 3)))
   (declare (double-float d c))
   (check-type alpha (double-float 1d0))
-  (tagbody 
+  (tagbody
    top
      (let+ (((&values x v) (prog () ; loop was not optimized for some reason
                             top
@@ -609,7 +609,7 @@ x^(alpha-1)*(1-x)^(beta-1).")
 
 
 ;;; Discrete distribution.
-;;; 
+;;;
 ;;; ?? The implementation may be improved speedwise with declarations and
 ;;; micro-optimizations.  Not a high priority.  However, converting arguments
 ;;; to double-float provided a great speedup, especially in cases when the
@@ -653,7 +653,7 @@ x^(alpha-1)*(1-x)^(beta-1).")
     ;; save what's needed
     (make :probabilities probabilities :prob prob :alias alias :n-double n-double))
   (mean ()
-        (iter 
+        (iter
           (for p :in-vector probabilities :with-index i)
           (summing (* p i))))
   (variance ()
@@ -670,11 +670,10 @@ x^(alpha-1)*(1-x)^(beta-1).")
            (iter
              (for p :in-vector probabilities :to i)
              (summing p))
-           (cumulative-sum probabilities 
+           (cumulative-sum probabilities
                            :result-type 'double-float-vector)))
   (draw (&key)
         (multiple-value-bind (j p) (floor (random n-double))
           (if (<= p (aref prob j))
               j
               (aref alias j)))))
-

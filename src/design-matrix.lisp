@@ -5,11 +5,11 @@
 ;;; building blocks for a DSL for design matrices
 
 ;;; (list term1 ...)
-;;; 
+;;;
 ;;; term := constant | covariate | interaction
-;;; 
+;;;
 ;;; covariate := symbol | (^ symbol exponent)
-;;; 
+;;;
 ;;; interaction := (* covariate1 covariate2 ...)
 
 (defun interaction-matrix (&rest matrices)
@@ -99,7 +99,7 @@ symbol size)."
       (collecting '#:* :into interaction-names))
     (if (atom name)
         (collecting name :into interaction-names)
-        (progn 
+        (progn
           (collecting (first name) :into interaction-names)
           (multiplying (second name) :into size)))
     (finally
@@ -118,7 +118,7 @@ PROCESS-FACTOR.  When CONSTANT is non-nil, a constant column with this name will
 be added.  Return IX specification, the matrix, and a list of factors and levels
 as values.
 
-Example: 
+Example:
   (design-matrix (clo :integer
                   1 2 3 :/
                   4 5 6)

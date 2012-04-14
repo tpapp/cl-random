@@ -67,7 +67,7 @@ returned.  Uses Richardson extrapolation w/ forward differencing."
            (setf (aref y j) (aref x j))))
     (lla::make-matrix% n n ddfx :kind :hermitian)))
 
-(defmacro loop-max-iter ((max-iter 
+(defmacro loop-max-iter ((max-iter
                           &optional (end-form '(error 'reached-max-iter)))
                          &body body)
   "Execute loop count down using max-iter, call end-form when it reaches zero."
@@ -101,7 +101,7 @@ returned.  Uses Richardson extrapolation w/ forward differencing."
    (tau2 :initarg :tau2 :initform 0.1d0 :documentation "0 < tau2 < tau3 <= 0.5
     keep the bracketing algorithm away from the endpoints of the interval.  tau2
     <= sigma is suggested, typical values are tau2=0.1 and tau3=0.5.")
-   (tau3 :initarg :tau3 :initform 0.5d0 
+   (tau3 :initarg :tau3 :initform 0.5d0
          :documentation "see tau2 of the same class.")
    ;; parameters for Armijo line search algorithm
    (step-reduction :initarg :step-reduction :initform 0.2d0
@@ -145,7 +145,7 @@ returned.  Uses Richardson extrapolation w/ forward differencing."
 ;; ;;; Algorithm for strong Wolfe conditions.
 
 ;; (defun sw-find-acceptable-alpha (f df a fa dfa b fb dfb
-;;                                  f0 slope curvature max-iter epsilon 
+;;                                  f0 slope curvature max-iter epsilon
 ;;                                  bfgs-parameters)
 ;;   ;; notes: dfb may be NIL, in which case quadratic interpolation is used
 ;;   (bind (((:slots-r/o tau2 tau3) bfgs-parameters))
@@ -186,7 +186,7 @@ returned.  Uses Richardson extrapolation w/ forward differencing."
 ;;                   (>= f-alpha f-alpha-prev))
 ;;           (return
 ;;             (sw-find-acceptable-alpha
-;;              f df 
+;;              f df
 ;;              alpha-prev f-alpha-prev df-alpha-prev
 ;;              alpha f-alpha nil
 ;;              f0 slope curvature linesearch-max-iter epsilon bfgs-parameters)))
@@ -194,21 +194,21 @@ returned.  Uses Richardson extrapolation w/ forward differencing."
 ;;           (when (<= (abs df-alpha) curvature)
 ;;             (return (values alpha f-alpha)))
 ;;           (when (<= 0 df-alpha)
-;;             (return 
+;;             (return
 ;;               (sw-find-acceptable-alpha
-;;                f df 
+;;                f df
 ;;                alpha f-alpha df-alpha
-;;                alpha-prev f-alpha-prev df-alpha-prev 
+;;                alpha-prev f-alpha-prev df-alpha-prev
 ;;                f0 slope curvature linesearch-max-iter epsilon bfgs-parameters)))
 ;;           (let* ((left (- (* 2 alpha) alpha-prev))
-;;                  (alpha-next 
+;;                  (alpha-next
 ;;                   (if (<= alpha-max left)
 ;;                       alpha-max
 ;;                       (cubic-minimum alpha f-alpha df-alpha
 ;;                                      alpha-prev f-alpha-prev df-alpha-prev
 ;;                                      left
 ;;                                      (min alpha-max
-;;                                           (+ alpha 
+;;                                           (+ alpha
 ;;                                              (* tau1 (- alpha alpha-prev))))))))
 ;;             (setf alpha-prev alpha
 ;;                   f-alpha-prev f-alpha
@@ -217,7 +217,7 @@ returned.  Uses Richardson extrapolation w/ forward differencing."
 
 
 
-;; (defun bfgs-minimize (f x &key (df nil df?) 
+;; (defun bfgs-minimize (f x &key (df nil df?)
 ;;                       (delta (expt double-float-epsilon 1/2))
 ;;                       (epsilon (expt double-float-epsilon 1/2))
 ;;                       gamma
@@ -228,7 +228,7 @@ returned.  Uses Richardson extrapolation w/ forward differencing."
 ;;                       count-f-eval?
 ;;                       (bfgs-parameters *default-bfgs-parameters*))
 ;;   "Parameters:
-   
+
 ;;    f : An R^n=>R function to be optimized.
 
 ;;    x : Initial point.
@@ -242,7 +242,7 @@ returned.  Uses Richardson extrapolation w/ forward differencing."
 ;;    epsilon : Convergence criterion in f(x):
 ;;      |change in f(x)| <= epsilon*(1+|f(x)|).  Ignored when nil.
 
-;;    gamma : Convergence criterion in df(x). 
+;;    gamma : Convergence criterion in df(x).
 ;;      |change in df(x)|_sup <= gamma.  Ignored when nil.
 
 ;;    Convergence happens when all three are met (except for those which are
@@ -258,7 +258,7 @@ returned.  Uses Richardson extrapolation w/ forward differencing."
 ;;      difference will be used.  Note that the latter is quite cheap, since it
 ;;      requires only two evaluations.
 
-   
+
 
 ;; Return
 ;;   (values
@@ -301,14 +301,14 @@ returned.  Uses Richardson extrapolation w/ forward differencing."
 ;;              (df-uni (if (and df? use-df-for-linesearch?)
 ;;                          (lambda (alpha) (dot (funcall df (e+ x (e* p alpha))) p))
 ;;                          (numdiff1* f-uni numdiff-epsilon)))
-;;              ((:values alpha f-alpha) 
-;;               (funcall linesearch f-uni df-uni fx (dot dfx p) 1d0 
+;;              ((:values alpha f-alpha)
+;;               (funcall linesearch f-uni df-uni fx (dot dfx p) 1d0
 ;;                        epsilon bfgs-parameters))
 ;;              (s (e* p alpha)))
 ;;         ;; check convergence (using relative changes)
 ;;         (when (and (below? (/ (abs (- fx f-alpha)) (1+ (abs fx))) epsilon)
 ;;                    (below? (/ (norm2 s) (1+ (norm2 x))) delta))
-;;           (d:d "rel conv: ~a, ~a" 
+;;           (d:d "rel conv: ~a, ~a"
 ;;                (/ (abs (- fx f-alpha)) (1+ (abs fx)))
 ;;                (/ (norm2 s) (1+ (norm2 x))))
 ;;           (done iter-count))
@@ -317,8 +317,8 @@ returned.  Uses Richardson extrapolation w/ forward differencing."
 ;;           (setf x (e+ x s)
 ;;                 fx f-alpha
 ;;                 dfx (funcall df x)
-;;                 H (bfgs-update-inverse-hessian H (e- dfx dfx-prev) s 
-;;                                                (and (not H?) 
+;;                 H (bfgs-update-inverse-hessian H (e- dfx dfx-prev) s
+;;                                                (and (not H?)
 ;;                                                     (first-iteration-p)))))))))
 
 (defun negative-quadratic-form (x A negative-Ax)
@@ -350,7 +350,7 @@ All vectors are assumed to have element type DOUBLE-FLOAT."
         (setf (aref negative-Ax i) negative-sum)))
     negative-xAX))
 
-(defun x+direction (x direction alpha &optional 
+(defun x+direction (x direction alpha &optional
                     (z (lla-array (length x) :double)) (relative 16d0))
   "Calculate X+ALPHA*DIRECTION, place it in Z.  All vectors (X, DIRECTION,
 Z) are assumed to have element type double-float (not checked), and the same
@@ -380,11 +380,11 @@ iff all are =.  Z is returned as the second value."
 ;;;   alpha - starting alpha
 ;;;   z - resulting x ends up here
 ;;;   bfgs-parameters - all other parameters picked from here
-;;; 
+;;;
 ;;; Return values
 ;;;   alpha - the suggested alpha
 ;;;   f-alpha - the value at this alpha
-;;;   convergence indicator: NIL if OK, :ZERO if converged to X, 
+;;;   convergence indicator: NIL if OK, :ZERO if converged to X,
 
 (defun linesearch-armijo (f df-uni x direction fx df0 alpha z bfgs-parameters)
   "Armijo line search.  Last x evaluated is available in z."
@@ -428,7 +428,7 @@ and ACCEPTED?"
           ((< (funcall df-uni alpha f-alpha) curvature) (setf left alpha))
           ;; both hold
           (t (done nil)))
-        (setf alpha 
+        (setf alpha
               (if right
                   (if (<= (incf bisections) max-bisections)
                       (/ (+ left right) 2d0)
@@ -474,7 +474,7 @@ too small), in this case, no argument is changed.."
     t))
 
 
-(defun bfgs-minimize (f x &key (df nil df?) 
+(defun bfgs-minimize (f x &key (df nil df?)
  ;                     (delta (expt double-float-epsilon 1/2))
                       (epsilon (expt double-float-epsilon 1/2))
                       ;; gamma
@@ -547,7 +547,7 @@ too small), in this case, no argument is changed.."
                                                     (funcall f y)))
                           0d0)))
                    ((&values alpha f-alpha status)
-                    (funcall linesearch #'f #'df-uni x s fx df0 1d0 z 
+                    (funcall linesearch #'f #'df-uni x s fx df0 1d0 z
                              bfgs-parameters)))
               (when (<= (/ (abs (- fx f-alpha)) (+ (abs fx) epsilon)) epsilon)
                 (done))
@@ -556,7 +556,7 @@ too small), in this case, no argument is changed.."
                     ;; s is scaled to be the step
                     (dotimes (i n)
                       (multf (aref s i) alpha))
-                    ;; calculate new gradient and difference, 
+                    ;; calculate new gradient and difference,
                     ;; overwrite old gradient
                     (setf y (funcall df z))
                     (rotatef y dfx)      ; y: old, dfx: new
@@ -576,4 +576,3 @@ too small), in this case, no argument is changed.."
                   (reset "linesearch converged to current point")))
             ;; nonnegative gradient, try to reset
             (reset "nonnegative gradient"))))))
-

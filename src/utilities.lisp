@@ -154,4 +154,3 @@ them as a VECTOR-DOUBLE-FLOAT.  Vector is always copied."
            (assert (<= 0 x) (x) "Element is not positive.")
            (/ x sum))
          vector)))
-

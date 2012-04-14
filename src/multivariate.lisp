@@ -7,7 +7,7 @@
 (defun check-mean-variance-compatibility (mean variance)
   "Assert that the mean is a vector, and its dimensions are compatible with
 variance."
-  (assert (and (vectorp mean) 
+  (assert (and (vectorp mean)
                (= (length mean) (nrow variance) (ncol variance)))))
 
 (defun normal-quadratic-form (x mean variance-left-sqrt)
@@ -20,7 +20,7 @@ square root of variance."
    :instance instance)
   ((n :type fixnum :documentation "Number of dimensions.")
    (mean :type vector :reader t)
-   (variance-left-sqrt :reader t :documentation 
+   (variance-left-sqrt :reader t :documentation
                        "Left square root of the variance matrix."))
   (let ((variance-left-sqrt (left-square-root variance)))
     (check-mean-variance-compatibility mean variance-left-sqrt)
@@ -53,8 +53,8 @@ square root of variance."
 ;;; inverse-chi-square, nu degrees of freedom) is returned as the second
 ;;; value.
 
-(define-rv r-multivariate-t (mean sigma nu 
-                                  &key multivariate-normal scaling-factor 
+(define-rv r-multivariate-t (mean sigma nu
+                                  &key multivariate-normal scaling-factor
                                   (s^2 1d0 s^2?))
   (:documentation "Multivariate T distribution with given MEAN, scale
   SIGMA*S^2 and NU degrees of freedom.")
@@ -63,7 +63,7 @@ square root of variance."
    (scaling-factor :type r-inverse-gamma :documentation
                    "distribution that scales the variance of draws."
                    :reader t))
-  (make :multivariate-normal 
+  (make :multivariate-normal
         (aif multivariate-normal
              (prog1 it
                (check-type it r-multivariate-normal)
@@ -80,7 +80,7 @@ square root of variance."
                        "Can't initialize both S^2 and SCALING-FACTOR.")
                it)
              (r-inverse-chi-square nu s^2)))
-  (mean () 
+  (mean ()
         (assert (< 1 (nu scaling-factor)))
         (mean multivariate-normal))
   (variance ()
@@ -112,9 +112,9 @@ square root of variance."
               (normal (sub multivariate-normal index-specification))
               ((&accessors-r/o nu s^2) scaling-factor))
          (etypecase normal
-           (r-normal 
+           (r-normal
             (r-t (mean normal) (* s^2 (variance normal)) nu))
-           (r-multivariate-normal 
+           (r-multivariate-normal
             (r-multivariate-t nil nil nil
                               :multivariate-normal normal
                               :scaling-factor scaling-factor)))))
@@ -154,12 +154,12 @@ distribution (dimension k x k)."
     (check-type nu (and fixnum (satisfies plusp)))
     (make :nu nu :scale-left-sqrt scale-left-sqrt :k (nrow scale-left-sqrt)))
   (mean () (e* nu (mm scale-left-sqrt t)))
-  (draw (&key) 
+  (draw (&key)
         (mm (mm scale-left-sqrt (draw-standard-wishart-left-sqrt nu k)) t)))
 
 ;;; Inverse-Wishart
 ;;;
-;;; If A ~ Inverse-Wishart[nu,inverse-scale], then 
+;;; If A ~ Inverse-Wishart[nu,inverse-scale], then
 ;;; (invert A) ~ Wishart(nu,inverse-scale).
 
 (define-rv r-inverse-wishart (nu inverse-scale)

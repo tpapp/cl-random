@@ -14,7 +14,7 @@
 (defun ~- (a &rest args)
   "Subtraction, treating NIL as -Infinity."
   (if args
-      (let ((args-sum 
+      (let ((args-sum
              (iter
                (for arg :in args)
                (unless arg
