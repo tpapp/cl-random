@@ -60,12 +60,16 @@
     (ensure-same (pdf rv -0.7) 0)
     (ensure-same (pdf rv -0.3) 0.5515669)
     (ensure-same (cdf rv -0.7) 0)
-    (ensure-same (cdf rv -0.3) 0.1063703))
+    (ensure-same (quantile rv 0) -0.5)
+    (ensure-same (cdf rv -0.3) 0.1063703)
+    (ensure-same (quantile rv 0.1063703) -0.3))
   (let ((rv (r-truncated-normal -0.5 nil -0.4 2.5)))
     (ensure-same (pdf rv -0.7) 0)
     (ensure-same (pdf rv -0.3) 0.3090382)
     (ensure-same (cdf rv -0.7) 0)
-    (ensure-same (cdf rv -0.3) 0.06184061)))
+    (ensure-same (cdf rv -0.3) 0.06184061)
+    (ensure-same (quantile rv 0) -0.5)
+    (ensure-same (quantile rv 0.06184061) -0.3)))
 
 (addtest (cl-random-tests)
   ;; LEFT
