@@ -93,7 +93,9 @@ Also, within BODY, slots are accessible by their names."
 
 (declaim (inline check-probability))
 (defun check-probability (p &optional limits)
-  "Assert that P is a probability (ie a real number between 0 and 1)."
+  "Assert that P is a probability (ie a real number between 0 and 1).  When
+LIMITS is given, it is checked that p is not 0 (:LEFT), 1 (:RIGHT), or
+0/1 (:BOTH)."
   (assert (<= 0 p 1) () "~A is not a valid probability." p)
   (when limits
     (let ((msg "The given probability is only attained in the limit."))
