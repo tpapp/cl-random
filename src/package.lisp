@@ -43,7 +43,7 @@
    #:left
    #:right
    #:r-exponential
-   #:beta
+   #:rate
    #:draw-standard-exponential
    #:r-normal
    #:mean
