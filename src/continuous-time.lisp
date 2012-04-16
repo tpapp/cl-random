@@ -3,13 +3,13 @@
 (in-package #:cl-random)
 
 (define-rv r-uniformized-markov-jump (rates &key transition-rate keys no-change)
-  (:documentation "Define a random variable for uniformized markov jumps, which
-returns two values: the time spent in the state, and the index of the next state (or
-the corresponding element in KEYS, which is a vector of the same length).
-TRANSITION-RATES defaults to the sum of keys, however, it can be specified to be
-larger, in which case the markov chain may remain in the same state and return
-NO-CHANGE as the second value.  Defines features DURATION and JUMP, which return the
-two underlying random variables.")
+  (:documentation "Define a random variable for uniformized markov jumps,
+which returns two values: the time spent in the state, and the index of the
+next state (or the corresponding element in KEYS, which is a vector of the
+same length).  TRANSITION-RATES defaults to the sum of keys, however, it can
+be specified to be larger, in which case the markov chain may remain in the
+same state and return NO-CHANGE as the second value.  Defines features
+DURATION and JUMP, which return the two underlying random variables.")
   ((duration :reader duration)
    (jump :reader jump)
    no-change
@@ -25,11 +25,11 @@ two underlying random variables.")
                 (assert (<= 0 no-change-rate) ()
                         "Transition rate has to be >= the sum of rates.")
                 (values
-                  transition-rate
-                  (concatenate 'double-float-vector rates (vector no-change-rate))))
+                 transition-rate
+                 (concatenate 'double-float-vector rates (vector no-change-rate))))
               (values
-                total-rate
-                rates))))
+               total-rate
+               rates))))
     (assert (every #'plusp rates) () "Rates need to be positive.")
     (make :duration (r-exponential transition-rate)
           :jump (r-discrete probabilities)
