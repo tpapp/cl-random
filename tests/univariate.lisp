@@ -183,7 +183,8 @@
   (ensure (same-sample-mean-variance (r-beta 1 1)))
   (ensure (same-sample-mean-variance (r-beta 12 1)))
   (ensure (same-sample-mean-variance (r-beta 1 8)))
-  (ensure (same-sample-mean-variance (r-beta 0.5 pi))))
+  (ensure (same-sample-mean-variance (r-beta 0.5 pi)))
+  (ensure-same (quantile (r-beta 0.3d0 0.6d0) 0.11) 0.001343620695608248967121))
 
 
 ;; general discrete distribution
