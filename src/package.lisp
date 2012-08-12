@@ -96,4 +96,4 @@
    #:s^2
    #:as-regression-covariates
    #:transform-y-x
-   ))
+   #:check-probability))

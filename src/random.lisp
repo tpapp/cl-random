@@ -92,14 +92,14 @@ Also, within BODY, slots are accessible by their names."
   X."))
 
 (declaim (inline check-probability))
-(defun check-probability (p &optional limits)
+(defun check-probability (p &optional open)
   "Assert that P is a probability (ie a real number between 0 and 1).  When
-LIMITS is given, it is checked that p is not 0 (:LEFT), 1 (:RIGHT), or
+OPEN is given, it is checked that p is not 0 (:LEFT), 1 (:RIGHT), or
 0/1 (:BOTH)."
   (assert (<= 0 p 1) () "~A is not a valid probability." p)
-  (when limits
+  (when open
     (let ((msg "The given probability is only attained in the limit."))
-     (ecase limits
+     (ecase open
        (:both (assert (/= p 0 1) () msg))
        (:left (assert (/= p 0) () msg))
        (:right (assert (/= p 1) () msg)))))

@@ -26,7 +26,7 @@ calculating the Gamma function using the Lanczos method."
 (defun within-integer? (z &optional (tol 0))
   "Return non-NIL iff Z is within TOL of an integer (in either
 direction).  TOL should be nonnegative (this is not checked)."
-  (let+ (((&values nil diff) (round z)))
+  (let+ (((&values &ign diff) (round z)))
     (<= (abs diff) tol)))
 
 (defun log-gamma% (z)

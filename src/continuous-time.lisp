@@ -30,7 +30,7 @@ DURATION and JUMP, which return the two underlying random variables.")
               (values
                total-rate
                rates))))
-    (assert (every #'plusp rates) () "Rates need to be positive.")
+    ;; (assert (every #'plusp rates) () "Rates need to be positive.")
     (make :duration (r-exponential transition-rate)
           :jump (r-discrete probabilities)
           :no-change no-change
