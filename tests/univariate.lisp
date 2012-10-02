@@ -72,13 +72,16 @@
     (ensure-same (quantile rv 0.06184061) -0.3)))
 
 (addtest (cl-random-tests)
-  ;; LEFT
-  ;; ;; not including zero
-  ;; (ensure (same-sample-mean-variance (make-instance 'truncated-normal :left 0.5d0
-  ;;                                            :mu 1d0 :sigma 0.72d0)))
-  ;; ;; including zero
-  ;; (ensure (same-sample-mean-variance (make-instance 'truncated-normal :left -0.7d0
-  ;;                                            :sigma 7d0)))
+  LEFT
+  ;; not including zero
+  (ensure (same-sample-mean-variance
+           (r-truncated-normal 0.5d0 nil 1d0 0.72d0)))
+  ;; (ensure (same-sample-mean-variance
+  ;;          (r-truncated-normal 100 nil 0 1)))
+  ;; including zero
+  (ensure (same-sample-mean-variance
+           (r-truncated-normal -0.7d0 nil 0d0 7d0)))
+
   ;; ;; RIGHT
   ;; ;; not including zero
   ;; (ensure (same-sample-mean-variance (make-instance 'truncated-normal :right -0.5d0

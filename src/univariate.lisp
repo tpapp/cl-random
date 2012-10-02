@@ -171,10 +171,17 @@ formulas are from Jawitz (2004)."
 
 (defun draw-left-truncated-standard-normal (left alpha)
   "Draw a left truncated standard normal, using an Exp(alpha,left)
-distribution."
+distribution.  LEFT is the standardized boundary, ALPHA should be calculated
+with TRUNCATED-NORMAL-OPTIMAL-ALPHA."
   (try ((z (+ (/ (draw-standard-exponential) alpha) left))
             (rho (exp (* (expt (- z alpha) 2) -0.5))))
        (<= (random 1d0) rho) z))
+
+(defun truncated-normal-optimal-alpha (left)
+  "Calculate optimal exponential parameter for left-truncated normals.  LEFT
+is the standardized boundary."
+  (/ (+ left (sqrt (+ (expt left 2) 4d0)))
+     2d0))
 
 (define-rv left-truncated-normal (mu sigma left)
   (:documentation "Truncated normal distribution with given mu and sigma
@@ -183,10 +190,14 @@ respectively), on the interval [left, \infinity).")
   ((mu :type double-float)
    (sigma :type double-float)
    (left :type double-float)
-   (m0 :type double-float))
+   (left-standardized :type double-float)
+   (m0 :type double-float)
+   (alpha :type double-float))
   (with-doubles (mu sigma left)
-    (make :mu mu :sigma sigma :left left
-          :m0 (truncated-normal-moments% 0 mu sigma left nil)))
+    (let ((left-standardized (to-standard-normal left mu sigma)))
+      (make :mu mu :sigma sigma :left left :left-standardized left-standardized
+            :m0 (truncated-normal-moments% 0 mu sigma left nil)
+            :alpha (truncated-normal-optimal-alpha left-standardized))))
   (log-pdf (x &optional ignore-constant?)
            (when (<= left x)
              (maybe-ignore-constant ignore-constant?
@@ -203,7 +214,11 @@ respectively), on the interval [left, \infinity).")
               (check-probability q :right)
               (rmath:qnorm5 (+ (* q m0) (1c m0)) mu sigma 1 0)))
   (mean () (truncated-normal-moments% 1 mu sigma left nil))
-  (variance () (truncated-normal-moments% 2 mu sigma left nil)))
+  (variance () (truncated-normal-moments% 2 mu sigma left nil))
+  (draw (&key)
+        (from-standard-normal
+         (draw-left-truncated-standard-normal left-standardized alpha)
+         mu sigma)))
 
 (defun r-truncated-normal (left right &optional (mu 0d0) (sigma 1d0))
   "Truncated normal distribution.  If LEFT or RIGHT is NIL, it corresponds to
@@ -274,12 +289,6 @@ respectively), on the interval [left, \infinity).")
 ;;       (t (/ (- (cdf-standard-normal (to-standard-normal x mu sigma)) cdf-left)
 ;;             mass)))))
 
-;; (declaim (inline truncated-normal-optimal-alpha truncated-normal-left-p))
-
-;; (defun truncated-normal-optimal-alpha (left)
-;;   "Calculate optimal exponential parameter for left-truncated normals."
-;;   (/ (+ left (sqrt (+ (expt left 2) 4d0)))
-;;      2d0))
 
 ;; (defun truncated-normal-left-p (optimal-alpha left right)
 ;;   "Calculate if it is optimal to use the left-truncated draw and
