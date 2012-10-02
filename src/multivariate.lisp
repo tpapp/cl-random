@@ -179,3 +179,24 @@ returned as decompositions.")
         (mm (transpose (solve (draw-standard-wishart-left-sqrt nu k)
                               inverse-scale-right-sqrt))
             t)))
+
+;;; Dirichlet distribution
+;;;
+;;; FIXME NOTHING is implemented, this is just a placeholder for now
+
+(define-rv r-dirichlet (alpha)
+  (:documentation "Dirichlet distribution.  The PDF p(X) (where X is in the
+unit simplex) is proportional to the product of the x^alpha for each
+coordinate.")
+  ((alpha :type double-float-vector :reader t
+          :documentation "Vector of alpha's.")
+   (alpha0 :type double-float :documentation "Sum of alphas."))
+  (let ((alpha (as-double-float-vector alpha :copy? t)))
+    (make :alpha alpha :alpha0 (sum alpha)))
+  (sub (&rest selections)
+       (let+ (((selection) selections)
+              (selection (sub-resolve-selection selection (length alpha) t)))
+         (if (fixnum? selection)
+             (let ((alpha (aref alpha selection)))
+               (r-beta alpha (- alpha0 alpha)))
+             (error "Not implemented for multivariate selections.")))))
