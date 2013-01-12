@@ -110,6 +110,12 @@ which has density exp(-x)."
   (with-doubles (x)
     (rmath:pnorm5 x mean sd 1 0)))
 
+(defun quantile-normal% (q mean sd)
+  "Internal function for normal quantile."
+  (with-doubles (q)
+    (check-probability q :both)
+    (rmath:qnorm5 q mean sd 1 0)))
+
 (define-rv r-normal (&optional (mean 0d0) (variance 1d0))
   (:documentation "Normal(mean,variance) distribution.")
   ((mean :type double-float :reader t)
@@ -125,9 +131,7 @@ which has density exp(-x)."
                                   (- +normal-log-pdf-constant+ (log sd))))
   (cdf (x) (cdf-normal% x mean sd))
   (quantile (q)
-            (with-doubles (q)
-              (check-probability q :both)
-              (rmath:qnorm5 q mean sd 1 0)))
+            (quantile-normal% q mean sd))
   (draw (&key)
     (from-standard-normal (draw-standard-normal) mean sd)))
 
@@ -393,7 +397,6 @@ respectively), on the interval [left, \infinity).")
   (with-doubles (log-mean log-sd)
     (assert (plusp log-sd))
     (make :log-mean log-mean :log-sd log-sd))
-
   (mean () (exp (+ log-mean (/ (expt log-sd 2) 2))))
   (variance () (let ((sigma^2 (expt log-sd 2)))
               (* (1- (exp sigma^2))
@@ -406,8 +409,17 @@ respectively), on the interval [left, \infinity).")
                                             (expt log-sd 2) -2)
                                          log-x)))
                                   (- +normal-log-pdf-constant+ (log log-sd))))
+  (cdf (x)
+       (if (plusp x)
+           (cdf-normal% (log x) log-mean log-sd)
+           0d0))
+  (quantile (q)
+            (check-probability q :right)
+            (if (zerop q)
+                0d0
+                (exp (quantile-normal% q log-mean log-sd))))
   (draw (&key)
-    (exp (from-standard-normal (draw-standard-normal) log-mean log-sd))))
+        (exp (from-standard-normal (draw-standard-normal) log-mean log-sd))))
 
 
 ;;; Student's T distribution
