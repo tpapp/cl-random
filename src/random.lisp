@@ -108,7 +108,7 @@ OPEN is given, it is checked that p is not 0 (:LEFT), 1 (:RIGHT), or
 (defgeneric quantile (random-variable q)
   (:documentation "Quantile of RANDOM-VARIABLE at Q.")
   (:method (object q)
-    (quantiles object (vector q))))
+    (aref (quantiles object (vector q)) 0)))
 
 (defgeneric log-pdf (random-variable x &optional ignore-constant?)
   (:documentation "Log of probability distribution function of RANDOM-VARIABLE
