@@ -54,15 +54,6 @@
            (assert (<= 0 x) (x) "Element is not positive.")
            (/ x sum))
          vector)))
-
-(defconstant +pi+ (as-float pi)
-  "The mathematical constant pi, with type INTERNAL-FLOAT.  Defined because CL:PI is LONG-FLOAT and that may not coincide with INTERNAL-FLOAT.")
-
-(defconstant +zero+ (as-float 0)
-  "Zero with type INTERNAL-FLOAT.")
-
-(defconstant +normal-log-pdf-constant+ (as-float (* -1/2 (log (* 2 pi))))
-  "Normalizing constant for the standard normal probability density.")
 
 ;;;; Macro for rejection methods.
 
