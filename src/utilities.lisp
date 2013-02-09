@@ -48,34 +48,6 @@
 (defconstant +normal-log-pdf-constant+ (as-float (* -1/2 (log (* 2 pi))))
   "Normalizing constant for the standard normal probability density.")
 
-;;; truncation boundaries
-
-;; (deftype truncation-boundary ()
-;;   '(or double-float null))
-
-
-
-;;;; comparisons for truncated distributions.
-;;;;
-;;;; The convention is that nil indicates no truncation (from that direction).  For the functions below, only the second argument is allowed to be nil.  These are inlined for speed.
-;;;;
-;;;; ?? the idea of using most-positive-double-float etc has occured,
-;;;; but looks rather inelegant -- Tamas
-
-;; (declaim (inline <* >*))
-
-;; (defun <* (a b)
-;;   "Always t if b is nil, otherwise (< a b)."
-;;   (if b
-;;       (< a b)
-;;       t))
-
-;; (defun >* (a b)
-;;   "Always t if b is nil, otherwise (> a b)."
-;;   (if b
-;;       (> a b)
-;;       t))
-
 ;;;; Macro for rejection methods.
 
 (defmacro try ((&rest bindings) condition value)
