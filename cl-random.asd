@@ -3,34 +3,28 @@
   :author "Tamas K Papp"
   :license "MIT"
   :version "0.0.1"
+  :depends-on (#:alexandria
+               #:anaphora
+               #:cl-num-utils
+               #:cl-rmath
+               #:let-plus
+               #:lla)
+  :pathname #P"src/"
   :serial t
   :components
-  ((:module
-    "package-init"
-    :pathname #P"src/"
-    :components
-    ((:file "package")))
-   (:module
-    "basics"
-    :pathname #P"src/"
-    :serial t
-    :components
-    ((:file "utilities")
-     (:file "log-infinity")
-     (:file "special-functions")
-     (:file "random")
-     (:file "discrete")
-     (:file "univariate")
-     (:file "continuous-time")
-     (:file "statistics")
-     (:file "multivariate")
-     ;; (:file "design-matrix")
-     (:file "regressions")
-     ;; (:file "optimization")
-)))
-  :depends-on
-  (#:alexandria #:cl-num-utils #:iterate #:let-plus #:anaphora #:lla
-                #:cl-rmath))
+  ((:file "internals")
+   (:file "package")
+   ;; (:file "random")
+   ;; (:file "discrete")
+   ;; (:file "univariate")
+   ;; (:file "continuous-time")
+   ;; (:file "statistics")
+   ;; (:file "multivariate")
+   ;; ;; (:file "design-matrix")
+   ;; (:file "regressions")
+   ;; (:file "optimization")
+   )
+  )
 
 (asdf:defsystem #:cl-random-tests
   :description "Unit tests for CL-RANDOM."
