@@ -1,6 +1,18 @@
 ;;; -*- Mode:Lisp; Syntax:ANSI-Common-Lisp; -*-
 (cl:defpackage #:cl-random.internals
-  (:use #:cl))
+  (:use #:cl
+        #:alexandria)
+  (:export
+   #:internal-float
+   #:float-vector
+   #:as-float
+   #:with-floats
+   #:as-float-vector
+   #:as-float-probabilities
+   #:+pi+
+   #:+zero+
+   #:+normal-log-pdf-constant+
+   #:try))
 
 (in-package #:cl-random.internals)
 
@@ -27,6 +39,7 @@
 
 (declaim (inline as-float-vector))
 (defun as-float-vector (vector &key copy?)
+  "Return VECTOR converted to another vector with elements converted to INTERNAL-FLOAT if necessary.  When COPY?, the vector is always copied."
   (if (or copy? (not (typep vector 'float-vector)))
       (map 'float-vector #'as-float vector)
       vector))
@@ -43,7 +56,10 @@
          vector)))
 
 (defconstant +pi+ (as-float pi)
-  "The mathematical constant pi, with double precision.  Defined because CL:PI is LONG-FLOAT and that may not coincide with INTERNAL-FLOAT.")
+  "The mathematical constant pi, with type INTERNAL-FLOAT.  Defined because CL:PI is LONG-FLOAT and that may not coincide with INTERNAL-FLOAT.")
+
+(defconstant +zero+ (as-float 0)
+  "Zero with type INTERNAL-FLOAT.")
 
 (defconstant +normal-log-pdf-constant+ (as-float (* -1/2 (log (* 2 pi))))
   "Normalizing constant for the standard normal probability density.")
