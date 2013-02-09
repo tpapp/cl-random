@@ -1,69 +1,80 @@
-(in-package :cl-random)
+;;; -*- Mode:Lisp; Syntax:ANSI-Common-Lisp; -*-
+(cl:defpackage #:cl-random.internals
+  (:use #:cl))
 
-;;;; !! At some point, this file should be split up for clarity.  That
-;;;; should be done once the structure of the library stabilizes. -- Tamas
+(in-package #:cl-random.internals)
+
+;;; internal representation of floats
 
-;;; ?? these 2 are rather useful macros, this is the 3rd library when
-;;; I see them, maybe put into a common library? not really worth the
-;;; overhead in work I guess -- Tamas
+(deftype internal-float ()
+  "Type used for internal representation of floats in the CL-RANDOM library."
+  'double-float)
 
-(defun concat-to-string (args)
-  (apply #'concatenate 'string
-                 (mapcar (lambda (arg)
-                           (etypecase arg
-                             (symbol (symbol-name arg))
-                             (string arg)))
-                         args)))
+(deftype float-vector (&optional n)
+  `(simple-array internal-float (,n)))
 
-(defun make-symbol* (&rest args)
-  "build a symbol by concatenating each element of ARGS, and intern it
-  in the current package.  Elements can be strings or symbols."
-  (intern (concat-to-string args)))
+(declaim (inline as-float))
+(defun as-float (x)
+  "Return the argument coerced to the CL-RANDOM library's internal float type."
+  (coerce x 'internal-float))
 
-;;; Macro for shortcut functions.  They are useful if you just need an
-;;; rv for a single calculation and then throw it away.
+(defmacro with-floats ((&rest variables) &body body)
+  "Rebind each variable, coerced to a the internal float type used by CL-RANDOM."
+  `(let ,(mapcar (lambda (variable)
+                   `(,variable (as-float ,variable)))
+          variables)
+     ,@body))
 
-(defmacro def* (name other-args &optional docstring)
-  "Define a name* shortcut function."
-  (check-type name symbol)
-  (check-type docstring (or string null))
-  `(defun ,(make-symbol* name "*") (rv ,@other-args &rest args)
-     ,@(if docstring (list docstring) nil)
-     (check-type rv symbol)
-     (,name (apply #'make-instance rv args) ,@other-args)))
+(declaim (inline as-float-vector))
+(defun as-float-vector (vector &key copy?)
+  (if (or copy? (not (typep vector 'float-vector)))
+      (map 'float-vector #'as-float vector)
+      vector))
+
+(defun as-float-probabilities (vector)
+  "Normalize vector as probabilities, assert that all are positive, return them as a VECTOR-DOUBLE-FLOAT.  Vector is always copied."
+  (let ((sum (as-float (clnu:sum vector))))
+    (declare (type internal-float sum))
+    (map 'float-vector
+         (lambda (x)
+           (declare (type double-float x))
+           (assert (<= 0 x) (x) "Element is not positive.")
+           (/ x sum))
+         vector)))
+
+(defconstant +pi+ (as-float pi)
+  "The mathematical constant pi, with double precision.  Defined because CL:PI is LONG-FLOAT and that may not coincide with INTERNAL-FLOAT.")
+
+(defconstant +normal-log-pdf-constant+ (as-float (* -1/2 (log (* 2 pi))))
+  "Normalizing constant for the standard normal probability density.")
+
+;;; truncation boundaries
+
+;; (deftype truncation-boundary ()
+;;   '(or double-float null))
 
 
-;;;; Types
+
+;;;; comparisons for truncated distributions.
 ;;;;
-
-(deftype truncation-boundary ()
-  '(or double-float null))
-
-(deftype double-float-vector (&optional n)
-  `(simple-array double-float (,n)))
-
-;;;; Comparisons for truncated distributions.
-;;;;
-;;;; The convention is that nil indicates no truncation (from that
-;;;; direction).  For the functions below, only the second argument is
-;;;; allowed to be nil.  These are inlined for speed.
+;;;; The convention is that nil indicates no truncation (from that direction).  For the functions below, only the second argument is allowed to be nil.  These are inlined for speed.
 ;;;;
 ;;;; ?? the idea of using most-positive-double-float etc has occured,
 ;;;; but looks rather inelegant -- Tamas
 
-(declaim (inline <* >*))
+;; (declaim (inline <* >*))
 
-(defun <* (a b)
-  "Always t if b is nil, otherwise (< a b)."
-  (if b
-      (< a b)
-      t))
+;; (defun <* (a b)
+;;   "Always t if b is nil, otherwise (< a b)."
+;;   (if b
+;;       (< a b)
+;;       t))
 
-(defun >* (a b)
-  "Always t if b is nil, otherwise (> a b)."
-  (if b
-      (> a b)
-      t))
+;; (defun >* (a b)
+;;   "Always t if b is nil, otherwise (> a b)."
+;;   (if b
+;;       (> a b)
+;;       t))
 
 ;;;; Macro for rejection methods.
 
@@ -118,39 +129,3 @@ condition is satisfied, then return value."
 ;;          ,value))))
 
 ;;; we use doubles for most calculations
-
-(defconstant +pi+ (float pi 1d0)
-  "Pi, with double precision.  Defined because cl:pi is long-float and we need
-  double-float.")
-
-(defconstant +normal-log-pdf-constant+ (* -0.5d0 (log (* 2 +pi+))))
-
-(declaim (inline as-double-float as-double-float-vector))
-
-(defun as-double-float (x)
-  "Return the argument coerced to a DOUBLE-FLOAT."
-  (coerce x 'double-float))
-
-(deftype double-float-vector (&optional (n '*))
-  `(simple-array double-float (,n)))
-
-(defun as-double-float-vector (vector &key copy?)
-  (if (or copy? (not (typep vector 'double-float-vector)))
-      (map 'double-float-vector #'as-double-float vector)
-      vector))
-
-(defun as-double-float-probabilities (vector)
-  "Normalize vector as probabilities, assert that all are positive, return
-them as a VECTOR-DOUBLE-FLOAT.  Vector is always copied."
-  ;; !! still gives notes, make this faster if necessary
-  (declare (optimize speed))
-  (let* ((vector (as-double-float-vector vector))
-         (sum (reduce #'+ vector)))
-    (declare (type double-float sum)
-             (type double-float-vector vector))
-    (map 'double-float-vector
-         (lambda (x)
-           (declare (type double-float x))
-           (assert (<= 0 x) (x) "Element is not positive.")
-           (/ x sum))
-         vector)))
