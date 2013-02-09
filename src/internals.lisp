@@ -14,7 +14,7 @@
    #:+normal-log-pdf-constant+
    #:try))
 
-(in-package #:cl-random.internals)
+(cl:in-package #:cl-random.internals)
 
 ;;; internal representation of floats
 
@@ -50,7 +50,7 @@
     (declare (type internal-float sum))
     (map 'float-vector
          (lambda (x)
-           (declare (type double-float x))
+           (declare (type internal-float x))
            (assert (<= 0 x) (x) "Element is not positive.")
            (/ x sum))
          vector)))
