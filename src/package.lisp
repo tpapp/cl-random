@@ -8,68 +8,6 @@
         #:let-plus
         #:lla)
   (:shadow #:mean #:variance)           ; also in ALEXANDRIA
-  (:export                              ; random
-   )
-  ;; (:export
-  ;;  ;; utilities
-  ;;  #:missing
-  ;;  #:not-implemented
-  ;;  #:undefined
-  ;;  #:positive-double-float
-  ;;  #:as-double-float
-  ;;  #:double-float-vector
-  ;;  #:as-double-float-vector
-  ;;  #:truncation-boundary
-  ;;  #:as-double-float-probabilities
-  ;;  ;; log-infinity
-  ;;  #:plus-infinity
-  ;;  #:~+
-  ;;  #:~-
-  ;;  #:~log
-  ;;  #:~exp
-  ;;  ;; random
-  ;;  #:draw
-  ;;  #:generator
-  ;;  #:replicating
-  ;;  #:cdf
-  ;;  #:log-pdf
-  ;;  #:pdf
-  ;;  #:quantile
-  ;;  ;; discrete
-  ;;  #:draw-bernoulli
-  ;;  #:draw-bernoulli-rational
-  ;;  #:distinct-random-integers
-  ;;  ;; univariate
-  ;;  #:r-uniform
-  ;;  #:left
-  ;;  #:right
-  ;;  #:r-exponential
-  ;;  #:rate
-  ;;  #:draw-standard-exponential
-  ;;  #:r-normal
-  ;;  #:mean
-  ;;  #:sd
-  ;;  #:draw-standard-normal
-  ;;  #:r-log-normal
-  ;;  #:log-mean
-  ;;  #:log-sd
-  ;;  #:r-t
-  ;;  #:scale
-  ;;  #:t-scale-to-variance-coefficient
-  ;;  #:r-gamma
-  ;;  #:alpha
-  ;;  #:beta
-  ;;  #:r-inverse-gamma
-  ;;  #:r-chi-square
-  ;;  #:r-chi-square-nu
-  ;;  #:r-inverse-chi-square
-  ;;  #:r-inverse-chi-square-nu
-  ;;  #:r-inverse-chi-square-scale
-  ;;  #:r-inverse-chi-square-s^2
-  ;;  #:r-beta
-  ;;  #:r-discrete
-  ;;  #:probabilities
-  ;;  #:r-truncated-normal
   ;;  ;; continuous-time
   ;;  #:r-uniformized-markov-jump
   ;;  ;; multivariate
@@ -99,13 +37,44 @@
   ;;  #:transform-y-x
   ;;  #:check-probability
   ;;  #:r-dirichlet)
-(:export
- #:draw)
-(:export
- #:generator
- #:mean
- #:variance
- #:cdf
- #:quantile
- #:log-pdf
- #:pdf))
+  (:export                              ; general interface
+   #:draw
+   #:generator
+   #:mean
+   #:variance
+   #:cdf
+   #:quantile
+   #:log-pdf
+   #:pdf)
+  (:export                              ; discrete
+   #:draw-bernoulli
+   #:distinct-random-integers
+   #:distinct-random-integers-dense)
+  (:export                              ; univariate
+   #:r-uniform
+   #:left
+   #:right
+   #:r-exponential
+   #:rate
+   #:draw-standard-exponential
+   #:draw-standard-normal
+   #:to-standard-normal
+   #:from-standard-normal
+   #:r-normal
+   #:r-truncated-normal
+   #:r-log-normal
+   #:log-mean
+   #:log-sd
+   #:t-scale-to-variance-coefficient
+   #:draw-standard-t
+   #:r-t
+   #:scale
+   #:nu
+   #:r-gamma
+   #:alpha
+   #:beta
+   #:r-inverse-gamma
+   #:r-chi-square
+   #:r-inverse-chi-square
+   #:r-beta
+   #:r-discrete))
