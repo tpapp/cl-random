@@ -9,10 +9,8 @@
    #:with-floats
    #:as-float-vector
    #:as-float-probabilities
-   #:+pi+
-   #:+zero+
-   #:+normal-log-pdf-constant+
-   #:try))
+   #:try
+   #:maybe-ignore-constant))
 
 (cl:in-package #:cl-random.internals)
 
@@ -55,11 +53,10 @@
            (/ x sum))
          vector)))
 
-;;;; Macro for rejection methods.
+;;;; Miscellaneous macros
 
 (defmacro try ((&rest bindings) condition value)
-  "Evaluate bindings (expanding into LET+, so all features can be used) until
-condition is satisfied, then return value."
+  "Evaluate bindings (expanding into LET+, so all features can be used) until condition is satisfied, then return value."
   (with-unique-names (top)
     `(prog ()
         ,top
@@ -67,3 +64,11 @@ condition is satisfied, then return value."
           (if ,condition
               (return ,value)
               (go ,top))))))
+
+(defmacro maybe-ignore-constant (ignore-constant? value constant)
+  "Handle a constant that is calculated only when IGNORE-CONSTANT? is NIL and VALUE is not negative infinity (represented by NIL)."
+  (once-only (value)
+    `(when ,value
+       (if ,ignore-constant?
+           ,value
+           (+ ,value ,constant)))))
