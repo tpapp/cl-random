@@ -17,9 +17,14 @@
 
 ;;; internal representation of floats
 
-(deftype internal-float ()
+(deftype internal-float (&optional lower-limit upper-limit)
   "Type used for internal representation of floats in the CL-RANDOM library."
-  'double-float)
+  `(double-float ,(if (eq lower-limit '*)
+                      lower-limit
+                      (float lower-limit 1d0))
+                 ,(if (eq upper-limit '*)
+                      upper-limit
+                      (float upper-limit 1d0))))
 
 (deftype float-vector (&optional n)
   `(simple-array internal-float (,n)))
