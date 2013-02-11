@@ -14,7 +14,7 @@
   :components
   ((:file "internals")
    (:file "package")
-   ;; (:file "random")
+   (:file "random")
    ;; (:file "discrete")
    ;; (:file "univariate")
    ;; (:file "continuous-time")
