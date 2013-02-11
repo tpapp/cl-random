@@ -1,7 +1,8 @@
 ;;; -*- Mode:Lisp; Syntax:ANSI-Common-Lisp; -*-
 (cl:defpackage #:cl-random.internals
   (:use #:cl
-        #:alexandria)
+        #:alexandria
+        #:let-plus)
   (:export
    #:internal-float
    #:float-vector
