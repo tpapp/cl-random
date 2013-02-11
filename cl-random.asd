@@ -15,7 +15,7 @@
   ((:file "internals")
    (:file "package")
    (:file "random")
-   ;; (:file "discrete")
+   (:file "discrete")
    (:file "univariate")
    ;; (:file "continuous-time")
    ;; (:file "statistics")
