@@ -16,7 +16,7 @@
    (:file "package")
    (:file "random")
    ;; (:file "discrete")
-   ;; (:file "univariate")
+   (:file "univariate")
    ;; (:file "continuous-time")
    ;; (:file "statistics")
    ;; (:file "multivariate")

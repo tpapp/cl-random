@@ -4,66 +4,62 @@
 
 (define-rv r-uniform (left right)
   (:documentation "Uniform(left,right) distribution.")
-  ((left :type double-float :reader t)
-   (right :type double-float :reader t)
-   (width :type double-float))
-  (with-doubles (left right)
+  ((left :type internal-float :reader t)
+   (right :type internal-float :reader t)
+   (width :type internal-float))
+  (with-floats (left right)
     (assert (< left right))
     (let ((width (- right left)))
       (make :left left :right right :width width)))
   (mean () (/ (+ left right) 2))
   (variance () (/ (expt width 2) 12d0))
   (log-pdf (x &optional ignore-constant?)
-           (declare (ignore ignore-constant?))
-           (with-doubles (x)
+           (declare (ignorable ignore-constant?))
+           (with-floats (x)
              (if (<= left x right)
                  (- (log width))
                  nil)))
   (cdf (x)
-       (with-doubles (x)
+       (with-floats (x)
          (cond
            ((< x left) 0d0)
            ((< right x) 1d0)
            (t (/ (- x left) width)))))
   (quantile (p)
-            (with-doubles (p)
+            (with-floats (p)
               (check-probability p)
               (+ left (* p (- right left)))))
   (draw (&key)
         (+ left (random width))))
-
 
 ;;; Exponential distribution.
 ;;;
 ;;; Also provides the primitive draw-standard-exponential, which is useful for
 ;;; constructing other distributions.
 
+(declaim (inline draw-standard-exponential))
 (defun draw-standard-exponential ()
-  "Return a random variable from the Exponential(1) distribution,
-which has density exp(-x)."
-  ;; need 1-random, because there is a remote chance of getting a 0.
+  "Return a random variable from the Exponential(1) distribution, which has density exp(-x)."
+  ;; need 1-random, because there is a small but nonzero chance of getting a 0.
   (- (log (- 1d0 (random 1d0)))))
 
-(declaim (inline draw-standard-exponential))
-
 (define-rv r-exponential (rate)
-  (:documentation "Exponential(beta) distribution, with density
-  beta*exp(-beta*x) on x >= 0.")
-  ((rate :type double-float :reader t))
-  (with-doubles (rate)
+  (:documentation "Exponential(beta) distribution, with density beta*exp(-beta*x) on x >= 0.")
+  ((rate :type internal-float :reader t))
+  (with-floats (rate)
     (assert (plusp rate))
     (make :rate rate))
   (mean () (/ rate))
   (variance () (expt rate -2))
   (log-pdf (x &optional ignore-constant?)
            (declare (ignore ignore-constant?))
-           (with-doubles (x)
+           (with-floats (x)
              (- (log rate) (* rate x))))
   (cdf (x)
-       (with-doubles (x)
+       (with-floats (x)
          (- 1 (exp (- (* rate x))))))
   (quantile (p)
-            (with-doubles (p)
+            (with-floats (p)
               (check-probability p :right)
               (/ (log (- 1 p)) (- rate))))
   (draw (&key)
@@ -72,16 +68,15 @@ which has density exp(-x)."
 
 ;;; Normal distribution (univariate).
 ;;;
-;;; Also provides some primitives (mostly for standardized normal) that are
-;;; useful for constructing/drawing from other distributions.
+;;; Also provides some primitives (mostly for standardized normal) that are useful for constructing/drawing from other distributions.
 
-(declaim (ftype (function () double-float) draw-standard-normal))
+(declaim (ftype (function () internal-float) draw-standard-normal))
 
 (defun draw-standard-normal ()
   "Draw a random number from N(0,1)."
-  ;; Method from Leva (1992).  This is considered much better/faster
-  ;; than the Box-Muller method.
-  (declare (optimize (speed 3) (safety 0)))
+  ;; Method from Leva (1992).  This is considered much better/faster than the Box-Muller method.
+  (declare (optimize (speed 3) (safety 0))
+           #+sbcl (sb-ext:muffle-conditions sb-ext:compiler-note))
   (tagbody
    top
      (let* ((u (random 1d0))
@@ -107,33 +102,36 @@ which has density exp(-x)."
 
 (defun cdf-normal% (x mean sd)
   "Internal function for normal CDF."
-  (with-doubles (x)
+  (with-floats (x)
     (rmath:pnorm5 x mean sd 1 0)))
 
 (defun quantile-normal% (q mean sd)
   "Internal function for normal quantile."
-  (with-doubles (q)
+  (with-floats (q)
     (check-probability q :both)
     (rmath:qnorm5 q mean sd 1 0)))
 
+(defconstant +normal-log-pdf-constant+ (as-float (/ (log (* 2 pi)) 2))
+  "Normalizing constant for a standard normal PDF.")
+
 (define-rv r-normal (&optional (mean 0d0) (variance 1d0))
   (:documentation "Normal(mean,variance) distribution.")
-  ((mean :type double-float :reader t)
-   (sd :type double-float :reader t))
-  (with-doubles (mean variance)
+  ((mean :type internal-float :reader t)
+   (sd :type internal-float :reader t))
+  (with-floats (mean variance)
     (assert (plusp variance))
     (make :mean mean :sd (sqrt variance)))
   (variance () (expt sd 2))
   (log-pdf (x &optional ignore-constant?)
            (maybe-ignore-constant ignore-constant?
-                                  (with-doubles (x)
+                                  (with-floats (x)
                                     (/ (expt (- x mean) 2) (expt sd 2) -2d0))
                                   (- +normal-log-pdf-constant+ (log sd))))
   (cdf (x) (cdf-normal% x mean sd))
   (quantile (q)
             (quantile-normal% q mean sd))
   (draw (&key)
-    (from-standard-normal (draw-standard-normal) mean sd)))
+        (from-standard-normal (draw-standard-normal) mean sd)))
 
 ;;; !! It is claimed in Marsaglia & Tsang (2000) that the ziggurat
 ;;; method is about 5-6 times faster than the above, mainly because of
@@ -146,10 +144,7 @@ which has density exp(-x)."
 (defun truncated-normal-moments% (N mu sigma left right
                                   &optional (m0 nil m0?))
   "N=0 gives the total mass of the truncated normal, used for normalization,
-N=1 the mean, and N=2 the variance.  where p(x) is the normal density.  When
-LEFT or RIGHT are NIL, they are taken to be - or + infinity, respectively.  M0
-may be provided for efficiency if would be calculated multiple times.  The
-formulas are from Jawitz (2004)."
+N=1 the mean, and N=2 the variance.  where p(x) is the normal density.  When LEFT or RIGHT are NIL, they are taken to be - or + infinity, respectively.  M0 may be provided for efficiency if would be calculated multiple times.  The formulas are from Jawitz (2004)."
   (if (zerop N)
       (- (if right (cdf-normal% right mu sigma) 1d0)
          (if left (cdf-normal% left mu sigma) 0d0))
@@ -174,30 +169,25 @@ formulas are from Jawitz (2004)."
                                 (expt mean-mu 2) (* 2 mu mean-mu))))))))
 
 (defun draw-left-truncated-standard-normal (left alpha)
-  "Draw a left truncated standard normal, using an Exp(alpha,left)
-distribution.  LEFT is the standardized boundary, ALPHA should be calculated
-with TRUNCATED-NORMAL-OPTIMAL-ALPHA."
+  "Draw a left truncated standard normal, using an Exp(alpha,left) distribution.  LEFT is the standardized boundary, ALPHA should be calculated with TRUNCATED-NORMAL-OPTIMAL-ALPHA."
   (try ((z (+ (/ (draw-standard-exponential) alpha) left))
-            (rho (exp (* (expt (- z alpha) 2) -0.5))))
+        (rho (exp (* (expt (- z alpha) 2) -0.5))))
        (<= (random 1d0) rho) z))
 
 (defun truncated-normal-optimal-alpha (left)
-  "Calculate optimal exponential parameter for left-truncated normals.  LEFT
-is the standardized boundary."
+  "Calculate optimal exponential parameter for left-truncated normals.  LEFT is the standardized boundary."
   (/ (+ left (sqrt (+ (expt left 2) 4d0)))
      2d0))
 
 (define-rv left-truncated-normal (mu sigma left)
-  (:documentation "Truncated normal distribution with given mu and sigma
-\(corresponds to the mean and standard deviation in the untruncated case,
-respectively), on the interval [left, \infinity).")
-  ((mu :type double-float)
-   (sigma :type double-float)
-   (left :type double-float)
-   (left-standardized :type double-float)
-   (m0 :type double-float)
-   (alpha :type double-float))
-  (with-doubles (mu sigma left)
+  (:documentation "Truncated normal distribution with given mu and sigma (corresponds to the mean and standard deviation in the untruncated case, respectively), on the interval [left, \infinity).")
+  ((mu :type internal-float)
+   (sigma :type internal-float)
+   (left :type internal-float)
+   (left-standardized :type internal-float)
+   (m0 :type internal-float)
+   (alpha :type internal-float))
+  (with-floats (mu sigma left)
     (let ((left-standardized (to-standard-normal left mu sigma)))
       (make :mu mu :sigma sigma :left left :left-standardized left-standardized
             :m0 (truncated-normal-moments% 0 mu sigma left nil)
@@ -205,7 +195,7 @@ respectively), on the interval [left, \infinity).")
   (log-pdf (x &optional ignore-constant?)
            (when (<= left x)
              (maybe-ignore-constant ignore-constant?
-                                    (with-doubles (x)
+                                    (with-floats (x)
                                       (/ (expt (- x mu) 2)
                                          (expt sigma 2) -2d0))
                                     (- +normal-log-pdf-constant+ (log sigma)
@@ -214,9 +204,9 @@ respectively), on the interval [left, \infinity).")
                (/ (1- (+ (cdf-normal% x mu sigma) m0)) m0)
                0d0))
   (quantile (q)
-            (with-doubles (q)
+            (with-floats (q)
               (check-probability q :right)
-              (rmath:qnorm5 (+ (* q m0) (1c m0)) mu sigma 1 0)))
+              (rmath:qnorm5 (+ (* q m0) (- 1 m0)) mu sigma 1 0)))
   (mean () (truncated-normal-moments% 1 mu sigma left nil))
   (variance () (truncated-normal-moments% 2 mu sigma left nil))
   (draw (&key)
@@ -235,14 +225,14 @@ respectively), on the interval [left, \infinity).")
 
 
 ;; (defclass truncated-normal (univariate)
-;;   ((mu :initarg :mu :initform 0d0 :reader mu :type double-float)
-;;    (sigma :initarg :sigma :initform 1d0 :reader sigma :type positive-double-float)
+;;   ((mu :initarg :mu :initform 0d0 :reader mu :type internal-float)
+;;    (sigma :initarg :sigma :initform 1d0 :reader sigma :type positive-internal-float)
 ;;    (left :initarg :left :initform nil :reader left :type truncation-boundary)
 ;;    (right :initarg :right :initform nil :reader right :type truncation-boundary)
-;;    (mass :type (double-float 0d0 1d0) :documentation "total mass of the raw PDF")
-;;    (mean :reader mean :type double-float :documentation "mean")
-;;    (variance :reader variance :type positive-double-float :documentation "variance")
-;;    (cdf-left :type double-float :documentation "CDF at left"))
+;;    (mass :type (internal-float 0d0 1d0) :documentation "total mass of the raw PDF")
+;;    (mean :reader mean :type internal-float :documentation "mean")
+;;    (variance :reader variance :type positive-internal-float :documentation "variance")
+;;    (cdf-left :type internal-float :documentation "CDF at left"))
 ;;   (:documentation ))
 
 ;; (define-printer-with-slots truncated-normal mu sigma left right)
@@ -285,7 +275,7 @@ respectively), on the interval [left, \infinity).")
 
 
 ;; (defmethod cdf ((rv truncated-normal) x)
-;;   (check-type x double-float)
+;;   (check-type x internal-float)
 ;;   (bind (((:slots-read-only mu sigma mass left right cdf-left) rv))
 ;;     (cond
 ;;       ((<* x left) 0d0)
@@ -316,7 +306,7 @@ respectively), on the interval [left, \infinity).")
 ;; (define-cached-slot (rv truncated-normal generator)
 ;;   (declare (optimize (speed 3)))
 ;;   (bind (((:slots-read-only mu sigma left right) rv))
-;;     (declare (double-float mu sigma)
+;;     (declare (internal-float mu sigma)
 ;;              (truncation-boundary left right))
 ;;     (macrolet ((lambda* (form)
 ;;                  "Lambda with no arguments, transform using mu and sigma."
@@ -392,18 +382,18 @@ respectively), on the interval [left, \infinity).")
 
 (define-rv r-log-normal (log-mean log-sd)
   (:documentation "Log-normal distribution with location log-mean and scale log-sd.")
-  ((log-mean :type double-float)
-   (log-sd :type double-float))
-  (with-doubles (log-mean log-sd)
+  ((log-mean :type internal-float)
+   (log-sd :type internal-float))
+  (with-floats (log-mean log-sd)
     (assert (plusp log-sd))
     (make :log-mean log-mean :log-sd log-sd))
   (mean () (exp (+ log-mean (/ (expt log-sd 2) 2))))
   (variance () (let ((sigma^2 (expt log-sd 2)))
-              (* (1- (exp sigma^2))
-                 (exp (+ (* 2 log-mean) sigma^2)))))
+                 (* (1- (exp sigma^2))
+                    (exp (+ (* 2 log-mean) sigma^2)))))
   (log-pdf (x &optional ignore-constant?)
            (maybe-ignore-constant ignore-constant?
-                                  (with-doubles (x)
+                                  (with-floats (x)
                                     (let ((log-x (log x)))
                                       (- (/ (expt (- log-x log-mean) 2)
                                             (expt log-sd 2) -2)
@@ -436,21 +426,22 @@ checks that nu > 2, ie the variance is defined."
   "Draw a standard T random variate, with NU degrees of freedom."
   ;; !! algorithm from Bailey (1994), test Marsaglia (1984) to see if it is
   ;; !! faster
-  (declare (double-float nu)
-           (optimize (speed 3)))
+  (declare (internal-float nu)
+           (optimize (speed 3))
+           #+sbcl (sb-ext:muffle-conditions sb-ext:compiler-note))
   (try ((v1 (1- (random 2d0)))
         (v2 (1- (random 2d0)))
         (r-square (+ (expt v1 2) (expt v2 2))))
        (<= r-square 1)
-       (* v1 (sqrt (the (double-float 0d0)
+       (* v1 (sqrt (the (internal-float 0d0)
                      (/ (* nu (1- (expt r-square (/ -2d0 nu)))) r-square))))))
 
 (define-rv r-t (mean scale nu)
   (:documentation "T(mean,scale,nu) random variate.")
-  ((mean :type double-float :reader t)
-   (scale :type double-float :reader t)
-   (nu :type double-float :reader t))
-  (with-doubles (mean scale nu)
+  ((mean :type internal-float :reader t)
+   (scale :type internal-float :reader t)
+   (nu :type internal-float :reader t))
+  (with-floats (mean scale nu)
     (assert (plusp nu))
     (assert (plusp scale))
     (make :mean mean :scale scale :nu nu))
@@ -472,8 +463,8 @@ checks that nu > 2, ie the variance is defined."
 (defun standard-gamma1-d-c (alpha)
   "Return precalculated constants (values d c), useful for drawing
 form a gamma distribution."
-  (let* ((d (the (double-float 0d0) (- alpha (/ 3d0))))
-         (c (/ (sqrt (* 9d0 d)))))
+  (let* ((d (- (as-float alpha) (/ 3)))
+         (c (/ (sqrt (* 9 d)))))
     (values d c)))
 
 (defun draw-standard-gamma1 (alpha d c)
@@ -481,12 +472,13 @@ form a gamma distribution."
 >= 1.  See Marsaglia and Tsang (2004).  You should precalculate d
 and c using the utility function above. "
   ;; !! see how much the change in draw-standard-normal would speed this up
-  (declare (optimize (speed 3)))
-  (declare (double-float d c))
-  (check-type alpha (double-float 1d0))
+  (declare (optimize (speed 3))
+           (type internal-float d c)
+           #+sbcl (sb-ext:muffle-conditions sb-ext:compiler-note))
+  (check-type alpha (internal-float 1))
   (tagbody
    top
-     (let+ (((&values x v) (prog () ; loop was not optimized for some reason
+     (let+ (((&values x v) (prog ()     ; loop was not optimized for some reason
                             top
                               (let* ((x (draw-standard-normal))
                                      (v (expt (1+ (* c x)) 3)))
@@ -501,12 +493,10 @@ and c using the utility function above. "
            (go top)))))
 
 (define-rv r-gamma (alpha beta)
-  (:documentation "Gamma(alpha,beta) distribution, with density proportional
-  to x^(alpha-1) exp(-x*beta).  Alpha and beta are known as shape and inverse
-  scale (or rate) parameters, respectively.")
-  ((alpha :type double-float :reader t)
-   (beta :type double-float :reader t))
-  (with-doubles (alpha beta)
+  (:documentation "Gamma(alpha,beta) distribution, with density proportional to x^(alpha-1) exp(-x*beta).  Alpha and beta are known as shape and inverse scale (or rate) parameters, respectively.")
+  ((alpha :type internal-float :reader t)
+   (beta :type internal-float :reader t))
+  (with-floats (alpha beta)
     (assert (plusp alpha))
     (assert (plusp beta))
     (make :alpha alpha :beta beta))
@@ -515,17 +505,16 @@ and c using the utility function above. "
   (log-pdf (x &optional ignore-constant?)
            (maybe-ignore-constant
             ignore-constant?
-            (with-doubles (x)
-              (- (+ (* alpha (log beta)) (* (1- alpha) (log x)))
-                 (* beta x)))
-            (- (log-gamma alpha))))
+            (with-floats (x)
+              (- (+ (* alpha (log beta)) (* (1- alpha) (log x))) (* beta x)))
+            (- (cl-rmath:lgammafn alpha))))
   ;; note that R uses scale=1/beta
   (cdf (x)
-       (with-doubles (x)
+       (with-floats (x)
          (with-fp-traps-masked
            (rmath:pgamma x alpha (/ beta) 1 0))))
   (quantile (q)
-            (with-doubles (q)
+            (with-floats (q)
               (check-probability q :right)
               (with-fp-traps-masked
                 (rmath:qgamma q alpha (/ beta) 1 0))))
@@ -549,10 +538,10 @@ and c using the utility function above. "
 (define-rv r-inverse-gamma (alpha beta)
   (:documentation "Inverse-Gamma(alpha,beta) distribution, with density p(x)
  proportional to x^(-alpha+1) exp(-beta/x)"
-   :==-slots (alpha beta))
-  ((alpha :type double-float :reader t)
-   (beta :type double-float :reader t))
-  (with-doubles (alpha beta)
+   :num=-slots (alpha beta))
+  ((alpha :type internal-float :reader t)
+   (beta :type internal-float :reader t))
+  (with-floats (alpha beta)
     (assert (plusp alpha))
     (assert (plusp beta))
     (make :alpha alpha :beta beta))
@@ -566,7 +555,7 @@ and c using the utility function above. "
            (maybe-ignore-constant
             ignore-constant?
             (- (* (- (1+ alpha)) (log x)) (/ beta x))
-            (- (* alpha (log beta)) (log-gamma alpha))))
+            (- (* alpha (log beta)) (cl-rmath:lgammafn alpha))))
   (draw (&key)
         (if (< alpha 1d0)
             (let+ ((1+alpha (1+ alpha))
@@ -618,9 +607,9 @@ INVERSE-GAMMA."
 (define-rv r-beta (alpha beta)
   (:documentation "Beta(alpha,beta) distribution, with density proportional to
 x^(alpha-1)*(1-x)^(beta-1).")
-  ((alpha :type double-float :reader t)
-   (beta :type double-float :reader t))
-  (with-doubles (alpha beta)
+  ((alpha :type internal-float :reader t)
+   (beta :type internal-float :reader t))
+  (with-floats (alpha beta)
     (assert (plusp alpha))
     (assert (plusp beta))
     (make :alpha alpha :beta beta))
@@ -632,7 +621,7 @@ x^(alpha-1)*(1-x)^(beta-1).")
               (beta (draw (r-gamma beta 1))))
           (/ alpha (+ alpha beta))))
   (quantile (q)
-            (with-doubles (q)
+            (with-floats (q)
               (rmath:qbeta q alpha beta 1 0))))
 
 
@@ -640,24 +629,24 @@ x^(alpha-1)*(1-x)^(beta-1).")
 ;;;
 ;;; ?? The implementation may be improved speedwise with declarations and
 ;;; micro-optimizations.  Not a high priority.  However, converting arguments
-;;; to double-float provided a great speedup, especially in cases when the
+;;; to internal-float provided a great speedup, especially in cases when the
 ;;; normalization resulted in rationals -- comparisons for the latter are
 ;;; quite slow.
 
 (define-rv r-discrete (probabilities)
   (:documentation "Discrete probabilities." :instance instance)
-  ((probabilities :type double-float-vector :reader t)
-   (prob :type double-float-vector)
+  ((probabilities :type float-vector :reader t)
+   (prob :type float-vector)
    (alias :type (simple-array fixnum (*)))
-   (n-double :type double-float))
+   (n-float :type internal-float))
   ;; algorithm from Vose (1991)
-  (let* ((probabilities (as-double-float-probabilities probabilities))
+  (let* ((probabilities (as-float-probabilities probabilities))
          (p (copy-seq probabilities))   ; this is modified
          (n (length probabilities))
          (alias (make-array n :element-type 'fixnum))
-         (prob (make-array n :element-type 'double-float))
-         (n-double (as-double-float n))
-         (threshold (/ n-double))
+         (prob (make-array n :element-type 'internal-float))
+         (n-float (as-float n))
+         (threshold (/ n-float))
          small
          large)
     ;; separate using threshold
@@ -667,41 +656,44 @@ x^(alpha-1)*(1-x)^(beta-1).")
           (push i small)))
     ;; reshuffle
     (loop :while (and small large) :do
-          (let* ((j (pop small))
-                 (k (pop large)))
-            (setf (aref prob j) (* n-double (aref p j))
-                  (aref alias j) k)
-            (if (< threshold (incf (aref p k)
-                                   (- (aref p j) threshold)))
-                (push k large)
-                (push k small))))
+             (let* ((j (pop small))
+                    (k (pop large)))
+               (setf (aref prob j) (* n-float (aref p j))
+                     (aref alias j) k)
+               (if (< threshold (incf (aref p k)
+                                      (- (aref p j) threshold)))
+                   (push k large)
+                   (push k small))))
     ;; the rest use 1
     (loop :for s :in small :do (setf (aref prob s) 1d0))
     (loop :for l :in large :do (setf (aref prob l) 1d0))
     ;; save what's needed
-    (make :probabilities probabilities :prob prob :alias alias :n-double n-double))
+    (make :probabilities probabilities :prob prob :alias alias :n-float n-float))
   (mean ()
-        (iter
-          (for p :in-vector probabilities :with-index i)
-          (summing (* p i))))
+        (loop
+          for p across probabilities
+          for i from 0
+          summing (* p i)))
   (variance ()
-            (iter
-              (with mean := (mean instance))
-              (for p :in-vector probabilities :with-index i)
-              (summing (* p (expt (- i mean) 2)))))
+            (loop
+              with mean = (mean instance)
+              for p across probabilities
+              for i from 0
+              summing (* p (expt (- i mean) 2))))
   (log-pdf (i &optional ignore-constant?)
            (declare (ignore ignore-constant?))
            (log (aref probabilities i)))
   (cdf (i)
        ;; NIL gives the whole CDF
        (if i
-           (iter
-             (for p :in-vector probabilities :to i)
-             (summing p))
-           (cumulative-sum probabilities
-                           :result-type 'double-float-vector)))
+           (loop
+             for p across probabilities
+             repeat i
+             summing p)
+           (clnu:cumulative-sum probabilities
+                                :result-type 'internal-float-vector)))
   (draw (&key)
-        (multiple-value-bind (j p) (floor (random n-double))
+        (multiple-value-bind (j p) (floor (random n-float))
           (if (<= p (aref prob j))
               j
               (aref alias j)))))
