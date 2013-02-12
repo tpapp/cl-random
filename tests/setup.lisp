@@ -5,6 +5,7 @@
         #:clunit
         #:cl-num-utils.elementwise
         #:cl-num-utils.matrix-shorthand
+        #:cl-num-utils.num=
         #:cl-random
         #:let-plus
         #:lla)
@@ -24,11 +25,18 @@
   (abs (* (- sample-mean mean)
           (sqrt (/ n variance)))))
 
-;; (defun same-sample-mean-variance (rv &key (n 100000) (z-band 4d0)
-;;                                           (var-band 0.1))
-;;   "Generate a sample of length N from RV, then use
+(defun same-univariate-moments (rv &key (n 100000) (z-band 4d0)
+                                        (var-band 0.1))
+  (let+ (((&accessors-r/o mean variance) rv)
+         (sample-moments (clnu.stats:central-sample-moments nil)))
+    (loop repeat n
+          do (clnu.stats:add sample-moments (draw rv)))
+    (and (< (z-score n mean variance (clnu.stats:mean sample-moments)) z-band)
+         (num= variance (clnu.stats:variance sample-moments) var-band))))
+
+;; (defun same-sample-mean-variance (rv &key )
+;;   "Generate a sample of length N from RV, then compare moments
 ;; COMPARE-SAMPLE-MEAN-VARIANCE.  For univariate and multivariate distributions."
-;;   (let+ (((&accessors-r/o mean variance) rv))
 ;;     (if (vectorp mean)
 ;;         (let ((moments (clnu:central-sample-moments
 ;;                         (aops:generate (funcall ))) )))
@@ -43,8 +51,7 @@
 ;;         (every (curry #'> z-band)
 ;;                (map 'vector (curry #'z-score n) mean (diagonal variance)
 ;;                     (mean sample)))
-;;         (and (< (z-score n mean variance (mean sample)) z-band)
-;;              (== variance (variance sample) var-band)))))
+;;         )))
 
 (defgeneric relative-difference (a b)
   (:documentation "Relative difference of A and B.")
