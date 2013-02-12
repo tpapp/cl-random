@@ -54,7 +54,6 @@
     (declare (type internal-float sum))
     (map 'float-vector
          (lambda (x)
-           (declare (type internal-float x))
            (assert (<= 0 x) (x) "Element is not positive.")
            (/ x sum))
          vector)))
