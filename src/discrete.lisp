@@ -2,22 +2,16 @@
 
 (in-package #:cl-random)
 
-(declaim (notinline draw-bernoulli-rational))
-(defun draw-bernoulli-rational (numerator denominator)
-  "Draw T with probability a/b, otherwise NIL."
-  (check-type denominator (integer 1))
-  (check-type numerator (integer 0))
-  (assert (<= numerator denominator))
-  (< (random denominator) numerator))
-
 (declaim (inline draw-bernoulli))
 (defun draw-bernoulli (p)
-  "Draw T with probability p, otherwise NIL."
+  "Return T with probability p, otherwise NIL.  Rationals are handled exactly."
   (etypecase p
     (integer (ecase p
                (0 0)
                (1 1)))
-    (rational (draw-bernoulli-rational (numerator p) (denominator p)))
+    (rational (let+ (((&accessors-r/o numerator denominator) p))
+                (assert (<= numerator denominator))
+                (< (random denominator) numerator)))
     (float (< (random (float 1 p)) p))))
 
 (defun distinct-random-integers (count limit)
