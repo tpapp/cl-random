@@ -50,12 +50,11 @@
 
 (defun as-float-probabilities (vector)
   "Normalize vector as probabilities, assert that all are positive, return them as a VECTOR-DOUBLE-FLOAT.  Vector is always copied."
-  (let ((sum (as-float (clnu:sum vector))))
-    (declare (type internal-float sum))
+  (let ((sum (clnu:sum vector)))
     (map 'float-vector
          (lambda (x)
            (assert (<= 0 x) (x) "Element is not positive.")
-           (/ x sum))
+           (as-float (/ x sum)))
          vector)))
 
 ;;;; Miscellaneous macros
