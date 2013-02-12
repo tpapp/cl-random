@@ -37,9 +37,7 @@
   :serial t
   :components
   ((:file "setup")
-   ;; (:file "log-infinity")
-   ;; (:file "special-functions")
-   ;; (:file "discrete")
+   (:file "discrete")
    ;; (:file "univariate")
    ;; (:file "continuous-time")
    ;; (:file "multivariate")
