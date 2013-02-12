@@ -77,4 +77,5 @@
    #:r-chi-square
    #:r-inverse-chi-square
    #:r-beta
-   #:r-discrete))
+   #:r-discrete
+   #:probabilities))
