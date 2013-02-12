@@ -686,9 +686,9 @@ x^(alpha-1)*(1-x)^(beta-1).")
   (cdf (i)
        ;; NIL gives the whole CDF
        (if i
-           (loop
+           (loop ; note: loop semantics takes care of indices outside support
              for p across probabilities
-             repeat i
+             repeat (1+ i)
              summing p)
            (clnu:cumulative-sum probabilities
                                 :result-type 'internal-float-vector)))
