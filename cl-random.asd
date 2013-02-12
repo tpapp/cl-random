@@ -5,6 +5,7 @@
   :version "0.0.1"
   :depends-on (#:alexandria
                #:anaphora
+               #:array-operations
                #:cl-num-utils
                #:cl-rmath
                #:let-plus
@@ -30,31 +31,18 @@
   :description "Unit tests for CL-RANDOM."
   :author "Tamas K Papp <tkpapp@gmail.com"
   :license "Same as CL-RANDOM, this is part of the CL-RANDOM library."
+  :depends-on (#:cl-random
+               #:clunit)
+  :pathname #P"tests/"
   :serial t
   :components
-  ((:module
-    "package-init"
-    :pathname #P"tests/"
-    :components
-    ((:file "package")))
-   (:module
-    "utilities-and-setup"
-    :pathname #P"tests/"
-    :components
-    ((:file "utilities")
-     (:file "setup")))
-   (:module
-    "tests"
-    :pathname #P"tests/"
-    :components
-    ((:file "log-infinity")
-     (:file "special-functions")
-     (:file "discrete")
-     (:file "univariate")
-     (:file "continuous-time")
-     (:file "multivariate")
-     (:file "regressions")
-     (:file "statistics"))))
-  :depends-on
-  (#:cl-utilities #:iterate #:metabang-bind #:anaphora #:lift #:cl-num-utils
-                  #:cl-random #:lla #:cl-num-utils-tests))
+  ((:file "setup")
+   ;; (:file "log-infinity")
+   ;; (:file "special-functions")
+   ;; (:file "discrete")
+   ;; (:file "univariate")
+   ;; (:file "continuous-time")
+   ;; (:file "multivariate")
+   ;; (:file "regressions")
+   ;; (:file "statistics")
+))
