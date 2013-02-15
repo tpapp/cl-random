@@ -8,7 +8,7 @@
   "Assert that the mean is a vector, and its dimensions are compatible with
 variance."
   (assert (and (vectorp mean)
-               (= (length mean) (nrow variance) (ncol variance)))))
+               (= (length mean) (aops:nrow variance) (aops:ncol variance)))))
 
 (defun normal-quadratic-form (x mean variance-left-sqrt)
   "Calculate (x-mean)^T variance^-1 (x-mean), given X, MEAN, and the left
@@ -133,14 +133,13 @@ square root of variance."
   "Draw a lower triangular matrix L such that (mm L t) has Wishart(I,nu)
 distribution (dimension k x k)."
   (let+ ((nu (coerce nu 'double-float))
-         (l (make-array (list k k) :element-type 'double-float)))
+         (l (make-array (list k k) :element-type 'internal-float)))
     (dotimes (i k)
       (setf (aref l i i) (sqrt (draw (r-chi-square (- nu i)))))
-      (iter
-        (for row-major-index :from (array-row-major-index l i 0)
-             :below (array-row-major-index l i i))
-        (setf (row-major-aref l row-major-index) (draw-standard-normal))))
-    (make-lower-triangular-matrix l)))
+      (loop for row-major-index from (array-row-major-index l i 0)
+            below (array-row-major-index l i i)
+            do (setf (row-major-aref l row-major-index) (draw-standard-normal))))
+    (lower-triangular-matrix l)))
 
 (define-rv r-wishart (nu scale)
   (:documentation "Wishart distribution with NU degrees of freedom and given
@@ -152,7 +151,7 @@ distribution (dimension k x k)."
    (k :type fixnum :documentation "dimension"))
   (let ((scale-left-sqrt (left-square-root scale)))
     (check-type nu (and fixnum (satisfies plusp)))
-    (make :nu nu :scale-left-sqrt scale-left-sqrt :k (nrow scale-left-sqrt)))
+    (make :nu nu :scale-left-sqrt scale-left-sqrt :k (aops:nrow scale-left-sqrt)))
   (mean () (e* nu (mm scale-left-sqrt t)))
   (draw (&key)
         (mm (mm scale-left-sqrt (draw-standard-wishart-left-sqrt nu k)) t)))
@@ -173,7 +172,7 @@ returned as decompositions.")
   (let ((inverse-scale-right-sqrt (right-square-root inverse-scale)))
     (check-type nu (and fixnum (satisfies plusp)))
     (make :nu nu :inverse-scale-right-sqrt inverse-scale-right-sqrt
-          :k (nrow inverse-scale-right-sqrt)))
+          :k (aops:nrow inverse-scale-right-sqrt)))
   (mean () (e/ (mm t inverse-scale-right-sqrt) (- nu k 1)))
   (draw (&key)
         (mm (transpose (solve (draw-standard-wishart-left-sqrt nu k)
@@ -185,18 +184,17 @@ returned as decompositions.")
 ;;; FIXME NOTHING is implemented, this is just a placeholder for now
 
 (define-rv r-dirichlet (alpha)
-  (:documentation "Dirichlet distribution.  The PDF p(X) (where X is in the
-unit simplex) is proportional to the product of the x^alpha for each
-coordinate.")
-  ((alpha :type double-float-vector :reader t
+  (:documentation "Dirichlet distribution.  The PDF p(X) (where X is in the unit simplex) is proportional to the product of the x^alpha for each coordinate.")
+  ((alpha :type float-vector :reader t
           :documentation "Vector of alpha's.")
-   (alpha0 :type double-float :documentation "Sum of alphas."))
-  (let ((alpha (as-double-float-vector alpha :copy? t)))
-    (make :alpha alpha :alpha0 (sum alpha)))
-  (sub (&rest selections)
-       (let+ (((selection) selections)
-              (selection (sub-resolve-selection selection (length alpha) t)))
-         (if (fixnum? selection)
-             (let ((alpha (aref alpha selection)))
-               (r-beta alpha (- alpha0 alpha)))
-             (error "Not implemented for multivariate selections.")))))
+   (alpha0 :type internal-float :documentation "Sum of alphas."))
+  (let ((alpha (as-float-vector alpha :copy? t)))
+    (make :alpha alpha :alpha0 (clnu:sum alpha)))
+  (cl-slice:slice
+   (&rest slices)
+   (let+ (((slice) slices)
+          (slice (cl-slice-dev:canonical-representation (length alpha) slice)))
+     (if (cl-slice-dev:singleton-representation? slice)
+         (let ((alpha (aref alpha slice)))
+           (r-beta alpha (- alpha0 alpha)))
+         (error "Not implemented for multivariate selections.")))))
