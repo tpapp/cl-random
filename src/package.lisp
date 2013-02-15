@@ -73,13 +73,14 @@
    #:probabilities)
   (:export
    #:r-uniformized-markov-jump)
-  (:export
-   #:r-multivariate-normal
-   #:variance-left-sqrt
-   #:r-multivariate-t
-   #:scaling-factor
-   #:s^2
-   #:r-wishart
-   #:scale-left-sqrt
-   #:r-inverse-wishart
-   #:inverse-scale-right-sqrt))
+  ;; (:export
+  ;;  #:r-multivariate-normal
+  ;;  #:variance-left-sqrt
+  ;;  #:r-multivariate-t
+  ;;  #:scaling-factor
+  ;;  #:s^2
+  ;;  #:r-wishart
+  ;;  #:scale-left-sqrt
+  ;;  #:r-inverse-wishart
+  ;;  #:inverse-scale-right-sqrt)
+)
