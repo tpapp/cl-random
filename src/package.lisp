@@ -5,6 +5,7 @@
         #:anaphora
         #:cl-num-utils.num=
         #:cl-random.internals
+        #:cl-slice
         #:let-plus
         #:lla)
   (:shadow #:mean #:variance)           ; also in ALEXANDRIA

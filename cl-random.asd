@@ -8,6 +8,7 @@
                #:array-operations
                #:cl-num-utils
                #:cl-rmath
+               #:cl-slice
                #:let-plus
                #:lla)
   :pathname #P"src/"
