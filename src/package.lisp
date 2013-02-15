@@ -3,6 +3,8 @@
   (:use #:common-lisp
         #:alexandria
         #:anaphora
+        #:cl-num-utils.elementwise
+        #:cl-num-utils.matrix
         #:cl-num-utils.num=
         #:cl-random.internals
         #:cl-slice
@@ -11,17 +13,6 @@
   (:shadow #:mean #:variance)           ; also in ALEXANDRIA
   ;;  ;; continuous-time
   ;;  #:r-uniformized-markov-jump
-  ;;  ;; multivariate
-  ;;  #:r-multivariate-normal
-  ;;  #:variance-left-sqrt
-  ;;  #:r-multivariate-t
-  ;;  #:scaling-factor
-  ;;  #:multivariate-normal
-  ;;  #:nu
-  ;;  #:r-wishart
-  ;;  #:scale-left-sqrt
-  ;;  #:r-inverse-wishart
-  ;;  #:inverse-scale-right-sqrt
   ;;  ;; statistics
   ;;  #:matrix-mean
   ;;  #:demean-matrix
@@ -79,4 +70,14 @@
    #:r-inverse-chi-square
    #:r-beta
    #:r-discrete
-   #:probabilities))
+   #:probabilities)
+  (:export
+   #:r-multivariate-normal
+   #:variance-left-sqrt
+   #:r-multivariate-t
+   #:scaling-factor
+   #:s^2
+   #:r-wishart
+   #:scale-left-sqrt
+   #:r-inverse-wishart
+   #:inverse-scale-right-sqrt))
