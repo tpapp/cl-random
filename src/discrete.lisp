@@ -26,8 +26,8 @@ high. Implements algorithm S from @cite{taocp3}, p 142."
   (let ((result (make-array count)))
     (loop with selected = 0
           for index below limit
-          do (when (draw-bernoulli-rational (- count selected)
-                                            (- limit index))
+          do (when (draw-bernoulli (/ (- count selected)
+                                      (- limit index)))
                (setf (aref result selected) index)
                (incf selected)
                (when (= selected limit)
