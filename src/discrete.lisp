@@ -30,6 +30,6 @@ high. Implements algorithm S from @cite{taocp3}, p 142."
                                       (- limit index)))
                (setf (aref result selected) index)
                (incf selected)
-               (when (= selected limit)
+               (when (= selected count)
                  (return))))
     result))
