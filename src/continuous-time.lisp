@@ -15,10 +15,10 @@ DURATION and JUMP, which return the two underlying random variables.")
    no-change
    (n :type fixnum :documentation "Number of states.")
    (keys :type (or null vector)))
-  (let+ ((rates (as-double-float-vector rates))
+  (let+ ((rates (as-float-vector rates))
          (keys (when keys (coerce keys 'vector)))
          (n (length rates))
-         (total-rate (sum rates))
+         (total-rate (clnu:sum rates))
          ((&values transition-rate probabilities)
           (if transition-rate
               (let ((no-change-rate (- transition-rate total-rate)))
@@ -26,7 +26,7 @@ DURATION and JUMP, which return the two underlying random variables.")
                         "Transition rate has to be >= the sum of rates.")
                 (values
                  transition-rate
-                 (concatenate 'double-float-vector rates (vector no-change-rate))))
+                 (concatenate 'float-vector rates (vector no-change-rate))))
               (values
                total-rate
                rates))))

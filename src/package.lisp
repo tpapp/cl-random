@@ -72,6 +72,8 @@
    #:r-discrete
    #:probabilities)
   (:export
+   #:r-uniformized-markov-jump)
+  (:export
    #:r-multivariate-normal
    #:variance-left-sqrt
    #:r-multivariate-t
