@@ -492,6 +492,11 @@ and c using the utility function above. "
            (return-from draw-standard-gamma1 (* d v))
            (go top)))))
 
+(declaim (inline log-gamma))
+(defun log-gamma (alpha)
+  "Log gamma function."
+  (rmath:lgammafn (coerce alpha 'double-float)))
+
 (define-rv r-gamma (alpha beta)
   (:documentation "Gamma(alpha,beta) distribution, with density proportional to x^(alpha-1) exp(-x*beta).  Alpha and beta are known as shape and inverse scale (or rate) parameters, respectively.")
   ((alpha :type internal-float :reader t)
@@ -507,7 +512,7 @@ and c using the utility function above. "
             ignore-constant?
             (with-floats (x)
               (- (+ (* alpha (log beta)) (* (1- alpha) (log x))) (* beta x)))
-            (- (cl-rmath:lgammafn alpha))))
+            (- (log-gamma alpha))))
   ;; note that R uses scale=1/beta
   (cdf (x)
        (with-floats (x)
@@ -555,7 +560,7 @@ and c using the utility function above. "
            (maybe-ignore-constant
             ignore-constant?
             (- (* (- (1+ alpha)) (log x)) (/ beta x))
-            (- (* alpha (log beta)) (cl-rmath:lgammafn alpha))))
+            (- (* alpha (log beta)) (log-gamma alpha))))
   (draw (&key)
         (if (< alpha 1d0)
             (let+ ((1+alpha (1+ alpha))
