@@ -111,7 +111,7 @@
     (check-probability q :both)
     (rmath:qnorm5 q mean sd 1 0)))
 
-(defconstant +normal-log-pdf-constant+ (as-float (/ (log (* 2 pi)) 2))
+(defconstant +normal-log-pdf-constant+ (as-float (/ (log (* 2 pi)) -2))
   "Normalizing constant for a standard normal PDF.")
 
 (define-rv r-normal (&optional (mean 0d0) (variance 1d0))

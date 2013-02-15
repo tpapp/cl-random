@@ -38,7 +38,7 @@
   :components
   ((:file "setup")
    (:file "discrete")
-   ;; (:file "univariate")
+   (:file "univariate")
    ;; (:file "continuous-time")
    ;; (:file "multivariate")
    ;; (:file "regressions")
