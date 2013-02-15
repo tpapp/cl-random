@@ -27,6 +27,11 @@
 
 (defun same-univariate-moments (rv &key (n 100000) (z-band 4d0)
                                         (var-band 0.1))
+  "Sample a univariate random variable N times and compare with expected moments, using
+
+  1. the z-score of the mean (should be below Z-BAND in absolute value),
+
+  2. the variance with NUM= using VAR-BAND as a tolerance."
   (let+ (((&accessors-r/o mean variance) rv)
          (sample-moments (clnu.stats:central-sample-moments nil)))
     (loop repeat n
