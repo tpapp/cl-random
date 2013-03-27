@@ -43,6 +43,7 @@
    #:distinct-random-integers
    #:distinct-random-integers-dense)
   (:export                              ; univariate
+   #:standard-deviation
    #:r-uniform
    #:left
    #:right
