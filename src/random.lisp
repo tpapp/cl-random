@@ -15,7 +15,8 @@ OPTIONS is (&key documentation instance), the default instance is a gensym.
 METHODS are (function-name lambda-list &body body), with (INSTANCE NAME) prepended to the lambda-list, ie the instance is accessible using INSTANCE.  Also, within BODY, slots are accessible by their names."
   (check-type name symbol)
   (let+ ((slots (mapcar #'ensure-list slots))
-         ((&key documentation (instance (make-gensym name)) num=-slots) options))
+         ((&key documentation (instance (make-gensym name)) num=-slots include)
+          options))
     (labels ((local-slots (body)
                ;; !! read-only slots could be expanded using LET for extra speed
                `(symbol-macrolet
@@ -33,7 +34,7 @@ METHODS are (function-name lambda-list &body body), with (INSTANCE NAME) prepend
                      (push (list reader nil slot-name) methods)))))
       ;; define form
       `(progn
-         (defstruct ,name
+         (defstruct (,name ,@(clnu:splice-when include `(:include ,include)))
            ,documentation
            ,@(loop for slot in slots collect
                       (let+ (((slot-name &key type read-only &allow-other-keys) slot))
@@ -52,12 +53,12 @@ METHODS are (function-name lambda-list &body body), with (INSTANCE NAME) prepend
          ,@(when num=-slots
              (with-unique-names (a b tolerance)
                `((defmethod num= ((,a ,name) (,b ,name)
-                                &optional (,tolerance *num=-tolerance*))
+                                  &optional (,tolerance *num=-tolerance*))
                    (and ,@(mapcar
                            (lambda (slot)
                              (let ((accessor (symbolicate name #\- slot)))
                                `(num= (,accessor ,a) (,accessor ,b)
-                                    ,tolerance)))
+                                      ,tolerance)))
                            num=-slots))))))))))
 
 (defgeneric draw (random-variable &key &allow-other-keys)
@@ -94,9 +95,6 @@ METHODS are (function-name lambda-list &body body), with (INSTANCE NAME) prepend
         (:left (assert (/= p 0) () msg))
         (:right (assert (/= p 1) () msg)))))
   t)
-
-(defgeneric quantile (random-variable q)
-  (:documentation "Quantile of RANDOM-VARIABLE at Q."))
 
 (defgeneric log-pdf (random-variable x &optional ignore-constant?)
   (:documentation "Log of probability distribution function of RANDOM-VARIABLE at X.  NIL corresponds to log(-infinity).  When IGNORE-CONSTANT?, the result may be shifted by an arbitrary real constant that does not change between calls of the same RANDOM-VARIABLE.  This may save computation, and is useful for MCMC methods, etc."))

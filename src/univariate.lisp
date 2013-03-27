@@ -1,5 +1,8 @@
 (in-package :cl-random)
 
+(defgeneric quantile (random-variable q)
+  (:documentation "Quantile of RANDOM-VARIABLE at Q."))
+
 ;;; Uniform distribution.
 
 (define-rv r-uniform (left right)
