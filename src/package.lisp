@@ -10,7 +10,7 @@
         #:cl-slice
         #:let-plus
         #:lla)
-  (:shadow #:mean #:variance)           ; also in ALEXANDRIA
+  (:shadow #:mean #:variance #:standard-deviation) ; also in ALEXANDRIA
   ;;  ;; continuous-time
   ;;  #:r-uniformized-markov-jump
   ;;  ;; statistics

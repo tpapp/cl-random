@@ -1,12 +1,21 @@
 (in-package :cl-random)
 
+(defstruct r-univariate
+  "Univariate distribution.")
+
 (defgeneric quantile (random-variable q)
   (:documentation "Quantile of RANDOM-VARIABLE at Q."))
+
+(defgeneric standard-deviation (random-variable)
+  (:documentation "Standard deviation of random variable.")
+  (:method ((randomv-variable r-univariate))
+    (sqrt (variance random-variable))))
 
 ;;; Uniform distribution.
 
 (define-rv r-uniform (left right)
-  (:documentation "Uniform(left,right) distribution.")
+  (:documentation "Uniform(left,right) distribution."
+   :include r-univariate)
   ((left :type internal-float :reader t)
    (right :type internal-float :reader t)
    (width :type internal-float))
@@ -47,7 +56,8 @@
   (- (log (- 1d0 (random 1d0)))))
 
 (define-rv r-exponential (rate)
-  (:documentation "Exponential(beta) distribution, with density beta*exp(-beta*x) on x >= 0.")
+  (:documentation "Exponential(beta) distribution, with density beta*exp(-beta*x) on x >= 0."
+   :include r-univariate)
   ((rate :type internal-float :reader t))
   (with-floats (rate)
     (assert (plusp rate))
@@ -118,7 +128,8 @@
   "Normalizing constant for a standard normal PDF.")
 
 (define-rv r-normal (&optional (mean 0d0) (variance 1d0))
-  (:documentation "Normal(mean,variance) distribution.")
+  (:documentation "Normal(mean,variance) distribution."
+   :include r-univariate)
   ((mean :type internal-float :reader t)
    (sd :type internal-float :reader t))
   (with-floats (mean variance)
@@ -183,7 +194,8 @@ N=1 the mean, and N=2 the variance.  where p(x) is the normal density.  When LEF
      2d0))
 
 (define-rv left-truncated-normal (mu sigma left)
-  (:documentation "Truncated normal distribution with given mu and sigma (corresponds to the mean and standard deviation in the untruncated case, respectively), on the interval [left, \infinity).")
+  (:documentation "Truncated normal distribution with given mu and sigma (corresponds to the mean and standard deviation in the untruncated case, respectively), on the interval [left, \infinity)."
+   :include r-univariate)
   ((mu :type internal-float)
    (sigma :type internal-float)
    (left :type internal-float)
@@ -384,7 +396,8 @@ N=1 the mean, and N=2 the variance.  where p(x) is the normal density.  When LEF
 ;;; Lognormal distribution
 
 (define-rv r-log-normal (log-mean log-sd)
-  (:documentation "Log-normal distribution with location log-mean and scale log-sd.")
+  (:documentation "Log-normal distribution with location log-mean and scale log-sd."
+   :include r-univariate)
   ((log-mean :type internal-float)
    (log-sd :type internal-float))
   (with-floats (log-mean log-sd)
@@ -440,7 +453,8 @@ checks that nu > 2, ie the variance is defined."
                      (/ (* nu (1- (expt r-square (/ -2d0 nu)))) r-square))))))
 
 (define-rv r-t (mean scale nu)
-  (:documentation "T(mean,scale,nu) random variate.")
+  (:documentation "T(mean,scale,nu) random variate."
+   :include r-univariate)
   ((mean :type internal-float :reader t)
    (scale :type internal-float :reader t)
    (nu :type internal-float :reader t))
@@ -501,7 +515,8 @@ and c using the utility function above. "
   (rmath:lgammafn (coerce alpha 'double-float)))
 
 (define-rv r-gamma (alpha beta)
-  (:documentation "Gamma(alpha,beta) distribution, with density proportional to x^(alpha-1) exp(-x*beta).  Alpha and beta are known as shape and inverse scale (or rate) parameters, respectively.")
+  (:documentation "Gamma(alpha,beta) distribution, with density proportional to x^(alpha-1) exp(-x*beta).  Alpha and beta are known as shape and inverse scale (or rate) parameters, respectively."
+   :include r-univariate)
   ((alpha :type internal-float :reader t)
    (beta :type internal-float :reader t))
   (with-floats (alpha beta)
@@ -546,6 +561,7 @@ and c using the utility function above. "
 (define-rv r-inverse-gamma (alpha beta)
   (:documentation "Inverse-Gamma(alpha,beta) distribution, with density p(x)
  proportional to x^(-alpha+1) exp(-beta/x)"
+   :include r-univariate
    :num=-slots (alpha beta))
   ((alpha :type internal-float :reader t)
    (beta :type internal-float :reader t))
@@ -614,7 +630,8 @@ INVERSE-GAMMA."
 
 (define-rv r-beta (alpha beta)
   (:documentation "Beta(alpha,beta) distribution, with density proportional to
-x^(alpha-1)*(1-x)^(beta-1).")
+x^(alpha-1)*(1-x)^(beta-1)."
+   :include r-univariate)
   ((alpha :type internal-float :reader t)
    (beta :type internal-float :reader t))
   (with-floats (alpha beta)
@@ -642,7 +659,9 @@ x^(alpha-1)*(1-x)^(beta-1).")
 ;;; quite slow.
 
 (define-rv r-discrete (probabilities)
-  (:documentation "Discrete probabilities." :instance instance)
+  (:documentation "Discrete probabilities."
+   :include r-univariate
+   :instance instance)
   ((probabilities :type float-vector :reader t)
    (prob :type float-vector)
    (alias :type (simple-array fixnum (*)))
