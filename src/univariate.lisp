@@ -8,7 +8,7 @@
 
 (defgeneric standard-deviation (random-variable)
   (:documentation "Standard deviation of random variable.")
-  (:method ((randomv-variable r-univariate))
+  (:method ((random-variable r-univariate))
     (sqrt (variance random-variable))))
 
 ;;; Uniform distribution.
