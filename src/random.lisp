@@ -61,16 +61,16 @@ METHODS are (function-name lambda-list &body body), with (INSTANCE NAME) prepend
                                       ,tolerance)))
                            num=-slots))))))))))
 
-(defgeneric draw (random-variable &key &allow-other-keys)
+(defgeneric draw (random-variable &key (rng *random-state*) &allow-other-keys)
   (:documentation "Draw random variates.  Can also be used on generators.")
   (:method ((function function) &key)
     (funcall function)))
 
-(defgeneric generator (random-variable)
+(defgeneric generator (random-variable &key rng)
   (:documentation "Return a closure that returns random draws.")
-  (:method (random-variable)
+  (:method (random-variable &key (rng *random-state*))
     (lambda ()
-      (draw random-variable))))
+      (draw random-variable :rng rng))))
 
 (defgeneric mean (random-variable)
   (:documentation "Mean of random variable."))

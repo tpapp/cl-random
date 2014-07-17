@@ -16,6 +16,7 @@
   :components
   ((:file "internals")
    (:file "package")
+   (:file "generator")
    (:file "random")
    (:file "discrete")
    (:file "univariate")

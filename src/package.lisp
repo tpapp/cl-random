@@ -29,6 +29,12 @@
   ;;  #:transform-y-x
   ;;  #:check-probability
   ;;  #:r-dirichlet)
+  (:export                              ; generators
+   #:random-number-generator
+   #:cl-rng
+   #:gsll-rng
+   #:next
+   #:clone
   (:export                              ; general interface
    #:draw
    #:generator

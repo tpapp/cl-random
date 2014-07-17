@@ -41,8 +41,8 @@
             (with-floats (p)
               (check-probability p)
               (+ left (* p (- right left)))))
-  (draw (&key)
-        (+ left (random width))))
+  (draw (&key (rng *random-state*))
+        (+ left (next rng width))))
 
 ;;; Exponential distribution.
 ;;;
@@ -50,10 +50,10 @@
 ;;; constructing other distributions.
 
 (declaim (inline draw-standard-exponential))
-(defun draw-standard-exponential ()
+(defun draw-standard-exponential (&key (rng *random-state*))
   "Return a random variable from the Exponential(1) distribution, which has density exp(-x)."
   ;; need 1-random, because there is a small but nonzero chance of getting a 0.
-  (- (log (- 1d0 (random 1d0)))))
+  (- (log (- 1d0 (next rng 1d0)))))
 
 (define-rv r-exponential (rate)
   (:documentation "Exponential(beta) distribution, with density beta*exp(-beta*x) on x >= 0."
@@ -75,8 +75,8 @@
             (with-floats (p)
               (check-probability p :right)
               (/ (log (- 1 p)) (- rate))))
-  (draw (&key)
-        (/ (draw-standard-exponential) rate)))
+  (draw (&key (rng *random-state*))
+        (/ (draw-standard-exponential :rng rng) rate)))
 
 
 ;;; Normal distribution (univariate).
@@ -85,15 +85,15 @@
 
 (declaim (ftype (function () internal-float) draw-standard-normal))
 
-(defun draw-standard-normal ()
+(defun draw-standard-normal (&key (rng *random-state*))
   "Draw a random number from N(0,1)."
   ;; Method from Leva (1992).  This is considered much better/faster than the Box-Muller method.
   (declare (optimize (speed 3) (safety 0))
            #+sbcl (sb-ext:muffle-conditions sb-ext:compiler-note))
   (tagbody
    top
-     (let* ((u (random 1d0))
-            (v (* 1.7156d0 (- (random 1d0) 0.5d0)))
+     (let* ((u (next rng 1d0))
+            (v (* 1.7156d0 (- (next rng 1d0) 0.5d0)))
             (x (- u 0.449871d0))
             (y (+ (abs v) 0.386595d0))
             (q (+ (expt x 2) (* y (- (* 0.19600d0 y) (* 0.25472d0 x))))))
@@ -101,7 +101,7 @@
                 (or (> q 0.27846d0)
                     (plusp (+ (expt v 2) (* 4 (expt u 2) (log u))))))
            (go top)
-           (return-from draw-standard-normal (/ v u))))))
+           (return-from draw-standard-normal (/ v u) :rng rng)))))
 
 (declaim (inline to-standard-normal from-standard-normal))
 
@@ -144,8 +144,8 @@
   (cdf (x) (cdf-normal% x mean sd))
   (quantile (q)
             (quantile-normal% q mean sd))
-  (draw (&key)
-        (from-standard-normal (draw-standard-normal) mean sd)))
+  (draw (&key (rng *random-state*))
+        (from-standard-normal (draw-standard-normal :rng rng) mean sd)))
 
 ;;; !! It is claimed in Marsaglia & Tsang (2000) that the ziggurat
 ;;; method is about 5-6 times faster than the above, mainly because of
@@ -182,11 +182,11 @@ N=1 the mean, and N=2 the variance.  where p(x) is the normal density.  When LEF
           (2 (+ (diff l2 r2) (- (expt sigma 2)
                                 (expt mean-mu 2) (* 2 mu mean-mu))))))))
 
-(defun draw-left-truncated-standard-normal (left alpha)
+(defun draw-left-truncated-standard-normal (left alpha &key (rng *random-state*))
   "Draw a left truncated standard normal, using an Exp(alpha,left) distribution.  LEFT is the standardized boundary, ALPHA should be calculated with TRUNCATED-NORMAL-OPTIMAL-ALPHA."
-  (try ((z (+ (/ (draw-standard-exponential) alpha) left))
+  (try ((z (+ (/ (draw-standard-exponential :rng rng) alpha) left))
         (rho (exp (* (expt (- z alpha) 2) -0.5))))
-       (<= (random 1d0) rho) z))
+       (<= (next rng 1d0) rho) z))
 
 (defun truncated-normal-optimal-alpha (left)
   "Calculate optimal exponential parameter for left-truncated normals.  LEFT is the standardized boundary."
@@ -224,9 +224,9 @@ N=1 the mean, and N=2 the variance.  where p(x) is the normal density.  When LEF
               (rmath:qnorm5 (+ (* q m0) (- 1 m0)) mu sigma 1 0)))
   (mean () (truncated-normal-moments% 1 mu sigma left nil))
   (variance () (truncated-normal-moments% 2 mu sigma left nil))
-  (draw (&key)
+  (draw (&key (rng *random-state*))
         (from-standard-normal
-         (draw-left-truncated-standard-normal left-standardized alpha)
+         (draw-left-truncated-standard-normal left-standardized alpha :rng rng)
          mu sigma)))
 
 (defun r-truncated-normal (left right &optional (mu 0d0) (sigma 1d0))
@@ -314,9 +314,9 @@ N=1 the mean, and N=2 the variance.  where p(x) is the normal density.  When LEF
 ;;   "Accept-reject algorithm based on uniforms.  Coefficient is
 ;; multiplying the exponential, and has to be based on exp(left^2) or
 ;; exp(right^2) as appropriate.  width is right-left."
-;;   (try ((z (+ left (random width)))
+;;   (try ((z (+ left (next rng width)))
 ;;         (rho (* coefficient (exp (* (expt z 2) -0.5d0)))))
-;;        (<= (random 1d0) rho) z))
+;;        (<= (next rng 1d0) rho) z))
 
 ;; (define-cached-slot (rv truncated-normal generator)
 ;;   (declare (optimize (speed 3)))
@@ -424,8 +424,8 @@ N=1 the mean, and N=2 the variance.  where p(x) is the normal density.  When LEF
             (if (zerop q)
                 0d0
                 (exp (quantile-normal% q log-mean log-sd))))
-  (draw (&key)
-        (exp (from-standard-normal (draw-standard-normal) log-mean log-sd))))
+  (draw (&key (rng *random-state*))
+        (exp (from-standard-normal (draw-standard-normal :rng rng) log-mean log-sd))))
 
 
 ;;; Student's T distribution
@@ -438,15 +438,15 @@ checks that nu > 2, ie the variance is defined."
   (assert (< 2d0 nu))
   (/ nu (- nu 2d0)))
 
-(defun draw-standard-t (nu)
+(defun draw-standard-t (nu &key (rng *random-state*))
   "Draw a standard T random variate, with NU degrees of freedom."
   ;; !! algorithm from Bailey (1994), test Marsaglia (1984) to see if it is
   ;; !! faster
   (declare (internal-float nu)
            (optimize (speed 3))
            #+sbcl (sb-ext:muffle-conditions sb-ext:compiler-note))
-  (try ((v1 (1- (random 2d0)))
-        (v2 (1- (random 2d0)))
+  (try ((v1 (1- (next rng 2d0)))
+        (v2 (1- (next rng 2d0)))
         (r-square (+ (expt v1 2) (expt v2 2))))
        (<= r-square 1)
        (* v1 (sqrt (the (internal-float 0d0)
@@ -465,8 +465,8 @@ checks that nu > 2, ie the variance is defined."
   (variance ()
             (* (expt scale 2)
                (t-scale-to-variance-coefficient nu)))
-  (draw (&key)
-        (from-standard-normal (draw-standard-t nu) mean scale)))
+  (draw (&key (rng *random-state*))
+        (from-standard-normal (draw-standard-t nu :rng rng) mean scale)))
 
 
 ;;; Gamma distribution.
@@ -484,7 +484,7 @@ form a gamma distribution."
          (c (/ (sqrt (* 9 d)))))
     (values d c)))
 
-(defun draw-standard-gamma1 (alpha d c)
+(defun draw-standard-gamma1 (alpha d c &key (rng *random-state*))
   "Return a standard gamma variate (beta=1) with shape parameter alpha
 >= 1.  See Marsaglia and Tsang (2004).  You should precalculate d
 and c using the utility function above. "
@@ -497,12 +497,12 @@ and c using the utility function above. "
    top
      (let+ (((&values x v) (prog ()     ; loop was not optimized for some reason
                             top
-                              (let* ((x (draw-standard-normal))
+                              (let* ((x (draw-standard-normal :rng rng))
                                      (v (expt (1+ (* c x)) 3)))
                                 (if (plusp v)
                                     (return (values x v))
                                     (go top)))))
-            (u (random 1d0))
+            (u (next rng 1d0))
             (xsq (expt x 2)))
        (if (or (< (+ u (* 0.0331 (expt xsq 2))) 1d0)
                (< (log u) (+ (* 0.5 xsq) (* d (+ (- 1d0 v) (log v))))))
@@ -541,7 +541,7 @@ and c using the utility function above. "
               (check-probability q :right)
               (with-fp-traps-masked
                 (rmath:qgamma q alpha (/ beta) 1 0))))
-  (draw (&key)
+  (draw (&key (rng *random-state*))
         ;; !! could optimize this by saving slots
         (if (< alpha 1d0)
             (let+ ((1+alpha (1+ alpha))
@@ -549,11 +549,11 @@ and c using the utility function above. "
                    ((&values d c) (standard-gamma1-d-c 1+alpha)))
               ;; use well known-transformation, see p 371 of Marsaglia and
               ;; Tsang (2000)
-              (/ (* (expt (random 1d0) 1/alpha)
-                    (draw-standard-gamma1 1+alpha d c))
+              (/ (* (expt (next rng 1d0) 1/alpha)
+                    (draw-standard-gamma1 1+alpha d c :rng rng))
                  beta))
             (let+ (((&values d c) (standard-gamma1-d-c alpha)))
-              (/ (draw-standard-gamma1 alpha d c) beta)))))
+              (/ (draw-standard-gamma1 alpha d c :rng rng) beta)))))
 
 
 ;;; Inverse gamma distribution.
@@ -580,7 +580,7 @@ and c using the utility function above. "
             ignore-constant?
             (- (* (- (1+ alpha)) (log x)) (/ beta x))
             (- (* alpha (log beta)) (log-gamma alpha))))
-  (draw (&key)
+  (draw (&key (rng *random-state*))
         (if (< alpha 1d0)
             (let+ ((1+alpha (1+ alpha))
                    (1/alpha (/ alpha))
@@ -588,10 +588,10 @@ and c using the utility function above. "
               ;; use well known-transformation, see p 371 of Marsaglia and
               ;; Tsang (2000)
               (/ beta
-                 (* (expt (random 1d0) 1/alpha)
-                    (draw-standard-gamma1 1+alpha d c))))
+                 (* (expt (next rng 1d0) 1/alpha)
+                    (draw-standard-gamma1 1+alpha d c :rng rng))))
             (let+ (((&values d c) (standard-gamma1-d-c alpha)))
-              (/ beta (draw-standard-gamma1 alpha d c))))))
+              (/ beta (draw-standard-gamma1 alpha d c :rng rng))))))
 
 
 ;;; Chi-square and inverse-chi-square distribution (both scaled).
@@ -641,9 +641,9 @@ x^(alpha-1)*(1-x)^(beta-1)."
   (mean () (/ alpha (+ alpha beta)))
   (variance () (let ((sum (+ alpha beta)))
                  (/ (* alpha beta) (* (expt sum 2) (1+ sum)))))
-  (draw (&key)
-        (let ((alpha (draw (r-gamma alpha 1)))
-              (beta (draw (r-gamma beta 1))))
+  (draw (&key (rng *random-state*))
+        (let ((alpha (draw (r-gamma alpha 1) :rng rng))
+              (beta (draw (r-gamma beta 1) :rng rng)))
           (/ alpha (+ alpha beta))))
   (quantile (q)
             (with-floats (q)
@@ -719,8 +719,8 @@ x^(alpha-1)*(1-x)^(beta-1)."
              summing p)
            (clnu:cumulative-sum probabilities
                                 :result-type 'internal-float-vector)))
-  (draw (&key)
-        (multiple-value-bind (j p) (floor (random n-float))
+  (draw (&key (rng *random-state*))
+        (multiple-value-bind (j p) (floor (next rng n-float))
           (if (<= p (aref prob j))
               j
               (aref alias j)))))
