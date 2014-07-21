@@ -101,7 +101,7 @@
                 (or (> q 0.27846d0)
                     (plusp (+ (expt v 2) (* 4 (expt u 2) (log u))))))
            (go top)
-           (return-from draw-standard-normal (/ v u) :rng rng)))))
+           (return-from draw-standard-normal (/ v u))))))
 
 (declaim (inline to-standard-normal from-standard-normal))
 

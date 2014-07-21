@@ -34,7 +34,7 @@
    #:cl-rng
    #:gsll-rng
    #:next
-   #:clone
+   #:clone)
   (:export                              ; general interface
    #:draw
    #:generator
@@ -78,7 +78,7 @@
    #:r-beta
    #:r-discrete
    #:probabilities)
-  (:export
+  (:export                              ; continuous-time
    #:r-uniformized-markov-jump)
   ;; (:export
   ;;  #:r-multivariate-normal

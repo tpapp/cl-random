@@ -9,6 +9,7 @@
                #:cl-num-utils
                #:cl-rmath
                #:cl-slice
+	       #:gsll
                #:let-plus
                #:lla)
   :pathname #P"src/"
@@ -16,7 +17,7 @@
   :components
   ((:file "internals")
    (:file "package")
-   (:file "generator")
+   (:file "random-number-generator")
    (:file "random")
    (:file "discrete")
    (:file "univariate")

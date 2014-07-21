@@ -2,17 +2,24 @@
 
 (in-package #:cl-random)
 
+;; TODO: Move bernoulli to univeriate, and implement as an rv. Idem for binomial, geometric, negative-binomial, poisson, ...
+
 (declaim (inline draw-bernoulli))
 (defun draw-bernoulli (p &key (rng *random-state*))
   "Return T with probability p, otherwise NIL.  Rationals are handled exactly."
   (etypecase p
     (integer (ecase p
-               (0 0)
-               (1 1)))
+               (0 NIL)
+               (1 T)))
     (rational (let+ (((&accessors-r/o numerator denominator) p))
                 (assert (<= numerator denominator))
                 (< (next rng denominator) numerator)))
     (float (< (next rng (float 1 p)) p))))
+
+(defun draw-bernoulli-bit (p &key (rng *random-state*))
+  (if (draw-bernoulli p :rng rng) 1 0))
+
+;; TODO: Add shuffle! and elt (see :alexandria).
 
 (defun distinct-random-integers (count limit &key (rng *random-state*))
   "Return a vector of COUNT distinct random integers, in increasing order,
