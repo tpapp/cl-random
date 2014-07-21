@@ -40,6 +40,7 @@
   :serial t
   :components
   ((:file "setup")
+   (:file "random-number-generator")
    (:file "discrete")
    (:file "univariate")
    (:file "continuous-time")

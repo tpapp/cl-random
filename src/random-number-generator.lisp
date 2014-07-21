@@ -69,11 +69,11 @@
 
 (defmethod next ((rng gsll-rng) (limit fixnum) &optional pos)
   (do ((r (gsll:sample (state rng) :uniform-fixnum :upperbound limit)))
-      ((not (and pos (zerop r))) (float r 0d0))))
+      ((not (and pos (zerop r))) r)))
 
 (defmethod next ((rng gsll-rng) (limit float) &optional pos)
   (do ((r (gsll:sample (state rng) :flat :a 0.0 :b limit)))
-      ((not (and pos (zerop r))) (float r 0d0))))
+      ((not (and pos (zerop r))) (float r limit))))
 
 
 ;; TODO: Add MT19337 from cl-randist.
