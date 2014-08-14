@@ -42,7 +42,7 @@
               (check-probability p)
               (+ left (* p (- right left)))))
   (draw (&key (rng *random-state*))
-        (+ left (next rng width))))
+        (+ left (next width rng))))
 
 ;;; Exponential distribution.
 ;;;
@@ -53,7 +53,7 @@
 (defun draw-standard-exponential (&key (rng *random-state*))
   "Return a random variable from the Exponential(1) distribution, which has density exp(-x)."
   ;; need 1-random, because there is a small but nonzero chance of getting a 0.
-  (- (log (- 1d0 (next rng 1d0)))))
+  (- (log (- 1d0 (next 1d0 rng)))))
 
 (define-rv r-exponential (rate)
   (:documentation "Exponential(beta) distribution, with density beta*exp(-beta*x) on x >= 0."
@@ -92,8 +92,8 @@
            #+sbcl (sb-ext:muffle-conditions sb-ext:compiler-note))
   (tagbody
    top
-     (let* ((u (next rng 1d0))
-            (v (* 1.7156d0 (- (next rng 1d0) 0.5d0)))
+     (let* ((u (next 1d0 rng))
+            (v (* 1.7156d0 (- (next 1d0 rng) 0.5d0)))
             (x (- u 0.449871d0))
             (y (+ (abs v) 0.386595d0))
             (q (+ (expt x 2) (* y (- (* 0.19600d0 y) (* 0.25472d0 x))))))
@@ -186,7 +186,7 @@ N=1 the mean, and N=2 the variance.  where p(x) is the normal density.  When LEF
   "Draw a left truncated standard normal, using an Exp(alpha,left) distribution.  LEFT is the standardized boundary, ALPHA should be calculated with TRUNCATED-NORMAL-OPTIMAL-ALPHA."
   (try ((z (+ (/ (draw-standard-exponential :rng rng) alpha) left))
         (rho (exp (* (expt (- z alpha) 2) -0.5))))
-       (<= (next rng 1d0) rho) z))
+       (<= (next 1d0 rng) rho) z))
 
 (defun truncated-normal-optimal-alpha (left)
   "Calculate optimal exponential parameter for left-truncated normals.  LEFT is the standardized boundary."
@@ -314,9 +314,9 @@ N=1 the mean, and N=2 the variance.  where p(x) is the normal density.  When LEF
 ;;   "Accept-reject algorithm based on uniforms.  Coefficient is
 ;; multiplying the exponential, and has to be based on exp(left^2) or
 ;; exp(right^2) as appropriate.  width is right-left."
-;;   (try ((z (+ left (next rng width)))
+;;   (try ((z (+ left (next width rng)))
 ;;         (rho (* coefficient (exp (* (expt z 2) -0.5d0)))))
-;;        (<= (next rng 1d0) rho) z))
+;;        (<= (next 1d0 rng) rho) z))
 
 ;; (define-cached-slot (rv truncated-normal generator)
 ;;   (declare (optimize (speed 3)))
@@ -445,8 +445,8 @@ checks that nu > 2, ie the variance is defined."
   (declare (internal-float nu)
            (optimize (speed 3))
            #+sbcl (sb-ext:muffle-conditions sb-ext:compiler-note))
-  (try ((v1 (1- (next rng 2d0)))
-        (v2 (1- (next rng 2d0)))
+  (try ((v1 (1- (next 2d0 rng)))
+        (v2 (1- (next 2d0 rng)))
         (r-square (+ (expt v1 2) (expt v2 2))))
        (<= r-square 1)
        (* v1 (sqrt (the (internal-float 0d0)
@@ -502,7 +502,7 @@ and c using the utility function above. "
                                 (if (plusp v)
                                     (return (values x v))
                                     (go top)))))
-            (u (next rng 1d0))
+            (u (next 1d0 rng))
             (xsq (expt x 2)))
        (if (or (< (+ u (* 0.0331 (expt xsq 2))) 1d0)
                (< (log u) (+ (* 0.5 xsq) (* d (+ (- 1d0 v) (log v))))))
@@ -549,7 +549,7 @@ and c using the utility function above. "
                    ((&values d c) (standard-gamma1-d-c 1+alpha)))
               ;; use well known-transformation, see p 371 of Marsaglia and
               ;; Tsang (2000)
-              (/ (* (expt (next rng 1d0) 1/alpha)
+              (/ (* (expt (next 1d0 rng) 1/alpha)
                     (draw-standard-gamma1 1+alpha d c :rng rng))
                  beta))
             (let+ (((&values d c) (standard-gamma1-d-c alpha)))
@@ -588,7 +588,7 @@ and c using the utility function above. "
               ;; use well known-transformation, see p 371 of Marsaglia and
               ;; Tsang (2000)
               (/ beta
-                 (* (expt (next rng 1d0) 1/alpha)
+                 (* (expt (next 1d0 rng) 1/alpha)
                     (draw-standard-gamma1 1+alpha d c :rng rng))))
             (let+ (((&values d c) (standard-gamma1-d-c alpha)))
               (/ beta (draw-standard-gamma1 alpha d c :rng rng))))))
@@ -720,7 +720,7 @@ x^(alpha-1)*(1-x)^(beta-1)."
            (clnu:cumulative-sum probabilities
                                 :result-type 'internal-float-vector)))
   (draw (&key (rng *random-state*))
-        (multiple-value-bind (j p) (floor (next rng n-float))
+        (multiple-value-bind (j p) (floor (next n-float rng))
           (if (<= p (aref prob j))
               j
               (aref alias j)))))

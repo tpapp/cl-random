@@ -18,7 +18,7 @@
     (and (< (z-score n mean variance (clnu.stats:mean sample-moments)) z-band)
          (num= variance (clnu.stats:variance sample-moments) var-band))))
 
-(defsuite random-number-generator-tests (tests))
+(defsuite generator-tests (tests))
 
 (deftest cl-rng-tests (random-number-generator-tests)
   (assert-true (valid-rng (make-instance 'cl-rng) :limit 100))

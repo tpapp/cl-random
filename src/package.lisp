@@ -30,11 +30,13 @@
   ;;  #:check-probability
   ;;  #:r-dirichlet)
   (:export                              ; generators
-   #:random-number-generator
-   #:cl-rng
-   #:gsll-rng
+   #:make-generator
    #:next
-   #:clone)
+   #:generator
+   #:transputer
+   #:randu
+   #:borosh13
+   #:waterman14)
   (:export                              ; general interface
    #:draw
    #:generator

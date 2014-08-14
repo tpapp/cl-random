@@ -17,7 +17,8 @@
   :components
   ((:file "internals")
    (:file "package")
-   (:file "random-number-generator")
+   (:file "generator")
+   (:file "simple-multiplicative-congruential-generators")
    (:file "random")
    (:file "discrete")
    (:file "univariate")
@@ -40,7 +41,7 @@
   :serial t
   :components
   ((:file "setup")
-   (:file "random-number-generator")
+  ; (:file "random-number-generator")
    (:file "discrete")
    (:file "univariate")
    (:file "continuous-time")

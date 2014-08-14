@@ -6,15 +6,15 @@
 
 (declaim (inline draw-bernoulli))
 (defun draw-bernoulli (p &key (rng *random-state*))
-  "Return T with probability p, otherwise NIL.  Rationals are handled exactly."
+  "Return T with probability p, otherwise NIL. Rationals are handled exactly."
   (etypecase p
     (integer (ecase p
                (0 NIL)
                (1 T)))
     (rational (let+ (((&accessors-r/o numerator denominator) p))
                 (assert (<= numerator denominator))
-                (< (next rng denominator) numerator)))
-    (float (< (next rng (float 1 p)) p))))
+                (< (next denominator rng) numerator)))
+    (float (< (next (float 1 p) rng) p))))
 
 (defun draw-bernoulli-bit (p &key (rng *random-state*))
   (if (draw-bernoulli p :rng rng) 1 0))
