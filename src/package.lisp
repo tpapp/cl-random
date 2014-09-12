@@ -48,6 +48,9 @@
    #:pdf)
   (:export                              ; discrete
    #:draw-bernoulli
+   #:draw-binomial
+   #:draw-geometric
+   #:draw-poisson
    #:distinct-random-integers
    #:distinct-random-integers-dense)
   (:export                              ; univariate

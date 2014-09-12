@@ -33,6 +33,8 @@ binomial distribution, with the rejection probability 2*TAIL, symmetrically."
   (assert-true (same-proportion? 0.1 10000
 				 (lambda () (draw-bernoulli 0.10)))))
 
+;; TODO: Test binomial, geometric, and poisson. What's the best test?
+
 (deftest distinct-random-integers (tests)
   (flet ((test (number count limit &key (n-draws 10000))
            "Test (DISTRINCT-RANDOM-INTEGERS COUNT LIMIT) by counting the times
