@@ -4,43 +4,43 @@
 
 ;; TODO: Move bernoulli to univeriate, and implement as an rv. Idem for binomial, geometric, negative-binomial, poisson, ...
 
-(declaim (inline draw-bernoulli))
-(defun draw-bernoulli (p &key (rng *random-state*))
-  "Return T with probability p, otherwise NIL. Rationals are handled exactly."
-  (etypecase p
-    (integer (ecase p
-               (0 NIL)
-               (1 T)))
-    (rational (let+ (((&accessors-r/o numerator denominator) p))
-                (assert (<= numerator denominator))
-                (< (next denominator rng) numerator)))
-    (float (< (next (float 1 p) rng) p))))
+;; (declaim (inline draw-bernoulli))
+;; (defun draw-bernoulli (p &key (rng *random-state*))
+;;   "Return T with probability p, otherwise NIL. Rationals are handled exactly."
+;;   (etypecase p
+;;     (integer (ecase p
+;;                (0 NIL)
+;;                (1 T)))
+;;     (rational (let+ (((&accessors-r/o numerator denominator) p))
+;;                 (assert (<= numerator denominator))
+;;                 (< (next denominator rng) numerator)))
+;;     (float (< (next (float 1 p) rng) p))))
 
-(defun draw-bernoulli-bit (p &key (rng *random-state*))
-  (if (draw-bernoulli p :rng rng) 1 0))
+;; (defun draw-bernoulli-bit (p &key (rng *random-state*))
+;;   (if (draw-bernoulli p :rng rng) 1 0))
 
-(declaim (inline draw-binomial))
-(defun draw-binomial (p n &key (rng *random-state*))
-  "Return the number of successes out of N bernoulli trials with probability of success P."
-  (let ((successes 0))
-    (dotimes (i n successes)
-      (when (draw-bernoulli p :rng rng)
-	(incf successes)))))
+;; (declaim (inline draw-binomial))
+;; (defun draw-binomial (p n &key (rng *random-state*))
+;;   "Return the number of successes out of N bernoulli trials with probability of success P."
+;;   (let ((successes 0))
+;;     (dotimes (i n successes)
+;;       (when (draw-bernoulli p :rng rng)
+;; 	(incf successes)))))
 
-(declaim (inline draw-geometric))
-(defun draw-geometric (p &key (rng *random-state*))
-  "Return the number of Bernoulli trials, with probability of success P, that were needed to reach the first success. This is >= 1."
-    (do ((trials 1 (1+ trials)))
-	((draw-bernoulli p :rng rng) trials)))
+;; (declaim (inline draw-geometric))
+;; (defun draw-geometric (p &key (rng *random-state*))
+;;   "Return the number of Bernoulli trials, with probability of success P, that were needed to reach the first success. This is >= 1."
+;;     (do ((trials 1 (1+ trials)))
+;; 	((draw-bernoulli p :rng rng) trials)))
 
-(declaim (inline draw-poison))
-(defun draw-poisson (lamda &key (rng *random-state*))
-  "Return the number of events that occur with probability LAMDA. The algorithm is from Donald E. Knuth (1969). Seminumerical Algorithms. The Art of Computer Programming, Volume 2. Addison Wesley. WARNING: It's simple but only linear in the return value K and is numerically unstable for large LAMDA."
-  (do ((l (exp (- lamda)))
-       (k 0 (1+ k))
-       (p 1d0 (* p u))
-       (u (next 1d0 rng) (next 1d0 rng)))
-      ((<= p l) k)))
+;; (declaim (inline draw-poison))
+;; (defun draw-poisson (lamda &key (rng *random-state*))
+;;   "Return the number of events that occur with probability LAMDA. The algorithm is from Donald E. Knuth (1969). Seminumerical Algorithms. The Art of Computer Programming, Volume 2. Addison Wesley. WARNING: It's simple but only linear in the return value K and is numerically unstable for large LAMDA."
+;;   (do ((l (exp (- lamda)))
+;;        (k 0 (1+ k))
+;;        (p 1d0 (* p u))
+;;        (u (next 1d0 rng) (next 1d0 rng)))
+;;       ((<= p l) k)))
 
 ;; TODO: Add shuffle! and elt (see :alexandria).
 

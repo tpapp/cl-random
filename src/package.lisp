@@ -47,10 +47,6 @@
    #:log-pdf
    #:pdf)
   (:export                              ; discrete
-   #:draw-bernoulli
-   #:draw-binomial
-   #:draw-geometric
-   #:draw-poisson
    #:distinct-random-integers
    #:distinct-random-integers-dense)
   (:export                              ; univariate
@@ -82,7 +78,12 @@
    #:r-inverse-chi-square
    #:r-beta
    #:r-discrete
-   #:probabilities)
+   #:probabilities
+   #:draw-bernoulli
+   #:r-bernoulli
+   #:draw-binomial
+   #:draw-geometric
+   #:draw-poisson)
   (:export                              ; continuous-time
    #:r-uniformized-markov-jump)
   ;; (:export
