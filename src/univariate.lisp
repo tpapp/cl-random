@@ -772,26 +772,20 @@ of success P."
       (when (draw-bernoulli p :rng rng)
 	(incf successes)))))
 
-;; ;; (defun binomial-pmf (x p n)
-;; ;;   "Return the probability 
-
-;; (define-rv r-binomial (p n)
-;;   (:documentation "Binomial(p,n) distribution, with N Bernoulli trials with 
-;; probability P for success."
-;;    :include r-univariate)
-;;   ((p :type internal-float :reader T)
-;;    (n :type fixnum :reader T)
-;;   (with-floats (p)
-;;     (check-probability p)
-;;     (make :p p :n n))
-;;   (mean () (* n p))
-;;   (variance () (* n p (- 1 p)))
-;;   (draw (&key (rng *random-state*))
-;;         (draw-binomial p n :rng rng))))
-;;   ;; (cdf (x)
-;;   ;;      (cond ((< x 0) 0)
-;;   ;; 	     ((< x 1) (- 1 p))
-;;   ;; 	     (T 1))))
+(define-rv r-binomial (p n)
+  (:documentation "Binomial(p,n) distribution, with N Bernoulli trials with 
+probability P for success."
+   :include r-univariate)
+  ((p :type internal-float :reader T)
+   (n :type integer :reader T))
+  (with-floats (p)
+    (check-probability p)
+    (assert (plusp n))
+    (make :p p :n n))
+  (mean () (* n p))
+  (variance () (* n p (- 1 p)))
+  (draw (&key (rng *random-state*))
+        (draw-binomial p n :rng rng)))
 
 
 

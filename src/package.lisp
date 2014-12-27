@@ -82,6 +82,7 @@
    #:draw-bernoulli
    #:r-bernoulli
    #:draw-binomial
+   #:r-binomial
    #:draw-geometric
    #:draw-poisson)
   (:export                              ; continuous-time
