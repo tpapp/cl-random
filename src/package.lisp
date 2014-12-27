@@ -84,6 +84,7 @@
    #:draw-binomial
    #:r-binomial
    #:draw-geometric
+   #:r-geometric
    #:draw-poisson)
   (:export                              ; continuous-time
    #:r-uniformized-markov-jump)

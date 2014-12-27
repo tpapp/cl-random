@@ -797,6 +797,18 @@ probability P for success."
     (do ((trials 1 (1+ trials)))
 	((draw-bernoulli p :rng rng) trials)))
 
+(define-rv r-geometric (p)
+  (:documentation "Geometric(p) distribution."
+   :include r-univariate)
+  ((p :type internal-float :reader T))
+  (with-floats (p)
+    (check-probability p)
+    (make :p p))
+  (mean () (/ p))
+  (variance () (/ (- 1 p) (* p p)))
+  (draw (&key (rng *random-state*))
+	(draw-geometric p :rng rng)))
+
 
 
 ;;; Poisson distribution
