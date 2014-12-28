@@ -22,14 +22,18 @@ binomial distribution, with the rejection probability 2*TAIL, symmetrically."
             (float (/ result count) 1d0))))
 
 (deftest bernoulli-tests (tests)
+  (assert-false (draw-bernoulli 0))
+  (assert-true (draw-bernoulli 1))
   (assert-true (same-proportion? 0.3 10000
-                            (lambda () (draw-bernoulli 3/10))))
+				 (lambda () (draw-bernoulli 3/10))))
   (assert-true (same-proportion? 1/31 100000
-                            (lambda () (draw-bernoulli 1/31))))
+				 (lambda () (draw-bernoulli 1/31))))
   (assert-true (same-proportion? 0.99d0 10000
-                            (lambda () (draw-bernoulli 0.99d0))))
+				 (lambda () (draw-bernoulli 0.99d0))))
   (assert-true (same-proportion? 0.1 10000
-                            (lambda () (draw-bernoulli 0.10)))))
+				 (lambda () (draw-bernoulli 0.10)))))
+
+;; TODO: Test binomial, geometric, and poisson. What's the best test?
 
 (deftest distinct-random-integers (tests)
   (flet ((test (number count limit &key (n-draws 10000))

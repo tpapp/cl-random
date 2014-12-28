@@ -29,6 +29,14 @@
   ;;  #:transform-y-x
   ;;  #:check-probability
   ;;  #:r-dirichlet)
+  (:export                              ; generators
+   #:make-generator
+   #:next
+   #:generator
+   #:transputer
+   #:randu
+   #:borosh13
+   #:waterman14)
   (:export                              ; general interface
    #:draw
    #:generator
@@ -39,7 +47,6 @@
    #:log-pdf
    #:pdf)
   (:export                              ; discrete
-   #:draw-bernoulli
    #:distinct-random-integers
    #:distinct-random-integers-dense)
   (:export                              ; univariate
@@ -71,8 +78,15 @@
    #:r-inverse-chi-square
    #:r-beta
    #:r-discrete
-   #:probabilities)
-  (:export
+   #:probabilities
+   #:draw-bernoulli
+   #:r-bernoulli
+   #:draw-binomial
+   #:r-binomial
+   #:draw-geometric
+   #:r-geometric
+   #:draw-poisson)
+  (:export                              ; continuous-time
    #:r-uniformized-markov-jump)
   ;; (:export
   ;;  #:r-multivariate-normal
