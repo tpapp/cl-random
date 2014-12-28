@@ -749,7 +749,7 @@ failure."
    :include r-univariate)
   ((p :type internal-float :reader T))
   (with-floats (p)
-    (check-probability p)
+    (check-probability p :both)
     (make :p p))
   (mean () p)
   (variance () (* p (- 1 p)))
@@ -759,6 +759,7 @@ failure."
        (cond ((< x 0) 0)
 	     ((< x 1) (- 1 p))
 	     (T 1))))
+
 
 
 ;;; Binomial distribution
@@ -802,7 +803,7 @@ probability P for success."
    :include r-univariate)
   ((p :type internal-float :reader T))
   (with-floats (p)
-    (check-probability p)
+    (check-probability p :left)
     (make :p p))
   (mean () (/ p))
   (variance () (/ (- 1 p) (* p p)))

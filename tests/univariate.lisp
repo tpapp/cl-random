@@ -212,3 +212,28 @@
 (deftest discrete-draws (univariate-tests)
   (assert-true (< (discrete-deviation (r-discrete #(1/6 1/2 1/3))) 0.01))
   (assert-true (< (discrete-deviation (r-discrete #(1/6 1/2 1/3 9 17 21))) 0.05)))
+
+;; Bernoulli distribution
+
+(deftest bernoulli-draws (univariate-tests)
+  (assert-true (same-univariate-moments (r-bernoulli 0.001)))
+  (assert-true (same-univariate-moments (r-bernoulli 0.3)))
+  (assert-true (same-univariate-moments (r-bernoulli 1/3)))
+  (assert-true (same-univariate-moments (r-bernoulli 0.8))))
+
+;; binomial distribution
+
+(deftest binomial-draws (univariate-tests)
+  (assert-true (same-univariate-moments (r-binomial 0.2 100)))
+  (assert-true (same-univariate-moments (r-binomial 0.1 1000)))
+  (assert-true (same-univariate-moments (r-binomial 0.9 200)))
+  (assert-true (same-univariate-moments (r-binomial 0.5 50))))
+
+;; geometric distribution
+
+(deftest geometric-draws (univariate-tests)
+  ;; TODO: What's wrong with p=1?
+  ;; (assert-true (same-univariate-moments (r-geometric 1))) 
+  (assert-true (same-univariate-moments (r-geometric 0.3)))
+  (assert-true (same-univariate-moments (r-geometric 1/6)))
+  (assert-true (same-univariate-moments (r-geometric 0.98))))
