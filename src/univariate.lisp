@@ -83,7 +83,7 @@
 ;;;
 ;;; Also provides some primitives (mostly for standardized normal) that are useful for constructing/drawing from other distributions.
 
-(declaim (ftype (function () internal-float) draw-standard-normal))
+;(declaim (ftype (function () internal-float) draw-standard-normal))
 
 (defun draw-standard-normal (&key (rng *random-state*))
   "Draw a random number from N(0,1)."
@@ -743,21 +743,24 @@ x^(alpha-1)*(1-x)^(beta-1)."
 (defun draw-bernoulli-bit (p &key (rng *random-state*))
   (if (draw-bernoulli p :rng rng) 1 0))
 
-(define-rv r-bernoulli (p)
-  (:documentation "Bernoulli(p) distribution, with probability P for success and 1-P for
-failure."
+
+;; Use PR instead of P, otherwise both type predicate and structure member are called
+;; r-bernoulli-p.
+(define-rv r-bernoulli (pr)
+  (:documentation "Bernoulli(pr) distribution, with probability PR for success and 1-PR
+for failure."
    :include r-univariate)
-  ((p :type internal-float :reader T))
-  (with-floats (p)
-    (check-probability p :both)
-    (make :p p))
-  (mean () p)
-  (variance () (* p (- 1 p)))
+  ((pr :type internal-float :reader T))
+  (with-floats (pr)
+    (check-probability pr :both)
+    (make :pr pr))
+  (mean () pr)
+  (variance () (* pr (- 1 pr)))
   (draw (&key (rng *random-state*))
-        (draw-bernoulli-bit p :rng rng))
+        (draw-bernoulli-bit pr :rng rng))
   (cdf (x)
        (cond ((< x 0) 0)
-	     ((< x 1) (- 1 p))
+	     ((< x 1) (- 1 pr))
 	     (T 1))))
 
 
@@ -773,20 +776,20 @@ of success P."
       (when (draw-bernoulli p :rng rng)
 	(incf successes)))))
 
-(define-rv r-binomial (p n)
-  (:documentation "Binomial(p,n) distribution, with N Bernoulli trials with 
-probability P for success."
+(define-rv r-binomial (pr n)
+  (:documentation "Binomial(pr,n) distribution, with N Bernoulli trials with 
+probability PR for success."
    :include r-univariate)
-  ((p :type internal-float :reader T)
+  ((pr :type internal-float :reader T)
    (n :type integer :reader T))
-  (with-floats (p)
-    (check-probability p)
+  (with-floats (pr)
+    (check-probability pr)
     (assert (plusp n))
-    (make :p p :n n))
-  (mean () (* n p))
-  (variance () (* n p (- 1 p)))
+    (make :pr pr :n n))
+  (mean () (* n pr))
+  (variance () (* n pr (- 1 pr)))
   (draw (&key (rng *random-state*))
-        (draw-binomial p n :rng rng)))
+        (draw-binomial pr n :rng rng)))
 
 
 
@@ -798,17 +801,17 @@ probability P for success."
     (do ((trials 1 (1+ trials)))
 	((draw-bernoulli p :rng rng) trials)))
 
-(define-rv r-geometric (p)
-  (:documentation "Geometric(p) distribution."
+(define-rv r-geometric (pr)
+  (:documentation "Geometric(pr) distribution."
    :include r-univariate)
-  ((p :type internal-float :reader T))
-  (with-floats (p)
-    (check-probability p :left)
-    (make :p p))
-  (mean () (/ p))
-  (variance () (/ (- 1 p) (* p p)))
+  ((pr :type internal-float :reader T))
+  (with-floats (pr)
+    (check-probability pr :left)
+    (make :pr pr))
+  (mean () (/ pr))
+  (variance () (/ (- 1 pr) (* pr pr)))
   (draw (&key (rng *random-state*))
-	(draw-geometric p :rng rng)))
+	(draw-geometric pr :rng rng)))
 
 
 
