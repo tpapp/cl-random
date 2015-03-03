@@ -13,6 +13,11 @@
 
 ;;; Uniform distribution.
 
+(defun draw-uniform (left right &key (rng *random-state*))
+  "Return a random variable from the uniform distribution between LEFT and RIGHT. It's type is
+the same as that of (- LEFT RIGHT)."
+  (+ left (next (- right left) rng)))
+
 (define-rv r-uniform (left right)
   (:documentation "Uniform(left,right) distribution."
    :include r-univariate)
@@ -49,14 +54,18 @@
 ;;; Also provides the primitive draw-standard-exponential, which is useful for
 ;;; constructing other distributions.
 
-(declaim (inline draw-standard-exponential))
+(declaim (inline draw-standard-exponential draw-exponential))
 (defun draw-standard-exponential (&key (rng *random-state*))
-  "Return a random variable from the Exponential(1) distribution, which has density exp(-x)."
+  "Return a random variable from the Exponential(1) distribution, which has density exp(-x) for x>=0 and 0 for x<0."
   ;; need 1-random, because there is a small but nonzero chance of getting a 0.
   (- (log (- 1d0 (next 1d0 rng)))))
 
+(defun draw-exponential (rate &key (rng *random-state*))
+  "Return a random variable from the Exponential(rate) distribution which has density rate*exp(-rate*x) for x>=0 and 0 for x<0. rate > 0."
+  (/ (draw-standard-exponential :rng rng) rate))
+
 (define-rv r-exponential (rate)
-  (:documentation "Exponential(beta) distribution, with density beta*exp(-beta*x) on x >= 0."
+  (:documentation "Exponential(rate) distribution, with density rate*exp(-rate*x) for x>=0 and 0 for x<0. rate > 0."
    :include r-univariate)
   ((rate :type internal-float :reader t))
   (with-floats (rate)
@@ -648,6 +657,34 @@ x^(alpha-1)*(1-x)^(beta-1)."
   (quantile (q)
             (with-floats (q)
               (rmath:qbeta q alpha beta 1 0))))
+
+
+
+;;; Rayleigh distribution.
+
+(declaim (inline drawy-rayleigh))
+(defun draw-rayleigh (scale &key (rng *random-state*))
+  "Return a random variable from the Rayleigh(scale) distribution, where scale > 0 and
+density x * exp(-x^2 / (2 scale^2)) / scale^2 for x>=0 and 0 for x<0."
+  (let ((u (- 1d0 (next 1d0 rng)))) ;We need 1-u, to avoid u=0.
+    (* scale (sqrt (* -2d0 (log u))))))
+
+(define-rv r-rayleigh (scale)
+  (:documentation "Rayleigh(scale) distribution with scale > 0 and density x * exp(-x^2 / (2 scale^2)) / scale^2 for x>=0 and 0 for x<0."
+   :include r-univariate)
+  ((scale :type internal-float :reader T))
+  (with-floats (scale)
+    (assert (plusp scale))
+    (make :scale scale))
+  (mean () (* scale (sqrt (/ PI 2))))
+  (variance () (* 1/2 (- 4 PI) scale scale))
+  (draw (&key (rng *random-state*))
+	(draw-rayleigh scale :rng rng))
+  (cdf (x)
+       (if (<= x 0)
+	   0
+	   (- 1d0 (exp (/ (* x x) (* -2 scale scale)))))))
+
 
 
 ;;; Discrete distribution.

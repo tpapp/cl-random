@@ -64,6 +64,7 @@ METHODS are (function-name lambda-list &body body), with (INSTANCE NAME) prepend
 (defgeneric draw (random-variable &key rng &allow-other-keys)
   (:documentation "Draw random variates.  Can also be used on generators.")
   (:method ((function function) &key (rng *random-state*))
+    (declare (ignorable rng))
     (funcall function)))
 
 (defgeneric generator (random-variable &key rng)

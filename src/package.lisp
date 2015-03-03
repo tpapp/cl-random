@@ -51,12 +51,14 @@
    #:distinct-random-integers-dense)
   (:export                              ; univariate
    #:standard-deviation
+   #:draw-uniform
    #:r-uniform
    #:left
    #:right
    #:r-exponential
    #:rate
    #:draw-standard-exponential
+   #:draw-exponential
    #:draw-standard-normal
    #:to-standard-normal
    #:from-standard-normal
@@ -77,6 +79,8 @@
    #:r-chi-square
    #:r-inverse-chi-square
    #:r-beta
+   #:draw-rayleigh
+   #:r-rayleigh
    #:r-discrete
    #:probabilities
    #:draw-bernoulli

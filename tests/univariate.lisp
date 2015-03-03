@@ -165,7 +165,28 @@
   (assert-true (same-univariate-moments (r-beta 1 8)))
   (assert-true (same-univariate-moments (r-beta 0.5 pi)))
   (assert-equality #'num= 0.001343620695608248967121
-      (quantile (r-beta 0.3d0 0.6d0) 0.11)))
+		   (quantile (r-beta 0.3d0 0.6d0) 0.11)))
+
+
+;; rayleigh distribution
+
+(deftest rayleigh-draws (univariate-tests)
+  (assert-true (same-univariate-moments (r-rayleigh 1)))
+  (assert-true (same-univariate-moments (r-rayleigh 0.0001d0)))
+  (assert-true (same-univariate-moments (r-rayleigh 1d0)))
+  (assert-true (same-univariate-moments (r-rayleigh 100)))
+  (assert-true (same-univariate-moments (r-rayleigh PI))))
+
+(deftest rayleigh-cdf (univariate-tests)
+  (assert-equality #'num= 0.0d0
+		   (cdf (r-rayleigh 250d0) 0d0))
+  (assert-equality #'num= 7.99997d-6
+		   (cdf (r-rayleigh 250d0) 1d0))
+  (assert-equality #'num= 0.00079968d0
+		   (cdf (r-rayleigh 250d0) 10d0))
+  (assert-equality #'num= 0.0768837d0
+		   (cdf (r-rayleigh 250d0) 100d0)))
+
 
 
 ;; general discrete distribution
